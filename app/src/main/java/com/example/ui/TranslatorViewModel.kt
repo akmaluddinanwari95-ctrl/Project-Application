@@ -15,10 +15,13 @@ import com.example.domain.ErrorAlert
 import com.example.domain.ExportDelimiter
 import com.example.domain.ExportEncoding
 import com.example.domain.FileQueueStatus
+import com.example.domain.GlossaryPreset
 import com.example.domain.LogEntry
 import com.example.domain.LogLevel
+import com.example.domain.ModDiffMergeResult
 import com.example.domain.PendingExportPreviewItem
 import com.example.domain.PreviewRow
+import com.example.domain.QaAuditSummary
 import com.example.domain.QueuedFileItem
 import com.example.domain.TranslationEngine
 import com.example.domain.TranslationProgressState
@@ -143,6 +146,65 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
   private val _showSaveDialog = MutableStateFlow(false)
   val showSaveDialog: StateFlow<Boolean> = _showSaveDialog.asStateFlow()
 
+  private val _editorFileId = MutableStateFlow<String?>(null)
+  val editorFileId: StateFlow<String?> = _editorFileId.asStateFlow()
+
+  val qaAuditSummary: StateFlow<QaAuditSummary?> = combine(
+      fileQueue,
+      _editorFileId,
+      settings
+  ) { queue, targetId, s ->
+    val targetFile = targetId?.let { id ->
+      queue.firstOrNull { it.id == id && it.results.isNotEmpty() }
+    }
+    targetFile?.let {
+      WarbandTextProcessor.auditTranslatedFile(
+          file = it,
+          separator = s.separator,
+          stripTag = s.stripTag,
+          skipRegex = s.skipRegex
+      )
+    }
+  }.stateIn(
+      scope = viewModelScope,
+      started = SharingStarted.WhileSubscribed(5000L),
+      initialValue = null
+  )
+
+  private val _showModDiffDialog = MutableStateFlow(false)
+  val showModDiffDialog: StateFlow<Boolean> = _showModDiffDialog.asStateFlow()
+
+  private val _diffNewModName = MutableStateFlow("")
+  val diffNewModName: StateFlow<String> = _diffNewModName.asStateFlow()
+
+  private val _diffOldTransName = MutableStateFlow("")
+  val diffOldTransName: StateFlow<String> = _diffOldTransName.asStateFlow()
+
+  private val _diffNewModLines = MutableStateFlow<List<String>>(emptyList())
+  private val _diffOldTransLines = MutableStateFlow<List<String>>(emptyList())
+
+  val diffMergePreview: StateFlow<ModDiffMergeResult?> = combine(
+      _diffNewModLines,
+      _diffOldTransLines,
+      settings
+  ) { newLines, oldLines, s ->
+    if (newLines.isEmpty() || oldLines.isEmpty()) {
+      null
+    } else {
+      WarbandTextProcessor.mergeModUpdateDiff(
+          newModLines = newLines,
+          oldTranslatedLines = oldLines,
+          separator = s.separator,
+          stripTag = s.stripTag,
+          skipRegex = s.skipRegex
+      )
+    }
+  }.stateIn(
+      scope = viewModelScope,
+      started = SharingStarted.WhileSubscribed(5000L),
+      initialValue = null
+  )
+
   private val _uiEvents = MutableSharedFlow<UiEvent>()
   val uiEvents: SharedFlow<UiEvent> = _uiEvents.asSharedFlow()
 
@@ -196,9 +258,21 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     }
   }
 
+  fun setBatchSize(batchSize: Int) {
+    viewModelScope.launch {
+      settingsStore.updateSettings { it.copy(batchSize = batchSize.coerceIn(1, 10)) }
+    }
+  }
+
   fun setAutoFallback(enabled: Boolean) {
     viewModelScope.launch {
       settingsStore.updateSettings { it.copy(autoFallback = enabled) }
+    }
+  }
+
+  fun setMedievalToneEnabled(enabled: Boolean) {
+    viewModelScope.launch {
+      settingsStore.updateSettings { it.copy(medievalToneEnabled = enabled) }
     }
   }
 
@@ -235,6 +309,17 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
   fun setGlossaryText(text: String) {
     viewModelScope.launch {
       settingsStore.updateSettings { it.copy(glossaryText = text) }
+    }
+  }
+
+  fun applyGlossaryPreset(preset: GlossaryPreset) {
+    viewModelScope.launch {
+      val merged = WarbandTextProcessor.mergeGlossaryText(
+          settings.value.glossaryText,
+          preset.termsText
+      )
+      settingsStore.updateSettings { it.copy(glossaryText = merged) }
+      _uiEvents.emit(UiEvent.ShowToast("Paket glosarium ditambahkan!"))
     }
   }
 
@@ -496,17 +581,194 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     }
   }
 
+  fun exportCacheBackupToUri(uri: Uri) {
+    viewModelScope.launch {
+      try {
+        val entries = cacheDao.getAllEntries()
+        if (entries.isEmpty()) {
+          _uiEvents.emit(UiEvent.ShowToast("Cache kosong, belum ada yang dapat diekspor."))
+          return@launch
+        }
+        val json = AndroidFileHelper.serializeCacheBackupJson(entries)
+        AndroidFileHelper.writeTextToUri(appContext, uri, json, ExportEncoding.UTF_8)
+        _uiEvents.emit(UiEvent.ShowToast("Backup cache (${entries.size} baris) berhasil diekspor!"))
+      } catch (e: Exception) {
+        _uiEvents.emit(UiEvent.ShowToast("Gagal ekspor cache: ${e.message}"))
+      }
+    }
+  }
+
+  fun importCacheBackupFromUri(uri: Uri) {
+    viewModelScope.launch {
+      try {
+        val raw = AndroidFileHelper.readTextFromUri(appContext, uri)
+        val entries = AndroidFileHelper.parseCacheBackupJson(raw)
+        if (entries.isEmpty()) {
+          _uiEvents.emit(UiEvent.ShowToast("File backup cache tidak valid atau kosong."))
+          return@launch
+        }
+        cacheDao.upsertAll(entries)
+        TranslationCoordinator.refreshAutoResumeCounts(appContext, settings.value)
+        TranslationCoordinator.appendLog("Impor backup cache: ${entries.size} entri dimuat.", LogLevel.OK)
+        _uiEvents.emit(UiEvent.ShowToast("${entries.size} entri cache berhasil diimpor!"))
+      } catch (e: Exception) {
+        _uiEvents.emit(UiEvent.ShowToast("Gagal impor cache: ${e.message}"))
+      }
+    }
+  }
+
+  fun openFullEditorForFile(fileId: String) {
+    _editorFileId.value = fileId
+  }
+
+  fun openFullEditorForFirstDone() {
+    val doneFile = fileQueue.value.firstOrNull { it.results.isNotEmpty() } ?: return
+    _editorFileId.value = doneFile.id
+  }
+
+  fun dismissFullEditor() {
+    _editorFileId.value = null
+  }
+
+  fun saveFullEditorLine(fileId: String, lineIndex: Int, newTranslatedLine: String) {
+    viewModelScope.launch {
+      val s = settings.value
+      TranslationCoordinator.updateLineInQueueFile(
+          context = appContext,
+          fileId = fileId,
+          lineIndex = lineIndex,
+          newTranslatedLine = newTranslatedLine,
+          separator = s.separator,
+          targetLang = s.targetLang
+      )
+      _uiEvents.emit(UiEvent.ShowToast("Baris #${lineIndex + 1} diperbarui & disimpan ke cache."))
+    }
+  }
+
+  fun applyFindAndReplace(fileId: String, findQuery: String, replaceWith: String, caseSensitive: Boolean) {
+    viewModelScope.launch {
+      val s = settings.value
+      val count = TranslationCoordinator.applyBatchReplaceToFile(
+          context = appContext,
+          fileId = fileId,
+          findQuery = findQuery,
+          replaceWith = replaceWith,
+          caseSensitive = caseSensitive,
+          separator = s.separator,
+          targetLang = s.targetLang
+      )
+      _uiEvents.emit(
+          UiEvent.ShowToast(
+              if (count > 0) "$count baris berhasil diperbarui." else "Tidak ada teks cocok untuk diganti."
+          )
+      )
+    }
+  }
+
+  fun autoFixQaMissingTokens(fileId: String) {
+    viewModelScope.launch {
+      val s = settings.value
+      val fixed = TranslationCoordinator.autoFixFileMissingTokens(
+          context = appContext,
+          fileId = fileId,
+          separator = s.separator,
+          stripTag = s.stripTag,
+          targetLang = s.targetLang
+      )
+      _uiEvents.emit(
+          UiEvent.ShowToast(
+              if (fixed > 0) "$fixed baris token hilang diperbaiki." else "Semua token sudah lengkap."
+          )
+      )
+    }
+  }
+
+  fun openModDiffDialog() {
+    _showModDiffDialog.value = true
+  }
+
+  fun dismissModDiffDialog() {
+    _showModDiffDialog.value = false
+  }
+
+  fun loadDiffNewModUri(uri: Uri) {
+    viewModelScope.launch {
+      try {
+        val lines = AndroidFileHelper.readNonEmptyLinesFromUri(appContext, uri)
+        _diffNewModName.value = AndroidFileHelper.getDisplayName(appContext, uri) ?: "new_mod.csv"
+        _diffNewModLines.value = lines
+      } catch (e: Exception) {
+        _uiEvents.emit(UiEvent.ShowToast("Gagal membaca file mod baru: ${e.message}"))
+      }
+    }
+  }
+
+  fun loadDiffOldTranslatedUri(uri: Uri) {
+    viewModelScope.launch {
+      try {
+        val lines = AndroidFileHelper.readNonEmptyLinesFromUri(appContext, uri)
+        _diffOldTransName.value = AndroidFileHelper.getDisplayName(appContext, uri) ?: "old_translated.csv"
+        _diffOldTransLines.value = lines
+      } catch (e: Exception) {
+        _uiEvents.emit(UiEvent.ShowToast("Gagal membaca file terjemahan lama: ${e.message}"))
+      }
+    }
+  }
+
+  fun applyModDiffToQueue() {
+    val preview = diffMergePreview.value ?: return
+    val fileName = _diffNewModName.value.ifBlank { "mod_update.csv" }
+    viewModelScope.launch {
+      val targetLang = settings.value.targetLang
+      val now = System.currentTimeMillis()
+      val cacheEntities = preview.seededCachePairs.entries.map { (src, dst) ->
+        com.example.data.local.TranslationCacheEntity(
+            targetLang = targetLang,
+            sourceText = src,
+            translatedText = dst,
+            updatedAt = now
+        )
+      }
+      if (cacheEntities.isNotEmpty()) {
+        cacheDao.upsertAll(cacheEntities)
+      }
+
+      val item = QueuedFileItem(
+          id = UUID.randomUUID().toString(),
+          name = fileName,
+          uriString = null,
+          lines = preview.mergedLines,
+          results = emptyList(),
+          status = FileQueueStatus.WAIT,
+          cachedLinesCount = preview.carriedOverCount + preview.skippedCount
+      )
+      TranslationCoordinator.enqueueFiles(listOf(item))
+      TranslationCoordinator.refreshAutoResumeCounts(appContext, settings.value)
+      TranslationCoordinator.appendLog(
+          "Mod Diff Merge ($fileName): ${preview.carriedOverCount} baris dipertahankan ke cache, ${preview.newOrChangedCount} baris baru siap diterjemahkan.",
+          LogLevel.OK
+      )
+      _selectedPreviewFileId.value = item.id
+      _showModDiffDialog.value = false
+      _diffNewModName.value = ""
+      _diffOldTransName.value = ""
+      _diffNewModLines.value = emptyList()
+      _diffOldTransLines.value = emptyList()
+      _uiEvents.emit(UiEvent.ShowToast("Diff dimuat: ${preview.carriedOverCount} dipertahankan, ${preview.newOrChangedCount} baris baru."))
+    }
+  }
+
   fun savePendingToDownloads() {
     val files = buildPendingSavePairs()
     _showSaveDialog.value = false
     if (files.isEmpty()) return
 
-    val charset = settings.value.exportEncoding.toCharset()
+    val encoding = settings.value.exportEncoding
     viewModelScope.launch {
-      when (val outcome = AndroidFileHelper.saveToDownloads(appContext, files, charset = charset)) {
+      when (val outcome = AndroidFileHelper.saveToDownloads(appContext, files, encoding = encoding)) {
         is SaveOutcome.Saved -> {
           _uiEvents.emit(
-              UiEvent.ShowToast("${outcome.count} file (${settings.value.exportEncoding.charsetName}) disimpan ke ${outcome.locationLabel}")
+              UiEvent.ShowToast("${outcome.count} file (${encoding.charsetName}) disimpan ke ${outcome.locationLabel}")
           )
         }
         is SaveOutcome.RequiresLegacyPicker -> {
@@ -525,12 +787,12 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     _showSaveDialog.value = false
     if (files.isEmpty()) return
 
-    val charset = settings.value.exportEncoding.toCharset()
+    val encoding = settings.value.exportEncoding
     viewModelScope.launch {
-      when (val outcome = AndroidFileHelper.saveToFolderTree(appContext, treeUri, files, charset = charset)) {
+      when (val outcome = AndroidFileHelper.saveToFolderTree(appContext, treeUri, files, encoding = encoding)) {
         is SaveOutcome.Saved -> {
           _uiEvents.emit(
-              UiEvent.ShowToast("${outcome.count} file (${settings.value.exportEncoding.charsetName}) berhasil disimpan ke folder tujuan!")
+              UiEvent.ShowToast("${outcome.count} file (${encoding.charsetName}) berhasil disimpan ke folder tujuan!")
           )
         }
         is SaveOutcome.Failed -> {
@@ -547,12 +809,12 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
       legacySaveQueue.clear()
       return
     }
-    val charset = settings.value.exportEncoding.toCharset()
+    val encoding = settings.value.exportEncoding
     viewModelScope.launch {
       try {
-        AndroidFileHelper.writeTextToUri(appContext, uri, current.second, charset = charset)
+        AndroidFileHelper.writeTextToUri(appContext, uri, current.second, encoding = encoding)
         if (legacySaveQueue.isEmpty()) {
-          _uiEvents.emit(UiEvent.ShowToast("File (${settings.value.exportEncoding.charsetName}) berhasil disimpan!"))
+          _uiEvents.emit(UiEvent.ShowToast("File (${encoding.charsetName}) berhasil disimpan!"))
         } else {
           triggerNextLegacySave()
         }

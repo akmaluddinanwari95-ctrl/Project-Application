@@ -69,8 +69,14 @@ class SettingsAndHistoryRobolectricTest {
     composeTestRule.onNodeWithTag("export_delimiter_semicolon").performScrollTo().performClick()
     assertEquals(ExportDelimiter.SEMICOLON, selectedDelimiter)
 
-    composeTestRule.onNodeWithTag("export_encoding_utf16").performScrollTo().performClick()
-    assertEquals(ExportEncoding.UTF_16, selectedEncoding)
+    composeTestRule.onNodeWithTag("export_encoding_utf8_bom").performScrollTo().performClick()
+    assertEquals(ExportEncoding.UTF_8_BOM, selectedEncoding)
+
+    composeTestRule.onNodeWithTag("export_encoding_utf16le").performScrollTo().performClick()
+    assertEquals(ExportEncoding.UTF_16_LE, selectedEncoding)
+
+    composeTestRule.onNodeWithTag("export_encoding_utf16be").performScrollTo().performClick()
+    assertEquals(ExportEncoding.UTF_16_BE, selectedEncoding)
   }
 
   @Test

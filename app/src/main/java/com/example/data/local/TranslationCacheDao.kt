@@ -22,6 +22,9 @@ interface TranslationCacheDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun upsertAll(entries: List<TranslationCacheEntity>)
 
+  @Query("SELECT * FROM translation_cache ORDER BY updatedAt DESC")
+  suspend fun getAllEntries(): List<TranslationCacheEntity>
+
   @Query("SELECT COUNT(*) FROM translation_cache")
   fun getCountFlow(): Flow<Int>
 

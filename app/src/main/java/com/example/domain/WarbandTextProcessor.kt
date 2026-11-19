@@ -237,4 +237,326 @@ object WarbandTextProcessor {
       "$cleanPrefix$safeOriginal$cleanSuffix"
     }
   }
+
+  val builtInGlossaryPresets: List<GlossaryPreset> = listOf(
+      GlossaryPreset(
+          id = "factions",
+          titleKey = "presetGlossFactions",
+          termsText = """
+            Swadia
+            Vaegir
+            Khergit
+            Nord
+            Rhodok
+            Sarranid
+            Calradia
+            Praven
+            Suno
+            Uxkhal
+            Dhirim
+            Reyvadin
+            Rivacheg
+            Khudan
+            Curaw
+            Tulga
+            Ichamur
+            Narra
+            Halmar
+            Sargoth
+            Tihr
+            Wercheg
+            Jelkala
+            Veluca
+            Yalen
+            Shariz
+            Durquba
+            Ahmerrad
+            Bariyye
+          """.trimIndent()
+      ),
+      GlossaryPreset(
+          id = "politics",
+          titleKey = "presetGlossPolitics",
+          termsText = """
+            Marshal=Marsekal
+            Vassal=Vasali
+            Fief=Wilayah Kekuasaan
+            Renown=Reputasi
+            Right to Rule=Hak Memerintah
+            Controversy=Kontroversi
+            Sovereign=Penguasa
+            Liege=Tuanku
+            Claimant=Penuntut Takhta
+            Banner=Panji
+          """.trimIndent()
+      ),
+      GlossaryPreset(
+          id = "military",
+          titleKey = "presetGlossMilitary",
+          termsText = """
+            Recruit=Rekrut
+            Militia=Milisi
+            Skirmisher=Penyerang Ringan
+            Footman=Prajurit Infanteri
+            Knight=Kesatria
+            Man-at-Arms=Kesatria Bersenjata
+            Crossbowman=Pemanah Busur Silang
+            Horse Archer=Pemanah Berkuda
+            Lancer=Pasukan Tombak Berkuda
+            Huscarl=Huskarl
+          """.trimIndent()
+      )
+  )
+
+  fun mergeGlossaryText(existingRaw: String, additionRaw: String): String {
+    val existingLines = existingRaw.lines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .toMutableList()
+    val seenKeys = existingLines.map { line ->
+      val eq = line.indexOf('=')
+      (if (eq > 0) line.substring(0, eq) else line).trim().lowercase()
+    }.toHashSet()
+
+    additionRaw.lines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") }
+        .forEach { line ->
+          val eq = line.indexOf('=')
+          val key = (if (eq > 0) line.substring(0, eq) else line).trim().lowercase()
+          if (key.isNotEmpty() && seenKeys.add(key)) {
+            existingLines.add(line)
+          }
+        }
+    return existingLines.joinToString("\n")
+  }
+
+  private val spaceBeforePunctRegex = Regex("\\s+([,.!?;:])")
+  private val multiSpaceRegex = Regex(" {2,}")
+  private val indonesianToneRules: List<Pair<Regex, String>> = listOf(
+      Regex("\\bTuanku saya\\b", RegexOption.IGNORE_CASE) to "Tuanku",
+      Regex("\\bTuan saya\\b", RegexOption.IGNORE_CASE) to "Tuanku",
+      Regex("\\bYang Mulia Anda\\b", RegexOption.IGNORE_CASE) to "Baginda",
+      Regex("\\bYang Mulia Kamu\\b", RegexOption.IGNORE_CASE) to "Baginda",
+      Regex("\\bKerajaan saya\\b", RegexOption.IGNORE_CASE) to "Kerajaanku",
+      Regex("\\bpasukan saya\\b", RegexOption.IGNORE_CASE) to "pasukanku",
+      Regex("\\bdesa saya\\b", RegexOption.IGNORE_CASE) to "desaku",
+      Regex("\\bkastil saya\\b", RegexOption.IGNORE_CASE) to "kastilku",
+      Regex("\\bkota saya\\b", RegexOption.IGNORE_CASE) to "kotaku",
+      Regex("\\bbangsawan laki-laki\\b", RegexOption.IGNORE_CASE) to "kesatria"
+  )
+  private val englishToneRules: List<Pair<Regex, String>> = listOf(
+      Regex("\\bmy lord\\b", RegexOption.IGNORE_CASE) to "My Lord",
+      Regex("\\byour grace\\b", RegexOption.IGNORE_CASE) to "Your Grace",
+      Regex("\\byour highness\\b", RegexOption.IGNORE_CASE) to "Your Highness"
+  )
+
+  fun applyMedievalTonePostProcessing(
+      text: String,
+      targetLang: String,
+      enabled: Boolean
+  ): String {
+    if (!enabled || text.isBlank()) return text
+
+    // Temporarily mask curly/caret tokens so tone replacements never touch inside {...}
+    val protectedTokens = mutableListOf<String>()
+    var working = curlyVarRegex.replace(text) { m ->
+      val idx = protectedTokens.size
+      protectedTokens.add(m.value)
+      "@@TOK${idx}@@"
+    }
+
+    working = spaceBeforePunctRegex.replace(working, "$1")
+    working = multiSpaceRegex.replace(working, " ")
+
+    when (targetLang.lowercase()) {
+      "id" -> {
+        indonesianToneRules.forEach { (rx, replacement) ->
+          working = rx.replace(working, replacement)
+        }
+      }
+      "en" -> {
+        englishToneRules.forEach { (rx, replacement) ->
+          working = rx.replace(working, replacement)
+        }
+      }
+    }
+
+    working = working.trim()
+    if (working.isNotEmpty() && working[0].isLowerCase() && !working.startsWith("@@TOK")) {
+      working = working.replaceFirstChar { it.uppercase() }
+    }
+
+    val restorePlaceholder = Regex("@@TOK(\\d+)@@")
+    return restorePlaceholder.replace(working) { m ->
+      val idx = m.groupValues[1].toIntOrNull()
+      if (idx != null && idx in protectedTokens.indices) protectedTokens[idx] else ""
+    }
+  }
+
+  fun auditTranslatedFile(
+      file: QueuedFileItem,
+      separator: String,
+      stripTag: String,
+      skipRegex: String
+  ): QaAuditSummary {
+    val sep = separator.ifEmpty { "|" }
+    val auditedRows = mutableListOf<QaAuditRow>()
+    var issueRowsCount = 0
+
+    file.lines.forEachIndexed { idx, origLine ->
+      val transLine = file.results.getOrNull(idx) ?: origLine
+      if (matchesSkipRegex(origLine, skipRegex)) {
+        return@forEachIndexed
+      }
+
+      val origSplit = splitLine(origLine, sep, stripTag)
+      val transSplit = splitLine(transLine, sep, "")
+
+      val issues = mutableListOf<QaIssueType>()
+      if (origSplit.hasCode && (!transSplit.hasCode || origSplit.codePart != transSplit.codePart)) {
+        issues.add(QaIssueType.BROKEN_SEPARATOR)
+      }
+
+      val origTokens = extractProtectedTokens(origSplit.textPart)
+      val transTokens = extractProtectedTokens(transSplit.textPart)
+      val missingTokens = origTokens.filterNot { it in transTokens }
+      val extraTokens = transTokens.filterNot { it in origTokens }
+
+      if (missingTokens.isNotEmpty()) issues.add(QaIssueType.MISSING_TOKEN)
+      if (extraTokens.isNotEmpty()) issues.add(QaIssueType.EXTRA_TOKEN)
+      if (restoreTokenRegex.containsMatchIn(transSplit.textPart)) {
+        issues.add(QaIssueType.LEFT_MARKER)
+      }
+      if (origSplit.textPart.length >= 16 &&
+          origSplit.textPart.any { it.isLetter() } &&
+          origSplit.textPart.equals(transSplit.textPart, ignoreCase = false)
+      ) {
+        issues.add(QaIssueType.UNTRANSLATED)
+      }
+
+      if (issues.isNotEmpty()) issueRowsCount++
+      auditedRows.add(
+          QaAuditRow(
+              lineIndex = idx,
+              codePart = origSplit.codePart,
+              originalLine = origLine,
+              translatedLine = transLine,
+              missingTokens = missingTokens,
+              extraTokens = extraTokens,
+              issues = issues
+          )
+      )
+    }
+
+    return QaAuditSummary(
+        fileId = file.id,
+        fileName = file.name,
+        totalRows = auditedRows.size,
+        issueCount = issueRowsCount,
+        rows = auditedRows
+    )
+  }
+
+  fun autoFixMissingTokens(
+      originalLine: String,
+      translatedLine: String,
+      separator: String,
+      stripTag: String
+  ): String {
+    val sep = separator.ifEmpty { "|" }
+    val origSplit = splitLine(originalLine, sep, stripTag)
+    val transSplit = splitLine(translatedLine, sep, "")
+
+    val origTokens = extractProtectedTokens(origSplit.textPart)
+    val transTokens = extractProtectedTokens(transSplit.textPart)
+    val missing = origTokens.filterNot { it in transTokens }
+
+    var fixedText = transSplit.textPart.trim()
+    if (missing.isNotEmpty()) {
+      fixedText = if (fixedText.isEmpty()) missing.joinToString(" ") else "$fixedText ${missing.joinToString(" ")}"
+    }
+
+    return if (origSplit.hasCode) "${origSplit.codePart}$sep$fixedText" else fixedText
+  }
+
+  fun mergeModUpdateDiff(
+      newModLines: List<String>,
+      oldTranslatedLines: List<String>,
+      separator: String,
+      stripTag: String,
+      skipRegex: String
+  ): ModDiffMergeResult {
+    val sep = separator.ifEmpty { "|" }
+    val oldByCode = HashMap<String, String>(oldTranslatedLines.size)
+    oldTranslatedLines.forEach { line ->
+      val split = splitLine(line, sep, stripTag)
+      if (split.hasCode && split.codePart.isNotBlank() && split.textPart.isNotEmpty()) {
+        oldByCode[split.codePart] = split.textPart
+      }
+    }
+
+    val seededCache = LinkedHashMap<String, String>()
+    var carriedOver = 0
+    var newOrChanged = 0
+    var skipped = 0
+
+    newModLines.forEach { newLine ->
+      if (matchesSkipRegex(newLine, skipRegex)) {
+        skipped++
+        return@forEach
+      }
+      val newSplit = splitLine(newLine, sep, stripTag)
+      if (newSplit.textPart.isEmpty()) {
+        skipped++
+        return@forEach
+      }
+      val reused = if (newSplit.hasCode) oldByCode[newSplit.codePart] else null
+      if (!reused.isNullOrBlank()) {
+        seededCache[newSplit.textPart] = reused
+        carriedOver++
+      } else {
+        newOrChanged++
+      }
+    }
+
+    return ModDiffMergeResult(
+        mergedLines = newModLines,
+        seededCachePairs = seededCache,
+        carriedOverCount = carriedOver,
+        newOrChangedCount = newOrChanged,
+        skippedCount = skipped
+    )
+  }
+
+  fun findAndReplaceInLines(
+      lines: List<String>,
+      findQuery: String,
+      replaceWith: String,
+      caseSensitive: Boolean,
+      separator: String
+  ): Pair<List<String>, Int> {
+    if (findQuery.isEmpty()) return lines to 0
+    val sep = separator.ifEmpty { "|" }
+    val rx = Regex(
+        Regex.escape(findQuery),
+        if (caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
+    )
+    var replacedRowsCount = 0
+    val updated = lines.map { line ->
+      val idx = line.indexOf(sep)
+      if (idx == -1) {
+        val next = rx.replace(line, Regex.escapeReplacement(replaceWith))
+        if (next != line) replacedRowsCount++
+        next
+      } else {
+        val codePart = line.substring(0, idx)
+        val textPart = line.substring(idx + sep.length)
+        val nextText = rx.replace(textPart, Regex.escapeReplacement(replaceWith))
+        if (nextText != textPart) replacedRowsCount++
+        "$codePart$sep$nextText"
+      }
+    }
+    return updated to replacedRowsCount
+  }
 }

@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -24,7 +25,9 @@ class SettingsDataStore(private val context: Context) {
     val UI_LANG = stringPreferencesKey("ui_lang")
     val ENGINE = stringPreferencesKey("engine")
     val DELAY_MS = longPreferencesKey("delay_ms")
+    val BATCH_SIZE = intPreferencesKey("batch_size")
     val AUTO_FALLBACK = booleanPreferencesKey("auto_fallback")
+    val MEDIEVAL_TONE = booleanPreferencesKey("medieval_tone")
     val SRC_LANG = stringPreferencesKey("src_lang")
     val TGT_LANG = stringPreferencesKey("tgt_lang")
     val SEPARATOR = stringPreferencesKey("separator")
@@ -43,7 +46,9 @@ class SettingsDataStore(private val context: Context) {
             uiLanguage = UiLanguage.fromCode(prefs[Keys.UI_LANG] ?: "id"),
             engine = TranslationEngine.fromId(prefs[Keys.ENGINE] ?: "google"),
             delayMs = prefs[Keys.DELAY_MS] ?: 200L,
+            batchSize = (prefs[Keys.BATCH_SIZE] ?: 1).coerceIn(1, 10),
             autoFallback = prefs[Keys.AUTO_FALLBACK] ?: true,
+            medievalToneEnabled = prefs[Keys.MEDIEVAL_TONE] ?: true,
             sourceLang = prefs[Keys.SRC_LANG] ?: "en",
             targetLang = prefs[Keys.TGT_LANG] ?: "id",
             separator = prefs[Keys.SEPARATOR] ?: "|",
@@ -63,7 +68,9 @@ class SettingsDataStore(private val context: Context) {
           uiLanguage = UiLanguage.fromCode(prefs[Keys.UI_LANG] ?: "id"),
           engine = TranslationEngine.fromId(prefs[Keys.ENGINE] ?: "google"),
           delayMs = prefs[Keys.DELAY_MS] ?: 200L,
+          batchSize = (prefs[Keys.BATCH_SIZE] ?: 1).coerceIn(1, 10),
           autoFallback = prefs[Keys.AUTO_FALLBACK] ?: true,
+          medievalToneEnabled = prefs[Keys.MEDIEVAL_TONE] ?: true,
           sourceLang = prefs[Keys.SRC_LANG] ?: "en",
           targetLang = prefs[Keys.TGT_LANG] ?: "id",
           separator = prefs[Keys.SEPARATOR] ?: "|",
@@ -79,7 +86,9 @@ class SettingsDataStore(private val context: Context) {
       prefs[Keys.UI_LANG] = updated.uiLanguage.code
       prefs[Keys.ENGINE] = updated.engine.id
       prefs[Keys.DELAY_MS] = updated.delayMs
+      prefs[Keys.BATCH_SIZE] = updated.batchSize.coerceIn(1, 10)
       prefs[Keys.AUTO_FALLBACK] = updated.autoFallback
+      prefs[Keys.MEDIEVAL_TONE] = updated.medievalToneEnabled
       prefs[Keys.SRC_LANG] = updated.sourceLang
       prefs[Keys.TGT_LANG] = updated.targetLang
       prefs[Keys.SEPARATOR] = updated.separator

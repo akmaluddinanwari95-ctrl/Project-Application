@@ -206,19 +206,32 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          <div class="bg-[#160D0C] border border-[#3A201C] rounded-lg p-3">
-            <label class="flex items-center text-xs font-medium text-parchmentDim mb-1.5">
-              <span data-i18n="lblSpeed">Jeda Permintaan (Anti-Blokir HTTP 429)</span>
-              <button type="button" onclick="openHelpModal('lblSpeed', event)" class="help-btn" aria-label="Info Jeda Permintaan">?</button>
-            </label>
-            <select id="delaySelect" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs sm:text-sm text-parchment focus:outline-none focus:border-goldAccent">
-              <option value="80" data-i18n="spdFast">⚡ Cepat (80 ms) — Cocok untuk file kecil</option>
-              <option value="200" selected data-i18n="spdNormal">⚖️ Normal (200 ms) — Direkomendasikan</option>
-              <option value="500" data-i18n="spdSafe">🛡️ Aman (500 ms) — Anti-limit untuk ribuan baris</option>
-            </select>
+          <div class="bg-[#160D0C] border border-[#3A201C] rounded-lg p-3 space-y-2.5">
+            <div>
+              <label class="flex items-center text-xs font-medium text-parchmentDim mb-1.5">
+                <span data-i18n="lblSpeed">Jeda Permintaan (Anti-Blokir HTTP 429)</span>
+                <button type="button" onclick="openHelpModal('lblSpeed', event)" class="help-btn" aria-label="Info Jeda Permintaan">?</button>
+              </label>
+              <select id="delaySelect" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs sm:text-sm text-parchment focus:outline-none focus:border-goldAccent">
+                <option value="80" data-i18n="spdFast">⚡ Cepat (80 ms) — Cocok untuk file kecil</option>
+                <option value="200" selected data-i18n="spdNormal">⚖️ Normal (200 ms) — Direkomendasikan</option>
+                <option value="500" data-i18n="spdSafe">🛡️ Aman (500 ms) — Anti-limit untuk ribuan baris</option>
+              </select>
+            </div>
+            <div>
+              <label class="flex items-center text-xs font-medium text-parchmentDim mb-1.5">
+                <span data-i18n="lblBatchSize">Mode Batch Permintaan</span>
+                <button type="button" onclick="openHelpModal('batchSize', event)" class="help-btn" aria-label="Info Mode Batch">?</button>
+              </label>
+              <select id="batchSizeSelect" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs sm:text-sm text-parchment focus:outline-none focus:border-goldAccent">
+                <option value="1" selected data-i18n="batchSize1">🎯 Presisi (1 baris/req) — Standar</option>
+                <option value="5" data-i18n="batchSize5">🚀 Cepat (5 baris/req) — ~3x lebih ngebut</option>
+                <option value="10" data-i18n="batchSize10">⚡ Turbo (10 baris/req) — ~5x lebih ngebut</option>
+              </select>
+            </div>
           </div>
 
-          <div class="bg-[#160D0C] border border-[#3A201C] rounded-lg p-3 flex flex-col justify-between">
+          <div class="bg-[#160D0C] border border-[#3A201C] rounded-lg p-3 flex flex-col justify-between gap-2">
             <div class="flex items-center justify-between">
               <span class="text-xs font-medium text-parchmentDim flex items-center">
                 <span data-i18n="lblCache">Memori Cache (Auto-Resume)</span>
@@ -328,6 +341,14 @@
           </div>
           <button type="button" onclick="openHelpModal('varProt', event)" class="help-btn mt-0.5" aria-label="Info Pelindung Variabel">?</button>
         </div>
+
+        <div class="bg-[#160D0C] border border-[#3A201C] rounded-lg p-2.5 flex items-center justify-between gap-2 text-xs text-parchment">
+          <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="medievalToneChk" checked class="rounded accent-burgundy w-4 h-4">
+            <span data-i18n="chkMedievalTone">Penghalus Gaya Bahasa Medieval (Post-Processing)</span>
+          </label>
+          <button type="button" onclick="openHelpModal('medievalTone', event)" class="help-btn" aria-label="Info Gaya Bahasa Medieval">?</button>
+        </div>
       </section>
 
       <!-- 3. Glosarium Kustom -->
@@ -348,6 +369,14 @@
           <p class="text-xs text-parchmentDim" data-i18n="glossHint">
             Kosong secara default agar Anda bebas mengisi istilah sendiri. Tulis 1 istilah per baris: tanpa <code class="text-parchment">=</code> (misal: <code class="text-parchment">Swadia</code>) agar <strong>tidak diterjemahkan</strong>, atau dengan <code class="text-parchment">=</code> (misal: <code class="text-parchment">Vassal=Vasali</code>) untuk terjemahan khusus.
           </p>
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-semibold text-goldAccent" data-i18n="lblGlossPresets">Sisip Paket Glosarium Warband:</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" onclick="applyGlossaryPreset('factions')" class="px-2.5 py-1 rounded-full bg-burgundy/40 hover:bg-burgundy/70 border border-goldMuted text-[11px] text-goldAccent font-medium transition" data-i18n="presetGlossFactions">+ Faksi Calradia</button>
+              <button type="button" onclick="applyGlossaryPreset('politics')" class="px-2.5 py-1 rounded-full bg-burgundy/40 hover:bg-burgundy/70 border border-goldMuted text-[11px] text-goldAccent font-medium transition" data-i18n="presetGlossPolitics">+ Politik & Gelar</button>
+              <button type="button" onclick="applyGlossaryPreset('military')" class="px-2.5 py-1 rounded-full bg-burgundy/40 hover:bg-burgundy/70 border border-goldMuted text-[11px] text-goldAccent font-medium transition" data-i18n="presetGlossMilitary">+ Militer Medieval</button>
+            </div>
+          </div>
           <textarea id="glossaryText" rows="5" placeholder="Contoh (1 istilah per baris):&#10;Swadia&#10;Calradia&#10;Vassal=Vasali&#10;Fief=Tanah Wilayah" class="w-full bg-[#150C0B] border border-[#4A2A24] rounded-lg p-3 text-xs sm:text-sm font-mono text-parchment placeholder-parchmentDim/40 focus:outline-none focus:border-goldAccent leading-relaxed"></textarea>
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" onclick="exportGlossary()" class="px-3 py-1.5 rounded-lg bg-[#241514] hover:bg-[#321E1C] border border-[#5A342D] text-xs text-parchment transition flex items-center gap-1.5">
@@ -387,10 +416,16 @@
           </div>
         </div>
 
-        <button type="button" onclick="document.getElementById('csvSingleInput').click()" class="w-full py-2.5 px-4 rounded-lg bg-[#170E0D] hover:bg-[#241514] border border-[#4A2A24] text-xs font-medium text-parchment transition flex items-center justify-center gap-2">
-          <span class="text-goldAccent">➕</span>
-          <span data-i18n="btnPickSingle">Tambah 1 File</span>
-        </button>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button type="button" onclick="document.getElementById('csvSingleInput').click()" class="w-full py-2.5 px-4 rounded-lg bg-[#170E0D] hover:bg-[#241514] border border-[#4A2A24] text-xs font-medium text-parchment transition flex items-center justify-center gap-2">
+            <span class="text-goldAccent">➕</span>
+            <span data-i18n="btnPickSingle">Tambah 1 File</span>
+          </button>
+          <button type="button" onclick="openModDiffModal()" class="w-full py-2.5 px-4 rounded-lg bg-[#170E0D] hover:bg-[#241514] border border-goldMuted/70 text-xs font-medium text-goldAccent transition flex items-center justify-center gap-2">
+            <span>🔄</span>
+            <span data-i18n="btnModDiff">Gabung Update Mod (Diff)</span>
+          </button>
+        </div>
 
         <div id="queueContainer" class="hidden space-y-2.5">
           <div class="flex items-center justify-between text-xs text-parchmentDim px-1">
@@ -462,15 +497,18 @@
           </button>
         </div>
 
-        <!-- Batch Preview Export + Download All + Error Log -->
-        <div id="postActionRow" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-          <button type="button" onclick="openExportPreviewForAllDone()" class="py-2.5 px-4 rounded-xl bg-burgundy/40 hover:bg-burgundy/65 border border-goldMuted text-goldAccent font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2">
+        <!-- Batch Preview Export + QA Audit & Editor + Download All + Error Log -->
+        <div id="postActionRow" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          <button type="button" onclick="openExportPreviewForAllDone()" class="py-2.5 px-3 rounded-xl bg-burgundy/40 hover:bg-burgundy/65 border border-goldMuted text-goldAccent font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-1.5">
             <span>👁️</span> <span data-i18n="btnPreviewExport">Pratinjau Ekspor</span>
           </button>
-          <button type="button" onclick="openExportPreviewForAllDone()" class="py-2.5 px-4 rounded-xl bg-forest/45 hover:bg-forest/70 border border-green-600/60 text-green-200 font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2">
-            <span>📦</span> <span data-i18n="btnDlAll">Simpan Semua File Selesai</span>
+          <button type="button" onclick="openQaEditorForFirstDone()" class="py-2.5 px-3 rounded-xl bg-[#271915] hover:bg-[#35221D] border border-goldMuted text-goldAccent font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-1.5">
+            <span>🛡️</span> <span data-i18n="btnQaEditor">QA & Editor</span>
           </button>
-          <button type="button" id="btnExportErrors" onclick="exportErrorLog()" class="hidden sm:col-span-2 py-2.5 px-4 rounded-xl bg-crimson/30 hover:bg-crimson/50 border border-crimson text-red-200 font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2">
+          <button type="button" onclick="openExportPreviewForAllDone()" class="py-2.5 px-3 rounded-xl bg-forest/45 hover:bg-forest/70 border border-green-600/60 text-green-200 font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-1.5">
+            <span>📦</span> <span data-i18n="btnDlAll">Simpan Semua</span>
+          </button>
+          <button type="button" id="btnExportErrors" onclick="exportErrorLog()" class="hidden sm:col-span-3 py-2.5 px-4 rounded-xl bg-crimson/30 hover:bg-crimson/50 border border-crimson text-red-200 font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2">
             <span>⚠️</span> <span id="lblErrCount">Ekspor Log Baris Gagal (0)</span>
           </button>
         </div>
@@ -657,6 +695,15 @@
             Hapus Cache
           </button>
         </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button type="button" onclick="exportCacheBackupJson()" class="py-2 px-3 rounded-lg bg-[#170E0D] hover:bg-[#241514] border border-[#4A2A24] text-xs font-medium text-parchment transition flex items-center justify-center gap-1.5">
+            <span class="text-goldAccent">💾</span> <span data-i18n="btnExpCacheJson">Ekspor Cache (.json)</span>
+          </button>
+          <button type="button" onclick="document.getElementById('cacheJsonFileInput').click()" class="py-2 px-3 rounded-lg bg-[#170E0D] hover:bg-[#241514] border border-[#4A2A24] text-xs font-medium text-parchment transition flex items-center justify-center gap-1.5">
+            <span class="text-goldAccent">📥</span> <span data-i18n="btnImpCacheJson">Impor Cache (.json)</span>
+          </button>
+          <input type="file" id="cacheJsonFileInput" accept=".json,application/json" class="hidden" onchange="importCacheBackupJson(event)">
+        </div>
       </section>
     </div>
 
@@ -754,6 +801,94 @@
         <button type="button" onclick="closeExportPreviewModal()" class="px-3.5 py-2 rounded-xl border border-[#4A2A24] text-xs font-semibold text-parchmentDim hover:text-parchment" data-i18n="btnCancel">Batal</button>
         <button type="button" onclick="downloadActivePreviewFile()" class="px-3.5 py-2 rounded-xl bg-burgundy/60 hover:bg-burgundy border border-goldMuted text-xs font-semibold text-parchment" data-i18n="btnDlSelected">Unduh File Ini</button>
         <button type="button" onclick="downloadAllModalFiles()" class="px-4 py-2 rounded-xl bg-forest/70 hover:bg-forest border border-green-500 text-xs font-bold text-green-100" data-i18n="btnDlAllModal">Unduh Semua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: QA Audit & Full Editor + Search & Find/Replace -->
+  <div id="qaEditorOverlay" onclick="closeQaEditorModal()" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div onclick="event.stopPropagation()" class="w-full max-w-2xl rounded-2xl bg-[#1D1110] border-2 border-[#4A2A24] shadow-2xl p-4 sm:p-5 space-y-3 text-parchment max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between gap-2 border-b border-[#3A201C] pb-2.5">
+        <div class="min-w-0 flex-1">
+          <h3 class="font-medieval text-sm sm:text-base font-bold text-goldAccent flex items-center gap-2">
+            <span>🛡️</span>
+            <span data-i18n="qaEditorTitle">QA Audit & Editor Penuh</span>
+          </h3>
+          <div id="qaEditorFileName" class="text-[11px] font-mono text-parchmentDim truncate"></div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" id="qaAutoFixBtn" onclick="autoFixQaMissingTokens()" class="hidden px-2.5 py-1.5 rounded-lg bg-amber-950/70 hover:bg-amber-900 border border-amber-500 text-[11px] font-semibold text-amber-200 transition" data-i18n="qaBtnAutoFix">Perbaiki Token Hilang</button>
+          <button type="button" onclick="closeQaEditorModal()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold">✕</button>
+        </div>
+      </div>
+
+      <div id="qaStatusBanner" class="rounded-lg px-3 py-2 text-xs border"></div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <input type="text" id="qaSearchInput" oninput="renderQaEditorRows()" data-i18n-placeholder="qaSearchPlaceholder" placeholder="Cari ID atau teks terjemahan..." class="flex-1 min-w-[180px] bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-1.5 text-xs text-parchment focus:outline-none focus:border-goldAccent">
+        <button type="button" id="qaFilterAllBtn" onclick="setQaFilterIssues(false)" class="px-3 py-1.5 rounded-full text-[11px] font-semibold bg-burgundy/60 border border-goldAccent text-goldAccent">Semua (0)</button>
+        <button type="button" id="qaFilterIssuesBtn" onclick="setQaFilterIssues(true)" class="px-3 py-1.5 rounded-full text-[11px] bg-[#170E0D] border border-[#4A2A24] text-parchmentDim">Bermasalah QA (0)</button>
+      </div>
+
+      <div class="rounded-xl bg-[#150C0B] border border-[#3A201C] p-2.5 space-y-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input type="text" id="qaFindInput" data-i18n-placeholder="qaFindLabel" placeholder="Cari" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-2.5 py-1.5 text-xs font-mono text-parchment focus:outline-none focus:border-goldAccent">
+          <input type="text" id="qaReplaceInput" data-i18n-placeholder="qaReplaceLabel" placeholder="Ganti dengan" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-2.5 py-1.5 text-xs font-mono text-parchment focus:outline-none focus:border-goldAccent">
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <label class="inline-flex items-center gap-1.5 text-[11px] text-parchmentDim cursor-pointer">
+            <input type="checkbox" id="qaCaseSensitiveChk" class="rounded accent-burgundy">
+            <span data-i18n="qaCaseSensitive">Peka Huruf</span>
+          </label>
+          <button type="button" onclick="applyQaFindAndReplace()" class="px-3 py-1.5 rounded-lg bg-burgundy hover:bg-burgundyHover border border-goldMuted text-xs font-semibold text-parchment transition" data-i18n="qaBtnReplaceAll">Ganti Semua</button>
+        </div>
+      </div>
+
+      <div id="qaRowsContainer" class="flex-1 overflow-y-auto space-y-2 rounded-xl bg-[#0D0707] border border-[#4A2A24] p-2.5 min-h-[220px]"></div>
+
+      <div class="flex justify-end border-t border-[#3A201C] pt-2.5">
+        <button type="button" onclick="closeQaEditorModal()" class="px-4 py-2 rounded-xl border border-[#4A2A24] text-xs font-semibold text-parchment hover:border-goldAccent" data-i18n="btnCloseHelp">Mengerti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Mod Update Diff Merge -->
+  <div id="modDiffOverlay" onclick="closeModDiffModal()" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div onclick="event.stopPropagation()" class="w-full max-w-lg rounded-2xl bg-[#1D1110] border-2 border-[#4A2A24] shadow-2xl p-4 sm:p-5 space-y-3 text-parchment">
+      <div class="flex items-center justify-between border-b border-[#3A201C] pb-2.5">
+        <h3 class="font-medieval text-sm sm:text-base font-bold text-goldAccent flex items-center gap-2">
+          <span>🔄</span>
+          <span data-i18n="modDiffTitle">Gabung Update Mod (Diff Merge)</span>
+        </h3>
+        <button type="button" onclick="closeModDiffModal()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold">✕</button>
+      </div>
+
+      <p class="text-xs text-parchmentDim" data-i18n="modDiffDesc">Bawa terjemahan lama Anda ke versi mod terbaru: ID yang sama disalin otomatis ke cache sehingga hanya baris baru yang diterjemahkan.</p>
+
+      <div class="space-y-2">
+        <button type="button" onclick="document.getElementById('diffNewModInput').click()" class="w-full p-3 rounded-xl bg-[#160D0C] hover:bg-[#221413] border border-[#4A2A24] text-left transition">
+          <div class="text-xs font-semibold text-parchment" data-i18n="modDiffPickNew">1. Pilih CSV Mod Versi Baru</div>
+          <div id="diffNewModLabel" class="text-[11px] font-mono text-green-300 truncate mt-0.5">—</div>
+        </button>
+        <input type="file" id="diffNewModInput" accept=".csv,.txt,.tsv" class="hidden" onchange="handleDiffNewModFile(event)">
+
+        <button type="button" onclick="document.getElementById('diffOldTransInput').click()" class="w-full p-3 rounded-xl bg-[#160D0C] hover:bg-[#221413] border border-[#4A2A24] text-left transition">
+          <div class="text-xs font-semibold text-parchment" data-i18n="modDiffPickOld">2. Pilih CSV Terjemahan Lama Anda</div>
+          <div id="diffOldTransLabel" class="text-[11px] font-mono text-green-300 truncate mt-0.5">—</div>
+        </button>
+        <input type="file" id="diffOldTransInput" accept=".csv,.txt,.tsv" class="hidden" onchange="handleDiffOldTransFile(event)">
+      </div>
+
+      <div id="modDiffSummaryBox" class="hidden rounded-xl bg-[#0D0707] border border-[#4A2A24] p-3 space-y-1.5 text-xs">
+        <div class="font-semibold text-goldAccent" data-i18n="modDiffSummary">Hasil Analisis Diff</div>
+        <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffReused">Dipertahankan (Auto-Cache)</span><span id="diffReusedVal" class="font-mono font-bold text-green-300">0</span></div>
+        <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffNew">Baru / Perlu Diterjemahkan</span><span id="diffNewVal" class="font-mono font-bold text-amber-300">0</span></div>
+        <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffSkipped">Dilewati</span><span id="diffSkippedVal" class="font-mono font-bold text-parchmentDim">0</span></div>
+      </div>
+
+      <div class="flex justify-end gap-2 border-t border-[#3A201C] pt-3">
+        <button type="button" onclick="closeModDiffModal()" class="px-3.5 py-2 rounded-xl border border-[#4A2A24] text-xs font-semibold text-parchmentDim" data-i18n="btnCancel">Batal</button>
+        <button type="button" id="diffApplyBtn" onclick="applyModDiffToQueue()" disabled class="px-4 py-2 rounded-xl bg-burgundy hover:bg-burgundyHover disabled:opacity-40 border border-goldMuted text-xs font-bold text-parchment" data-i18n="modDiffApply">Masukkan ke Antrean</button>
       </div>
     </div>
   </div>
@@ -919,7 +1054,45 @@ const I18N = {
     lblQuickRename: 'Ubah Awalan / Akhiran Output',
     btnCancel: 'Batal',
     btnDlSelected: 'Unduh File Ini',
-    btnDlAllModal: 'Unduh Semua'
+    btnDlAllModal: 'Unduh Semua',
+    lblBatchSize: 'Mode Batch Permintaan',
+    batchSize1: '🎯 Presisi (1 baris/req) — Standar',
+    batchSize5: '🚀 Cepat (5 baris/req) — ~3x lebih ngebut',
+    batchSize10: '⚡ Turbo (10 baris/req) — ~5x lebih ngebut',
+    chkMedievalTone: 'Penghalus Gaya Bahasa Medieval (Post-Processing)',
+    lblGlossPresets: 'Sisip Paket Glosarium Warband:',
+    presetGlossFactions: '+ Faksi Calradia',
+    presetGlossPolitics: '+ Politik & Gelar',
+    presetGlossMilitary: '+ Militer Medieval',
+    btnExpCacheJson: 'Ekspor Cache (.json)',
+    btnImpCacheJson: 'Impor Cache (.json)',
+    encUtf8BomDesc: 'UTF-8 dengan BOM (direkomendasikan Excel & mod PC tertentu)',
+    encUtf16LeDesc: '16-bit Little Endian + BOM (standar Windows & Warband klasik)',
+    encUtf16BeDesc: '16-bit Big Endian + BOM (Unicode BE)',
+    btnQaEditor: 'QA & Editor',
+    qaEditorTitle: 'QA Audit & Editor Penuh',
+    qaFilterAll: 'Semua Baris',
+    qaFilterIssues: 'Bermasalah QA',
+    qaSearchPlaceholder: 'Cari ID atau teks terjemahan...',
+    qaFindLabel: 'Cari',
+    qaReplaceLabel: 'Ganti dengan',
+    qaBtnReplaceAll: 'Ganti Semua',
+    qaBtnAutoFix: 'Perbaiki Token Hilang',
+    qaCaseSensitive: 'Peka Huruf',
+    qaNoIssuesBanner: 'Mantap! Semua token Warband & pemisah lolos audit QA.',
+    qaIssuesFoundBanner: 'baris ditemukan memiliki potensi masalah QA',
+    btnModDiff: 'Gabung Update Mod (Diff)',
+    modDiffTitle: 'Gabung Update Mod (Diff Merge)',
+    modDiffDesc: 'Bawa terjemahan lama Anda ke versi mod terbaru: ID yang sama disalin otomatis ke cache sehingga hanya baris baru yang diterjemahkan.',
+    modDiffPickNew: '1. Pilih CSV Mod Versi Baru',
+    modDiffPickOld: '2. Pilih CSV Terjemahan Lama Anda',
+    modDiffSummary: 'Hasil Analisis Diff',
+    modDiffReused: 'Dipertahankan (Auto-Cache)',
+    modDiffNew: 'Baru / Perlu Diterjemahkan',
+    modDiffSkipped: 'Dilewati',
+    modDiffApply: 'Masukkan ke Antrean',
+    btnEdit: 'Edit',
+    btnSave: 'Simpan'
   },
   en: {
     navTitle: 'M&B Warband Translator',
@@ -1043,7 +1216,45 @@ const I18N = {
     lblQuickRename: 'Quick Batch Rename',
     btnCancel: 'Cancel',
     btnDlSelected: 'Download This File',
-    btnDlAllModal: 'Download All'
+    btnDlAllModal: 'Download All',
+    lblBatchSize: 'Request Batch Mode',
+    batchSize1: '🎯 Precision (1 line/req) — Standard',
+    batchSize5: '🚀 Fast (5 lines/req) — ~3x faster',
+    batchSize10: '⚡ Turbo (10 lines/req) — ~5x faster',
+    chkMedievalTone: 'Medieval Tone Post-Processing (Spacing & Titles)',
+    lblGlossPresets: 'Insert Warband Glossary Presets:',
+    presetGlossFactions: '+ Calradia Factions',
+    presetGlossPolitics: '+ Politics & Titles',
+    presetGlossMilitary: '+ Medieval Military',
+    btnExpCacheJson: 'Export Cache (.json)',
+    btnImpCacheJson: 'Import Cache (.json)',
+    encUtf8BomDesc: 'UTF-8 with BOM (recommended for Excel & certain PC mods)',
+    encUtf16LeDesc: '16-bit Little Endian + BOM (classic Windows & Warband standard)',
+    encUtf16BeDesc: '16-bit Big Endian + BOM (Unicode BE)',
+    btnQaEditor: 'QA & Editor',
+    qaEditorTitle: 'QA Audit & Full Editor',
+    qaFilterAll: 'All Rows',
+    qaFilterIssues: 'QA Issues',
+    qaSearchPlaceholder: 'Search ID or translated text...',
+    qaFindLabel: 'Find',
+    qaReplaceLabel: 'Replace with',
+    qaBtnReplaceAll: 'Replace All',
+    qaBtnAutoFix: 'Fix Missing Tokens',
+    qaCaseSensitive: 'Case Sensitive',
+    qaNoIssuesBanner: 'Clean! All Warband tokens & separators passed QA audit.',
+    qaIssuesFoundBanner: 'rows flagged with potential QA issues',
+    btnModDiff: 'Mod Update Diff',
+    modDiffTitle: 'Mod Update Diff Merge',
+    modDiffDesc: 'Carry over existing translations into a newer mod version: matching IDs populate cache so only new/changed lines translate.',
+    modDiffPickNew: '1. Pick New Mod Version CSV',
+    modDiffPickOld: '2. Pick Your Old Translated CSV',
+    modDiffSummary: 'Diff Analysis Summary',
+    modDiffReused: 'Carried Over (Auto-Cache)',
+    modDiffNew: 'New / To Translate',
+    modDiffSkipped: 'Skipped',
+    modDiffApply: 'Add to Queue',
+    btnEdit: 'Edit',
+    btnSave: 'Save'
   },
   tr: {
     navTitle: 'M&B Warband Çeviri Aracı',
@@ -1167,7 +1378,45 @@ const I18N = {
     lblQuickRename: 'Hızlı Toplu Yeniden Adlandırma',
     btnCancel: 'İptal',
     btnDlSelected: 'Bu Dosyayı İndir',
-    btnDlAllModal: 'Tümünü İndir'
+    btnDlAllModal: 'Tümünü İndir',
+    lblBatchSize: 'Toplu İstek Modu',
+    batchSize1: '🎯 Hassas (1 satır/istek) — Standart',
+    batchSize5: '🚀 Hızlı (5 satır/istek) — ~3x daha hızlı',
+    batchSize10: '⚡ Turbo (10 satır/istek) — ~5x daha hızlı',
+    chkMedievalTone: 'Orta Çağ Üslup İyileştirmesi (Son İşleme)',
+    lblGlossPresets: 'Hazır Warband Sözlük Paketleri:',
+    presetGlossFactions: '+ Calradia Krallıkları',
+    presetGlossPolitics: '+ Siyaset ve Unvanlar',
+    presetGlossMilitary: '+ Orta Çağ Askeri',
+    btnExpCacheJson: 'Önbelleği Dışa Aktar (.json)',
+    btnImpCacheJson: 'Önbelleği İçe Aktar (.json)',
+    encUtf8BomDesc: 'BOM içeren UTF-8 (Excel ve bazı PC modları için)',
+    encUtf16LeDesc: '16-bit Little Endian + BOM (klasik Windows / Warband)',
+    encUtf16BeDesc: '16-bit Big Endian + BOM (Unicode BE)',
+    btnQaEditor: 'QA ve Düzenleyici',
+    qaEditorTitle: 'QA Denetimi ve Tam Düzenleyici',
+    qaFilterAll: 'Tüm Satırlar',
+    qaFilterIssues: 'QA Sorunları',
+    qaSearchPlaceholder: 'ID veya çevrilmiş metin ara...',
+    qaFindLabel: 'Bul',
+    qaReplaceLabel: 'Değiştir',
+    qaBtnReplaceAll: 'Tümünü Değiştir',
+    qaBtnAutoFix: 'Eksik Belirteçleri Düzelt',
+    qaCaseSensitive: 'Büyük/Küçük Harf',
+    qaNoIssuesBanner: 'Harika! Tüm Warband belirteçleri ve ayraçlar QA kontrolünden geçti.',
+    qaIssuesFoundBanner: 'satırda olası QA sorunu bulundu',
+    btnModDiff: 'Mod Güncelleme Farkı',
+    modDiffTitle: 'Mod Güncelleme Fark Birleştirme',
+    modDiffDesc: 'Eski çevirilerinizi yeni mod sürümüne aktarın: eşleşen kimlikler önbelleğe alınır, yalnızca yeni satırlar çevrilir.',
+    modDiffPickNew: '1. Yeni Mod Sürümü CSV Seçin',
+    modDiffPickOld: '2. Eski Çevrilmiş CSV Seçin',
+    modDiffSummary: 'Fark Analizi Özeti',
+    modDiffReused: 'Korunan (Oto-Önbellek)',
+    modDiffNew: 'Yeni / Çevrilecek',
+    modDiffSkipped: 'Atlanan',
+    modDiffApply: 'Kuyruğa Ekle',
+    btnEdit: 'Düzenle',
+    btnSave: 'Kaydet'
   }
 };
 
@@ -1288,9 +1537,19 @@ const HELP_TOPICS = {
     tr: { title: 'Oturum Geçmişi', body: '<p>İşlenen dosyaların meta verilerini saklar ve kuyruğa yeniden açmanıza izin verir.</p>' }
   },
   secExportSettings: {
-    id: { title: 'Pengaturan Ekspor & Batch Rename', body: '<p>Atur delimiter CSV keluaran (<code>|</code>, <code>,</code>, <code>Tab</code>, <code>;</code>), encoding (<code>UTF-8</code> / <code>UTF-16</code>), serta awalan/akhiran nama file otomatis.</p>' },
-    en: { title: 'Export Settings & Batch Rename', body: '<p>Configures CSV delimiter, character encoding (UTF-8/UTF-16), and batch filename prefix/suffix.</p>' },
+    id: { title: 'Pengaturan Ekspor & Batch Rename', body: '<p>Atur delimiter CSV keluaran (<code>|</code>, <code>,</code>, <code>Tab</code>, <code>;</code>), encoding (<code>UTF-8</code>, <code>UTF-8 BOM</code>, <code>UTF-16 LE/BE</code>), serta awalan/akhiran nama file otomatis.</p>' },
+    en: { title: 'Export Settings & Batch Rename', body: '<p>Configures CSV delimiter, character encoding (UTF-8, UTF-8 BOM, UTF-16 LE/BE), and batch filename prefix/suffix.</p>' },
     tr: { title: 'Dışa Aktarım ve Toplu Adlandırma', body: '<p>CSV ayracını, karakter kodlamasını ve çıktı dosyası ön ek/son ek kurallarını ayarlar.</p>' }
+  },
+  batchSize: {
+    id: { title: 'Mode Batch Permintaan (1 / 5 / 10 Baris)', body: '<p>Menggabungkan 5 atau 10 baris dalam satu permintaan terjemahan agar file ribuan baris selesai jauh lebih cepat, dengan fallback otomatis per baris jika terjadi ketidakcocokan.</p>' },
+    en: { title: 'Request Batch Mode (1 / 5 / 10 Lines)', body: '<p>Sends 5 or 10 lines per request for up to 5x faster translation, automatically falling back to line-by-line mode if split counts mismatch.</p>' },
+    tr: { title: 'Toplu İstek Modu (1 / 5 / 10 Satır)', body: '<p>Tek istekte 5 veya 10 satır göndererek çeviriyi hızlandırır; uyumsuzlukta otomatik tek satıra döner.</p>' }
+  },
+  medievalTone: {
+    id: { title: 'Penghalus Gaya Bahasa Medieval', body: '<p>Merapikan spasi tanda baca, huruf kapital awal kalimat, serta mengubah frasa kaku seperti <em>Tuanku saya</em> menjadi <em>Tuanku</em> atau <em>pasukan saya</em> menjadi <em>pasukanku</em> secara lokal tanpa API eksternal.</p>' },
+    en: { title: 'Medieval Tone Post-Processing', body: '<p>Cleans punctuation spacing, sentence capitalization, and formal medieval titles deterministically without corrupting Warband tokens.</p>' },
+    tr: { title: 'Orta Çağ Üslup İyileştirmesi', body: '<p>Noktalama boşluklarını ve Orta Çağ hitaplarını yerel kurallarla düzenler.</p>' }
   }
 };
 
@@ -1341,6 +1600,9 @@ function setLanguage(lang) {
     } else {
       el.textContent = t(key);
     }
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
   });
 
   updateGlossaryBadge();
@@ -1436,16 +1698,30 @@ function formatExportContent(lines, sourceSeparator, delimiterId) {
   }).join('\r\n') + '\r\n';
 }
 
+function normalizeEncodingId(id) {
+  const clean = String(id || 'utf8').toLowerCase();
+  if (clean === 'utf8_bom') return 'utf8_bom';
+  if (clean === 'utf16' || clean === 'utf16le' || clean === 'utf-16le') return 'utf16le';
+  if (clean === 'utf16be' || clean === 'utf-16be') return 'utf16be';
+  return 'utf8';
+}
+
 function encodeContentToBlob(content, encodingId) {
-  if (encodingId === 'utf16') {
-    // UTF-16BE with BOM (matching JVM Charset UTF-16)
+  const enc = normalizeEncodingId(encodingId);
+  if (enc === 'utf8_bom') {
+    const utf8Bytes = new TextEncoder().encode(content);
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    return new Blob([bom, utf8Bytes], { type: 'text/csv;charset=utf-8' });
+  }
+  if (enc === 'utf16le' || enc === 'utf16be') {
+    const littleEndian = enc === 'utf16le';
     const buf = new ArrayBuffer((content.length + 1) * 2);
     const view = new DataView(buf);
-    view.setUint16(0, 0xFEFF, false);
+    view.setUint16(0, 0xFEFF, littleEndian);
     for (let i = 0; i < content.length; i++) {
-      view.setUint16((i + 1) * 2, content.charCodeAt(i), false);
+      view.setUint16((i + 1) * 2, content.charCodeAt(i), littleEndian);
     }
-    return new Blob([buf], { type: 'text/csv;charset=utf-16' });
+    return new Blob([buf], { type: `text/csv;charset=${littleEndian ? 'utf-16le' : 'utf-16be'}` });
   }
   return new Blob([content], { type: 'text/csv;charset=utf-8' });
 }
@@ -1457,7 +1733,7 @@ function loadSettings() {
       const parsed = JSON.parse(saved);
       exportSettings = {
         delimiter: parsed.delimiter || 'pipe',
-        encoding: parsed.encoding || 'utf8',
+        encoding: normalizeEncodingId(parsed.encoding || 'utf8'),
         prefix: sanitizeFilenameAffix(parsed.prefix || ''),
         suffix: sanitizeFilenameAffix(parsed.suffix || '')
       };
@@ -1543,6 +1819,57 @@ function clearCacheStorage() {
   renderQueue();
   showToast('Cache terjemahan berhasil dibersihkan.');
   appendLog('Cache memori telah dihapus.', 'warn');
+}
+
+function exportCacheBackupJson() {
+  if (translationCache.size === 0) {
+    showToast('Cache masih kosong.');
+    return;
+  }
+  const now = Date.now();
+  const entries = [];
+  translationCache.forEach((translatedText, key) => {
+    const sepIdx = key.indexOf('|');
+    if (sepIdx > 0) {
+      entries.push({
+        targetLang: key.slice(0, sepIdx),
+        sourceText: key.slice(sepIdx + 1),
+        translatedText,
+        updatedAt: now
+      });
+    }
+  });
+  const payload = JSON.stringify({ version: 1, exportedAt: now, entries }, null, 2);
+  triggerDownload(new Blob([payload], { type: 'application/json;charset=utf-8' }), 'warband_translation_cache_backup.json');
+  showToast(`Ekspor ${entries.length.toLocaleString()} entri cache ke .json selesai!`);
+}
+
+function importCacheBackupJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.entries) ? parsed.entries : []);
+      let imported = 0;
+      list.forEach(item => {
+        if (item && item.targetLang && item.sourceText && item.translatedText) {
+          translationCache.set(`${String(item.targetLang).trim()}|${item.sourceText}`, item.translatedText);
+          imported++;
+        }
+      });
+      saveCache();
+      refreshAutoResumeCounts();
+      renderQueue();
+      showToast(`Berhasil mengimpor ${imported.toLocaleString()} entri cache!`);
+      appendLog(`Impor cache JSON: ${imported} entri digabung.`, 'ok');
+    } catch (err) {
+      showErrorPopup('Gagal Impor Cache JSON', err && err.message ? err.message : 'Format JSON tidak valid');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+  event.target.value = '';
 }
 
 function onSettingsChanged() {
@@ -1712,35 +2039,146 @@ function restoreWarbandTokens(translatedText, tokens, glossary) {
   return result.trim();
 }
 
+const GLOSSARY_PRESETS = {
+  factions: [
+    'Swadia', 'Vaegir', 'Khergit', 'Nord', 'Rhodok', 'Sarranid', 'Calradia',
+    'Praven', 'Suno', 'Uxkhal', 'Dhirim', 'Reyvadin', 'Rivacheg', 'Khudan',
+    'Curaw', 'Tulga', 'Ichamur', 'Narra', 'Halmar', 'Sargoth', 'Tihr',
+    'Wercheg', 'Jelkala', 'Veluca', 'Yalen', 'Shariz', 'Durquba', 'Ahmerrad', 'Bariyye'
+  ].join('\n'),
+  politics: [
+    'Marshal=Marsekal', 'Vassal=Vasali', 'Fief=Wilayah Kekuasaan', 'Renown=Reputasi',
+    'Right to Rule=Hak Memerintah', 'Controversy=Kontroversi', 'Sovereign=Penguasa',
+    'Liege=Tuanku', 'Claimant=Penuntut Takhta', 'Banner=Panji'
+  ].join('\n'),
+  military: [
+    'Recruit=Rekrut', 'Militia=Milisi', 'Skirmisher=Penyerang Ringan', 'Footman=Prajurit Infanteri',
+    'Knight=Kesatria', 'Man-at-Arms=Kesatria Bersenjata', 'Crossbowman=Pemanah Busur Silang',
+    'Horse Archer=Pemanah Berkuda', 'Lancer=Pasukan Tombak Berkuda', 'Huscarl=Huskarl'
+  ].join('\n')
+};
+
+function applyGlossaryPreset(presetId) {
+  const addition = GLOSSARY_PRESETS[presetId];
+  if (!addition) return;
+  const textarea = document.getElementById('glossaryText');
+  const existingLines = (textarea.value || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const seenKeys = new Set(existingLines.map(line => {
+    const eq = line.indexOf('=');
+    return (eq > 0 ? line.slice(0, eq) : line).trim().toLowerCase();
+  }));
+  addition.split('\n').forEach(line => {
+    const clean = line.trim();
+    const eq = clean.indexOf('=');
+    const key = (eq > 0 ? clean.slice(0, eq) : clean).trim().toLowerCase();
+    if (key && !seenKeys.has(key)) {
+      seenKeys.add(key);
+      existingLines.push(clean);
+    }
+  });
+  textarea.value = existingLines.join('\n');
+  updateGlossaryBadge();
+  showToast('Paket glosarium ditambahkan!');
+}
+
+function applyMedievalTonePostProcessing(text, targetLang, enabled) {
+  if (!enabled || !text || !text.trim()) return text;
+  const protectedTokens = [];
+  let working = text.replace(/\{[^}]+\}/g, m => {
+    const idx = protectedTokens.length;
+    protectedTokens.push(m);
+    return `@@TOK${idx}@@`;
+  });
+  working = working.replace(/\s+([,.!?;:])/g, '$1').replace(/ {2,}/g, ' ');
+  const tl = String(targetLang || '').toLowerCase();
+  if (tl === 'id') {
+    const idRules = [
+      [/\bTuanku saya\b/gi, 'Tuanku'],
+      [/\bTuan saya\b/gi, 'Tuanku'],
+      [/\bYang Mulia Anda\b/gi, 'Baginda'],
+      [/\bYang Mulia Kamu\b/gi, 'Baginda'],
+      [/\bKerajaan saya\b/gi, 'Kerajaanku'],
+      [/\bpasukan saya\b/gi, 'pasukanku'],
+      [/\bdesa saya\b/gi, 'desaku'],
+      [/\bkastil saya\b/gi, 'kastilku'],
+      [/\bkota saya\b/gi, 'kotaku'],
+      [/\bbangsawan laki-laki\b/gi, 'kesatria']
+    ];
+    idRules.forEach(([rx, rep]) => { working = working.replace(rx, rep); });
+  } else if (tl === 'en') {
+    working = working
+      .replace(/\bmy lord\b/gi, 'My Lord')
+      .replace(/\byour grace\b/gi, 'Your Grace')
+      .replace(/\byour highness\b/gi, 'Your Highness');
+  }
+  working = working.trim();
+  if (working && /^[a-z]/.test(working) && !working.startsWith('@@TOK')) {
+    working = working.charAt(0).toUpperCase() + working.slice(1);
+  }
+  return working.replace(/@@TOK(\d+)@@/g, (_, idxStr) => {
+    const idx = parseInt(idxStr, 10);
+    return protectedTokens[idx] !== undefined ? protectedTokens[idx] : '';
+  });
+}
+
+function parseSplitLine(rawLine, sep, stripTag) {
+  let working = stripTag ? rawLine.replace(new RegExp(escapeRegex(stripTag), 'g'), '') : rawLine;
+  const sepIdx = working.indexOf(sep);
+  const hasCode = sepIdx !== -1;
+  return {
+    hasCode,
+    codePart: hasCode ? working.slice(0, sepIdx) : '',
+    textPart: hasCode ? working.slice(sepIdx + sep.length).trim() : working.trim()
+  };
+}
+
 async function processSingleLine(rawLine, engineName) {
   const sep = document.getElementById('sepChar').value || '|';
   const stripTag = document.getElementById('stripTag').value;
   const sl = document.getElementById('srcLang').value;
   const tl = document.getElementById('tgtLang').value;
+  const medievalEnabled = document.getElementById('medievalToneChk')?.checked ?? true;
 
-  let workingLine = rawLine;
-  if (stripTag) workingLine = workingLine.replace(new RegExp(escapeRegex(stripTag), 'g'), '');
+  const split = parseSplitLine(rawLine, sep, stripTag);
+  if (!split.textPart) return { output: split.hasCode ? `${split.codePart}${sep}` : '', fromCache: true };
 
-  const sepIdx = workingLine.indexOf(sep);
-  const hasCode = sepIdx !== -1;
-  const codePart = hasCode ? workingLine.slice(0, sepIdx) : '';
-  const textPart = hasCode ? workingLine.slice(sepIdx + sep.length).trim() : workingLine.trim();
-
-  if (!textPart) return { output: hasCode ? `${codePart}${sep}` : '', fromCache: true };
-
-  const cacheKey = `${tl}|${textPart}`;
+  const cacheKey = `${tl}|${split.textPart}`;
   if (translationCache.has(cacheKey)) {
     const cachedVal = translationCache.get(cacheKey);
-    return { output: hasCode ? `${codePart}${sep}${cachedVal}` : cachedVal, fromCache: true };
+    return { output: split.hasCode ? `${split.codePart}${sep}${cachedVal}` : cachedVal, fromCache: true };
   }
 
   const glossary = parseGlossary();
-  const { protectedText, tokens } = protectWarbandTokens(textPart, glossary);
+  const { protectedText, tokens } = protectWarbandTokens(split.textPart, glossary);
   const rawTranslated = await callTranslatorEngine(engineName, protectedText, sl, tl);
-  const finalTranslated = restoreWarbandTokens(rawTranslated, tokens, glossary);
+  let finalTranslated = restoreWarbandTokens(rawTranslated, tokens, glossary);
+  finalTranslated = applyMedievalTonePostProcessing(finalTranslated, tl, medievalEnabled);
   translationCache.set(cacheKey, finalTranslated);
 
-  return { output: hasCode ? `${codePart}${sep}${finalTranslated}` : finalTranslated, fromCache: false };
+  return { output: split.hasCode ? `${split.codePart}${sep}${finalTranslated}` : finalTranslated, fromCache: false };
+}
+
+async function processBatchChunk(descriptors, engineName) {
+  const sep = document.getElementById('sepChar').value || '|';
+  const sl = document.getElementById('srcLang').value;
+  const tl = document.getElementById('tgtLang').value;
+  const medievalEnabled = document.getElementById('medievalToneChk')?.checked ?? true;
+  const glossary = parseGlossary();
+  const BATCH_DELIM = 'ZXQBRQXZ';
+
+  const protectedItems = descriptors.map(d => protectWarbandTokens(d.split.textPart, glossary));
+  const combined = protectedItems.map(p => p.protectedText).join(`\n${BATCH_DELIM}\n`);
+  const rawBatch = await callTranslatorEngine(engineName, combined, sl, tl);
+  const parts = rawBatch.split(/\s*ZXQBRQXZ\s*/i).map(s => s.trim());
+  if (parts.length !== descriptors.length) {
+    throw new Error(`Batch split mismatch: ${parts.length}/${descriptors.length}`);
+  }
+  return descriptors.map((desc, idx) => {
+    let translated = restoreWarbandTokens(parts[idx], protectedItems[idx].tokens, glossary);
+    translated = applyMedievalTonePostProcessing(translated, tl, medievalEnabled);
+    translationCache.set(`${tl}|${desc.split.textPart}`, translated);
+    return desc.split.hasCode ? `${desc.split.codePart}${sep}${translated}` : translated;
+  });
 }
 
 /**
@@ -1871,6 +2309,10 @@ function renderQueue() {
          <button type="button" onclick="event.stopPropagation(); moveQueueItem('${item.id}', 1)" ${index === fileQueue.length - 1 ? 'disabled' : ''} class="px-1.5 py-0.5 text-parchmentDim disabled:opacity-25 hover:text-goldAccent">↓</button>`
       : '';
 
+    const qaBtn = item.status === 'done' && item.results.length > 0
+      ? `<button type="button" onclick="event.stopPropagation(); openQaEditorForFile('${item.id}')" class="px-2 py-1 rounded bg-burgundy/45 hover:bg-burgundy border border-goldMuted text-goldAccent text-xs font-medium transition">🛡️ QA</button>`
+      : '';
+
     const dlBtn = item.status === 'done' && item.results.length > 0
       ? `<button type="button" onclick="event.stopPropagation(); openExportPreviewForSingle('${item.id}')" class="px-2.5 py-1 rounded bg-forest/50 hover:bg-forest border border-green-600 text-green-200 text-xs font-medium transition">👁️ / ⬇ ${t('btnDlFile')}</button>`
       : '';
@@ -1889,7 +2331,7 @@ function renderQueue() {
         <div class="flex items-center gap-1.5 shrink-0">${badgeHtml}</div>
       </div>
       ${progressBarHtml}
-      <div class="flex items-center justify-end gap-1.5">${moveBtns}${dlBtn}${rmBtn}</div>
+      <div class="flex items-center justify-end gap-1.5">${moveBtns}${qaBtn}${dlBtn}${rmBtn}</div>
     `;
     list.appendChild(li);
   });
@@ -2183,78 +2625,105 @@ async function startTranslation() {
     let lastSampleTime = startTime;
     let lastSampleCount = 0;
 
+    const sep = document.getElementById('sepChar').value || '|';
+    const stripTag = document.getElementById('stripTag').value;
+    const tl = document.getElementById('tgtLang').value;
+    const batchLimit = Math.max(1, parseInt(document.getElementById('batchSizeSelect')?.value || '1', 10) || 1);
+
     const fileHeaderLabel = `[${fIdx + 1}/${pendingFiles.length}] ${fileItem.name}`;
     document.getElementById('currentFileLabel').textContent = fileHeaderLabel;
     document.getElementById('stickyFileName').textContent = fileHeaderLabel;
 
-    for (let i = 0; i < total; i++) {
+    let i = 0;
+    while (i < total) {
       while (isPaused && !shouldStop) await sleep(250);
       if (shouldStop) break;
 
       const originalLine = fileItem.lines[i];
-      let translated = null;
-      let usedCache = false;
 
       if (checkSkipRegex(originalLine)) {
-        translated = originalLine;
-        usedCache = true;
+        fileItem.results.push(originalLine);
+        cacheHits++;
+        i++;
+        fileItem.processedCount = i;
       } else {
-        let success = false;
-        let lastErrMessage = 'Koneksi gagal';
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          try {
-            const res = await processSingleLine(originalLine, selectedEngine);
-            translated = res.output;
-            usedCache = res.fromCache;
-            success = true;
-            break;
-          } catch (err) {
-            lastErrMessage = err && err.message ? err.message : lastErrMessage;
-            if (attempt < 3) await sleep(800 * attempt);
+        const split0 = parseSplitLine(originalLine, sep, stripTag);
+        if (!split0.textPart) {
+          fileItem.results.push(split0.hasCode ? `${split0.codePart}${sep}` : '');
+          cacheHits++;
+          i++;
+          fileItem.processedCount = i;
+        } else if (translationCache.has(`${tl}|${split0.textPart}`)) {
+          const cachedVal = translationCache.get(`${tl}|${split0.textPart}`);
+          fileItem.results.push(split0.hasCode ? `${split0.codePart}${sep}${cachedVal}` : cachedVal);
+          cacheHits++;
+          i++;
+          fileItem.processedCount = i;
+        } else if (batchLimit > 1) {
+          const chunk = [];
+          let charBudget = 0;
+          let probe = i;
+          while (probe < total && chunk.length < batchLimit) {
+            const candidateRaw = fileItem.lines[probe];
+            if (checkSkipRegex(candidateRaw)) break;
+            const cSplit = parseSplitLine(candidateRaw, sep, stripTag);
+            if (!cSplit.textPart || translationCache.has(`${tl}|${cSplit.textPart}`)) break;
+            const nextLen = cSplit.textPart.length + 14;
+            if (chunk.length > 0 && charBudget + nextLen > 1050) break;
+            chunk.push({ lineIndex: probe, rawLine: candidateRaw, split: cSplit });
+            charBudget += nextLen;
+            probe++;
           }
-        }
-        if (!success && useFallback) {
-          for (const altEngine of fallbackPool) {
+
+          let batchSucceeded = false;
+          if (chunk.length > 1) {
             try {
-              const res = await processSingleLine(originalLine, altEngine);
-              translated = res.output;
-              usedCache = res.fromCache;
-              success = true;
-              appendLog(`Baris ${i + 1} dialihkan ke ${altEngine.toUpperCase()}`, 'warn');
-              break;
-            } catch (altErr) {
-              lastErrMessage = altErr && altErr.message ? altErr.message : lastErrMessage;
+              const outputs = await processBatchChunk(chunk, selectedEngine);
+              outputs.forEach(out => fileItem.results.push(out));
+              batchSucceeded = true;
+            } catch (_) {
+              batchSucceeded = false;
             }
           }
-        }
-        if (!success) {
-          translated = originalLine;
-          failedRowsLog.push(`[${fileItem.name} | Baris ${i + 1}] ${originalLine}`);
-          appendLog(`Gagal baris ${i + 1} di ${fileItem.name} (${lastErrMessage})`, 'err');
-          showErrorPopup('Gagal Menerjemahkan Baris', lastErrMessage, `${fileItem.name} · Baris #${i + 1}`);
+
+          if (batchSucceeded) {
+            i += chunk.length;
+            fileItem.processedCount = i;
+            await sleep(delayMs);
+          } else {
+            // Single-line fallback for reliability
+            const res = await translateSingleWithRetry(originalLine, i, fileItem.name, selectedEngine, useFallback, fallbackPool);
+            fileItem.results.push(res.output);
+            if (res.fromCache) cacheHits++;
+            else await sleep(delayMs);
+            i++;
+            fileItem.processedCount = i;
+          }
+        } else {
+          const res = await translateSingleWithRetry(originalLine, i, fileItem.name, selectedEngine, useFallback, fallbackPool);
+          fileItem.results.push(res.output);
+          if (res.fromCache) cacheHits++;
+          else await sleep(delayMs);
+          i++;
+          fileItem.processedCount = i;
         }
       }
 
-      if (usedCache) cacheHits++;
-      fileItem.results.push(translated);
-      fileItem.processedCount = i + 1;
-
       const now = Date.now();
-      if (now - lastSampleTime >= 500 || i === total - 1) {
+      if (now - lastSampleTime >= 500 || i >= total) {
         const dt = Math.max(0.25, (now - lastSampleTime) / 1000);
-        const speed = (i + 1 - lastSampleCount) / dt;
+        const speed = (i - lastSampleCount) / dt;
         if (speed > peakSpeedLinesPerSec) peakSpeedLinesPerSec = speed;
-        telemetrySamples.push({ speed, pct: (i + 1) / total * 100 });
+        telemetrySamples.push({ speed, pct: (i / total) * 100 });
         if (telemetrySamples.length > 60) telemetrySamples.shift();
         lastSampleTime = now;
-        lastSampleCount = i + 1;
+        lastSampleCount = i;
         drawTelemetryChart();
       }
 
-      updateProgressUI(i + 1, total, cacheHits, startTime);
-      if ((i + 1) % 5 === 0 || i === total - 1) renderLivePreview(fileItem);
-      if (!usedCache && (i + 1) % 25 === 0) saveCache();
-      if (!usedCache) await sleep(delayMs);
+      updateProgressUI(i, total, cacheHits, startTime);
+      if (i % 5 === 0 || i >= total) renderLivePreview(fileItem);
+      if (i % 25 === 0) saveCache();
     }
 
     saveCache();
@@ -2328,8 +2797,10 @@ function renderSettingsScreen() {
   }).join('');
 
   const encodings = [
-    { id: 'utf8', label: 'UTF-8 (Standard)', badge: 'UTF-8', descKey: 'encUtf8Desc' },
-    { id: 'utf16', label: 'UTF-16 (Unicode)', badge: 'UTF-16', descKey: 'encUtf16Desc' }
+    { id: 'utf8', label: 'UTF-8 (No BOM)', badge: 'UTF-8', descKey: 'encUtf8Desc' },
+    { id: 'utf8_bom', label: 'UTF-8 with BOM', badge: 'UTF-8 BOM', descKey: 'encUtf8BomDesc' },
+    { id: 'utf16le', label: 'UTF-16 LE + BOM', badge: 'UTF-16 LE', descKey: 'encUtf16LeDesc' },
+    { id: 'utf16be', label: 'UTF-16 BE + BOM', badge: 'UTF-16 BE', descKey: 'encUtf16BeDesc' }
   ];
   encBox.innerHTML = encodings.map(enc => {
     const sel = exportSettings.encoding === enc.id;
@@ -2674,8 +3145,397 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeHelpModal();
     closeExportPreviewModal();
+    closeQaEditorModal();
+    closeModDiffModal();
   }
 });
+
+async function translateSingleWithRetry(originalLine, lineIndex, fileName, primaryEngine, useFallback, fallbackPool) {
+  let lastErrMessage = 'Koneksi gagal';
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await processSingleLine(originalLine, primaryEngine);
+    } catch (err) {
+      lastErrMessage = err && err.message ? err.message : lastErrMessage;
+      if (attempt < 3) await sleep(800 * attempt);
+    }
+  }
+  if (useFallback) {
+    for (const altEngine of fallbackPool) {
+      try {
+        const res = await processSingleLine(originalLine, altEngine);
+        appendLog(`Baris ${lineIndex + 1} dialihkan ke ${altEngine.toUpperCase()}`, 'warn');
+        return res;
+      } catch (altErr) {
+        lastErrMessage = altErr && altErr.message ? altErr.message : lastErrMessage;
+      }
+    }
+  }
+  failedRowsLog.push(`[${fileName} | Baris ${lineIndex + 1}] ${originalLine}`);
+  appendLog(`Gagal baris ${lineIndex + 1} di ${fileName} (${lastErrMessage})`, 'err');
+  showErrorPopup('Gagal Menerjemahkan Baris', lastErrMessage, `${fileName} · Baris #${lineIndex + 1}`);
+  return { output: originalLine, fromCache: true };
+}
+
+// ============================================================================
+// QA AUDIT, SEARCH, FIND & REPLACE & FULL INLINE EDITOR
+// ============================================================================
+let qaActiveFileId = null;
+let qaFilterIssuesOnly = false;
+let qaAuditRows = [];
+
+function extractProtectedTokensList(text) {
+  const tokens = [];
+  [/\{[^}]+\}/g, /\^\^|\^/g, /%[sd]/g].forEach(rx => {
+    const m = String(text || '').match(rx);
+    if (m) m.forEach(tok => { if (!tokens.includes(tok)) tokens.push(tok); });
+  });
+  return tokens;
+}
+
+function buildQaAuditForFile(item) {
+  const sep = document.getElementById('sepChar').value || '|';
+  const stripTag = document.getElementById('stripTag').value;
+  const rows = [];
+  let issueCount = 0;
+
+  item.lines.forEach((origLine, idx) => {
+    if (checkSkipRegex(origLine)) return;
+    const transLine = item.results[idx] !== undefined ? item.results[idx] : origLine;
+    const origSplit = parseSplitLine(origLine, sep, stripTag);
+    const transSplit = parseSplitLine(transLine, sep, '');
+    const issues = [];
+
+    if (origSplit.hasCode && (!transSplit.hasCode || origSplit.codePart !== transSplit.codePart)) {
+      issues.push('BROKEN_SEP');
+    }
+    const origToks = extractProtectedTokensList(origSplit.textPart);
+    const transToks = extractProtectedTokensList(transSplit.textPart);
+    const missingTokens = origToks.filter(tok => !transToks.includes(tok));
+    const extraTokens = transToks.filter(tok => !origToks.includes(tok));
+    if (missingTokens.length > 0) issues.push('MISSING_TOK');
+    if (extraTokens.length > 0) issues.push('EXTRA_TOK');
+    if (/ZXQ\s*\d+\s*QXZ/i.test(transSplit.textPart)) issues.push('LEFT_MARKER');
+    if (origSplit.textPart.length >= 16 && /[a-zA-Z]/.test(origSplit.textPart) && origSplit.textPart === transSplit.textPart) {
+      issues.push('UNTRANSLATED');
+    }
+    if (issues.length > 0) issueCount++;
+    rows.push({ idx, origLine, transLine, missingTokens, extraTokens, issues });
+  });
+  return { rows, issueCount };
+}
+
+function openQaEditorForFirstDone() {
+  const done = fileQueue.find(f => f.status === 'done' && f.results.length > 0);
+  if (done) openQaEditorForFile(done.id);
+}
+
+function openQaEditorForFile(fileId) {
+  const item = fileQueue.find(f => f.id === fileId);
+  if (!item) return;
+  qaActiveFileId = item.id;
+  const audit = buildQaAuditForFile(item);
+  qaFilterIssuesOnly = audit.issueCount > 0;
+  document.getElementById('qaSearchInput').value = '';
+  document.getElementById('qaEditorOverlay').classList.remove('hidden');
+  renderQaEditorRows();
+}
+
+function closeQaEditorModal() {
+  document.getElementById('qaEditorOverlay').classList.add('hidden');
+}
+
+function setQaFilterIssues(onlyIssues) {
+  qaFilterIssuesOnly = onlyIssues;
+  renderQaEditorRows();
+}
+
+function renderQaEditorRows() {
+  const item = fileQueue.find(f => f.id === qaActiveFileId);
+  if (!item) return;
+  const audit = buildQaAuditForFile(item);
+  qaAuditRows = audit.rows;
+
+  document.getElementById('qaEditorFileName').textContent = item.name;
+  const autoFixBtn = document.getElementById('qaAutoFixBtn');
+  autoFixBtn.classList.toggle('hidden', audit.issueCount === 0);
+
+  const banner = document.getElementById('qaStatusBanner');
+  banner.className = audit.issueCount === 0
+    ? 'rounded-lg px-3 py-2 text-xs border bg-green-950/35 border-green-700 text-green-300'
+    : 'rounded-lg px-3 py-2 text-xs border bg-amber-950/40 border-amber-600 text-amber-200';
+  banner.textContent = audit.issueCount === 0
+    ? `✓ ${t('qaNoIssuesBanner')}`
+    : `⚠ ${audit.issueCount}/${audit.rows.length} ${t('qaIssuesFoundBanner')}`;
+
+  const allBtn = document.getElementById('qaFilterAllBtn');
+  const issBtn = document.getElementById('qaFilterIssuesBtn');
+  allBtn.textContent = `${t('qaFilterAll')} (${audit.rows.length})`;
+  issBtn.textContent = `${t('qaFilterIssues')} (${audit.issueCount})`;
+  allBtn.className = !qaFilterIssuesOnly
+    ? 'px-3 py-1.5 rounded-full text-[11px] font-semibold bg-burgundy/60 border border-goldAccent text-goldAccent'
+    : 'px-3 py-1.5 rounded-full text-[11px] bg-[#170E0D] border border-[#4A2A24] text-parchmentDim';
+  issBtn.className = qaFilterIssuesOnly
+    ? 'px-3 py-1.5 rounded-full text-[11px] font-semibold bg-burgundy/60 border border-goldAccent text-goldAccent'
+    : 'px-3 py-1.5 rounded-full text-[11px] bg-[#170E0D] border border-[#4A2A24] text-parchmentDim';
+
+  const query = (document.getElementById('qaSearchInput').value || '').trim().toLowerCase();
+  const filtered = audit.rows.filter(r => {
+    if (qaFilterIssuesOnly && r.issues.length === 0) return false;
+    if (!query) return true;
+    return r.origLine.toLowerCase().includes(query) || r.transLine.toLowerCase().includes(query) || String(r.idx + 1) === query;
+  });
+
+  const box = document.getElementById('qaRowsContainer');
+  box.innerHTML = '';
+  filtered.slice(0, 250).forEach(r => {
+    const badges = r.issues.map(iss => {
+      let lbl = iss;
+      if (iss === 'MISSING_TOK') lbl = `Missing: ${r.missingTokens.join(',')}`;
+      else if (iss === 'EXTRA_TOK') lbl = `Extra: ${r.extraTokens.join(',')}`;
+      else if (iss === 'BROKEN_SEP') lbl = 'Separator!';
+      else if (iss === 'LEFT_MARKER') lbl = 'ZXQ Marker!';
+      else if (iss === 'UNTRANSLATED') lbl = 'Untranslated';
+      return `<span class="px-1.5 py-0.5 rounded bg-red-950/70 border border-crimson text-red-200 text-[10px]">${escapeHtml(lbl)}</span>`;
+    }).join(' ');
+
+    const div = document.createElement('div');
+    div.className = `rounded-lg p-2.5 text-xs space-y-1.5 border ${r.issues.length > 0 ? 'bg-[#241212] border-crimson' : 'bg-[#150D0C] border-[#3A201C]'}`;
+    div.innerHTML = `
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-1.5"><span class="font-mono font-bold text-goldAccent">#${r.idx + 1}</span>${badges}</div>
+        <button type="button" onclick="enableQaRowEdit(${r.idx})" class="px-2 py-0.5 rounded bg-[#261614] hover:bg-burgundy/60 border border-[#5A342D] text-[11px] text-goldAccent">✏️ ${t('btnEdit')}</button>
+      </div>
+      <div class="font-mono text-[11px] text-parchmentDim/80 break-all">${escapeHtml(r.origLine)}</div>
+      <div id="qa-view-${r.idx}" class="font-mono text-[11px] text-green-300 break-all">${escapeHtml(r.transLine)}</div>
+      <div id="qa-edit-${r.idx}" class="hidden space-y-1.5 pt-1">
+        <input type="text" id="qa-input-${r.idx}" value="${escapeHtmlAttr(r.transLine)}" class="w-full bg-[#221413] border border-goldAccent rounded px-2.5 py-1.5 font-mono text-[11px] text-parchment focus:outline-none">
+        <div class="flex justify-end gap-1.5">
+          <button type="button" onclick="cancelQaRowEdit(${r.idx})" class="px-2.5 py-1 rounded bg-[#2A1816] border border-[#4A2A24] text-[11px] text-parchmentDim">${t('btnCancel')}</button>
+          <button type="button" onclick="saveQaRowEdit(${r.idx})" class="px-2.5 py-1 rounded bg-forest/60 hover:bg-forest border border-green-600 text-[11px] text-green-100 font-semibold">${t('btnSave')}</button>
+        </div>
+      </div>
+    `;
+    box.appendChild(div);
+  });
+}
+
+function enableQaRowEdit(lineIdx) {
+  document.getElementById(`qa-view-${lineIdx}`)?.classList.add('hidden');
+  document.getElementById(`qa-edit-${lineIdx}`)?.classList.remove('hidden');
+  document.getElementById(`qa-input-${lineIdx}`)?.focus();
+}
+
+function cancelQaRowEdit(lineIdx) {
+  document.getElementById(`qa-edit-${lineIdx}`)?.classList.add('hidden');
+  document.getElementById(`qa-view-${lineIdx}`)?.classList.remove('hidden');
+}
+
+function syncLineEditToCache(origLine, newTranslatedLine) {
+  const sep = document.getElementById('sepChar').value || '|';
+  const stripTag = document.getElementById('stripTag').value;
+  const tl = document.getElementById('tgtLang').value;
+  const origSplit = parseSplitLine(origLine, sep, stripTag);
+  const transSplit = parseSplitLine(newTranslatedLine, sep, '');
+  if (origSplit.textPart && transSplit.textPart) {
+    translationCache.set(`${tl}|${origSplit.textPart}`, transSplit.textPart);
+    saveCache();
+  }
+}
+
+function saveQaRowEdit(lineIdx) {
+  const item = fileQueue.find(f => f.id === qaActiveFileId);
+  const inputEl = document.getElementById(`qa-input-${lineIdx}`);
+  if (!item || !inputEl) return;
+  const newVal = inputEl.value;
+  item.results[lineIdx] = newVal;
+  syncLineEditToCache(item.lines[lineIdx] || '', newVal);
+  renderQaEditorRows();
+  if (activeFileObj && activeFileObj.id === item.id) renderLivePreview(item);
+  showToast(`Baris #${lineIdx + 1} diperbarui.`);
+}
+
+function applyQaFindAndReplace() {
+  const item = fileQueue.find(f => f.id === qaActiveFileId);
+  const findVal = document.getElementById('qaFindInput').value;
+  const replaceVal = document.getElementById('qaReplaceInput').value;
+  const caseSensitive = document.getElementById('qaCaseSensitiveChk').checked;
+  if (!item || !findVal) return;
+
+  const sep = document.getElementById('sepChar').value || '|';
+  const rx = new RegExp(escapeRegex(findVal), caseSensitive ? 'g' : 'gi');
+  let changed = 0;
+
+  item.results = item.results.map((line, idx) => {
+    const sepIdx = line.indexOf(sep);
+    let nextLine = line;
+    if (sepIdx === -1) {
+      nextLine = line.replace(rx, () => replaceVal);
+    } else {
+      const codePart = line.slice(0, sepIdx);
+      const textPart = line.slice(sepIdx + sep.length);
+      nextLine = `${codePart}${sep}${textPart.replace(rx, () => replaceVal)}`;
+    }
+    if (nextLine !== line) {
+      changed++;
+      syncLineEditToCache(item.lines[idx] || '', nextLine);
+    }
+    return nextLine;
+  });
+
+  renderQaEditorRows();
+  if (activeFileObj && activeFileObj.id === item.id) renderLivePreview(item);
+  showToast(`Find & Replace: ${changed} baris diperbarui.`);
+}
+
+function autoFixQaMissingTokens() {
+  const item = fileQueue.find(f => f.id === qaActiveFileId);
+  if (!item) return;
+  const sep = document.getElementById('sepChar').value || '|';
+  const stripTag = document.getElementById('stripTag').value;
+  let fixedCount = 0;
+
+  item.results = item.results.map((transLine, idx) => {
+    const origLine = item.lines[idx] || '';
+    if (checkSkipRegex(origLine)) return transLine;
+    const origSplit = parseSplitLine(origLine, sep, stripTag);
+    const transSplit = parseSplitLine(transLine, sep, '');
+    const origToks = extractProtectedTokensList(origSplit.textPart);
+    const transToks = extractProtectedTokensList(transSplit.textPart);
+    const missing = origToks.filter(tok => !transToks.includes(tok));
+    if (missing.length === 0) return transLine;
+
+    fixedCount++;
+    const fixedText = transSplit.textPart.trim()
+      ? `${transSplit.textPart.trim()} ${missing.join(' ')}`
+      : missing.join(' ');
+    const fixedLine = origSplit.hasCode ? `${origSplit.codePart}${sep}${fixedText}` : fixedText;
+    syncLineEditToCache(origLine, fixedLine);
+    return fixedLine;
+  });
+
+  renderQaEditorRows();
+  if (activeFileObj && activeFileObj.id === item.id) renderLivePreview(item);
+  showToast(`Auto-fix token: ${fixedCount} baris diperbarui.`);
+}
+
+// ============================================================================
+// MOD UPDATE DIFF MERGE
+// ============================================================================
+let diffNewModState = null; // { name, lines }
+let diffOldTransState = null; // { name, lines }
+let diffPreviewResult = null;
+
+function openModDiffModal() {
+  diffNewModState = null;
+  diffOldTransState = null;
+  diffPreviewResult = null;
+  document.getElementById('diffNewModLabel').textContent = '—';
+  document.getElementById('diffOldTransLabel').textContent = '—';
+  document.getElementById('modDiffSummaryBox').classList.add('hidden');
+  document.getElementById('diffApplyBtn').disabled = true;
+  document.getElementById('modDiffOverlay').classList.remove('hidden');
+}
+
+function closeModDiffModal() {
+  document.getElementById('modDiffOverlay').classList.add('hidden');
+}
+
+function readCsvFileLines(file, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim().length > 0);
+    cb(lines);
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function handleDiffNewModFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  readCsvFileLines(file, lines => {
+    diffNewModState = { name: file.name, lines };
+    document.getElementById('diffNewModLabel').textContent = `${file.name} (${lines.length} ${t('cacheUnit')})`;
+    recomputeModDiffPreview();
+  });
+  event.target.value = '';
+}
+
+function handleDiffOldTransFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  readCsvFileLines(file, lines => {
+    diffOldTransState = { name: file.name, lines };
+    document.getElementById('diffOldTransLabel').textContent = `${file.name} (${lines.length} ${t('cacheUnit')})`;
+    recomputeModDiffPreview();
+  });
+  event.target.value = '';
+}
+
+function recomputeModDiffPreview() {
+  if (!diffNewModState || !diffOldTransState) return;
+  const sep = document.getElementById('sepChar').value || '|';
+  const stripTag = document.getElementById('stripTag').value;
+
+  const oldByCode = new Map();
+  diffOldTransState.lines.forEach(line => {
+    const s = parseSplitLine(line, sep, stripTag);
+    if (s.hasCode && s.codePart.trim() && s.textPart) {
+      oldByCode.set(s.codePart, s.textPart);
+    }
+  });
+
+  const seededPairs = [];
+  let carried = 0, newOrChanged = 0, skipped = 0;
+  diffNewModState.lines.forEach(line => {
+    if (checkSkipRegex(line)) { skipped++; return; }
+    const s = parseSplitLine(line, sep, stripTag);
+    if (!s.textPart) { skipped++; return; }
+    const reused = s.hasCode ? oldByCode.get(s.codePart) : null;
+    if (reused && reused.trim()) {
+      seededPairs.push([s.textPart, reused]);
+      carried++;
+    } else {
+      newOrChanged++;
+    }
+  });
+
+  diffPreviewResult = { seededPairs, carried, newOrChanged, skipped };
+  document.getElementById('diffReusedVal').textContent = carried.toLocaleString();
+  document.getElementById('diffNewVal').textContent = newOrChanged.toLocaleString();
+  document.getElementById('diffSkippedVal').textContent = skipped.toLocaleString();
+  document.getElementById('modDiffSummaryBox').classList.remove('hidden');
+  document.getElementById('diffApplyBtn').disabled = false;
+}
+
+function applyModDiffToQueue() {
+  if (!diffNewModState || !diffPreviewResult) return;
+  const tl = document.getElementById('tgtLang').value;
+  diffPreviewResult.seededPairs.forEach(([srcText, transText]) => {
+    translationCache.set(`${tl}|${srcText}`, transText);
+  });
+  saveCache();
+
+  const item = {
+    id: String(Date.now() + Math.random()),
+    name: diffNewModState.name,
+    lines: diffNewModState.lines,
+    results: [],
+    status: 'wait',
+    cachedLinesCount: 0,
+    processedCount: 0
+  };
+  item.cachedLinesCount = countCachedLinesForFile(item);
+  fileQueue.push(item);
+  selectedPreviewFileId = item.id;
+  refreshAutoResumeCounts();
+  renderQueue();
+  renderCsvPreviewer();
+  updateControlButtons();
+  closeModDiffModal();
+  showToast(`Diff Merge: ${diffPreviewResult.carried} terjemahan dibawa ke antrean!`);
+  appendLog(`Diff Merge "${item.name}": ${diffPreviewResult.carried} cocok dari versi lama, ${diffPreviewResult.newOrChanged} baru.`, 'ok');
+}
 
 let lastErrorPopupTime = 0;
 function showErrorPopup(title, detail, lineInfo = '') {

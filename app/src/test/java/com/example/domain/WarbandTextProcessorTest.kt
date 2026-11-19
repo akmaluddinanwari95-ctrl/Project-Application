@@ -127,9 +127,22 @@ class WarbandTextProcessorTest {
     val semiOut = WarbandTextProcessor.formatExportContent(lines, "|", ExportDelimiter.SEMICOLON)
     assertEquals("str_a;Hello, Calradia!\r\nstr_b;Swadia\r\n", semiOut)
 
-    val utf16Bytes = commaOut.toByteArray(ExportEncoding.UTF_16.toCharset())
-    assertEquals(0xFE.toByte(), utf16Bytes[0])
-    assertEquals(0xFF.toByte(), utf16Bytes[1])
+    val utf8BomBytes = com.example.util.AndroidFileHelper.encodeExportContent(commaOut, ExportEncoding.UTF_8_BOM)
+    assertEquals(0xEF.toByte(), utf8BomBytes[0])
+    assertEquals(0xBB.toByte(), utf8BomBytes[1])
+    assertEquals(0xBF.toByte(), utf8BomBytes[2])
+
+    val utf16LeBytes = com.example.util.AndroidFileHelper.encodeExportContent(commaOut, ExportEncoding.UTF_16_LE)
+    assertEquals(0xFF.toByte(), utf16LeBytes[0])
+    assertEquals(0xFE.toByte(), utf16LeBytes[1])
+
+    val utf16BeBytes = com.example.util.AndroidFileHelper.encodeExportContent(commaOut, ExportEncoding.UTF_16_BE)
+    assertEquals(0xFE.toByte(), utf16BeBytes[0])
+    assertEquals(0xFF.toByte(), utf16BeBytes[1])
+
+    assertEquals(ExportEncoding.UTF_16_LE, ExportEncoding.fromId("utf16"))
+    assertEquals(ExportEncoding.UTF_8_BOM, ExportEncoding.fromId("utf8_bom"))
+    assertEquals(ExportEncoding.UTF_16_BE, ExportEncoding.fromId("utf16be"))
   }
 
   @Test
@@ -154,5 +167,110 @@ class WarbandTextProcessorTest {
         "idtroops_mod.csv",
         WarbandTextProcessor.buildExportFileName("troops.csv", "id/", "_mod\\:*?")
     )
+  }
+
+  @Test
+  fun mergeGlossaryText_mergesPresetsWithoutDuplicates() {
+    val factions = WarbandTextProcessor.builtInGlossaryPresets.first { it.id == "factions" }
+    val merged1 = WarbandTextProcessor.mergeGlossaryText("Swadia\nCustomTerm=Istilah", factions.termsText)
+    assertTrue(merged1.contains("CustomTerm=Istilah"))
+    assertTrue(merged1.contains("Calradia"))
+    val swadiaCount = merged1.lines().count { it.equals("Swadia", ignoreCase = true) }
+    assertEquals(1, swadiaCount)
+  }
+
+  @Test
+  fun applyMedievalTonePostProcessing_fixesIndonesianTitlesAndProtectsTokens() {
+    val raw = "tuanku saya , {playername} memiliki pasukan saya di kastil saya ."
+    val processed = WarbandTextProcessor.applyMedievalTonePostProcessing(raw, "id", enabled = true)
+    assertTrue(processed.startsWith("Tuanku, {playername}"))
+    assertTrue(processed.contains("pasukanku"))
+    assertTrue(processed.contains("kastilku."))
+    assertFalse(processed.contains(" ,"))
+
+    val disabled = WarbandTextProcessor.applyMedievalTonePostProcessing(raw, "id", enabled = false)
+    assertEquals(raw, disabled)
+  }
+
+  @Test
+  fun auditTranslatedFile_detectsMissingTokensAndBrokenSeparatorAndAutoFixes() {
+    val item = QueuedFileItem(
+        id = "q1",
+        name = "dialogs.csv",
+        lines = listOf(
+            "str_ok|Hello {playername}!",
+            "str_missing_tok|Pay {reg1} denars to {s0}.",
+            "str_broken|Visit Praven today."
+        ),
+        results = listOf(
+            "str_ok|Halo {playername}!",
+            "str_missing_tok|Bayar {reg1} denar.",
+            "Visit Praven hari ini."
+        )
+    )
+
+    val audit = WarbandTextProcessor.auditTranslatedFile(
+        file = item,
+        separator = "|",
+        stripTag = "{***}",
+        skipRegex = "^\\d+$"
+    )
+    assertEquals(3, audit.totalRows)
+    assertEquals(2, audit.issueCount)
+    assertTrue(QaIssueType.MISSING_TOKEN in audit.rows[1].issues)
+    assertEquals(listOf("{s0}"), audit.rows[1].missingTokens)
+    assertTrue(QaIssueType.BROKEN_SEPARATOR in audit.rows[2].issues)
+
+    val fixedLine = WarbandTextProcessor.autoFixMissingTokens(
+        originalLine = item.lines[1],
+        translatedLine = item.results[1],
+        separator = "|",
+        stripTag = "{***}"
+    )
+    assertEquals("str_missing_tok|Bayar {reg1} denar. {s0}", fixedLine)
+  }
+
+  @Test
+  fun mergeModUpdateDiff_matchesByCodeAndSeedsCachePairs() {
+    val newModLines = listOf(
+        "999",
+        "str_welcome|{***}Welcome to Calradia!",
+        "str_new_quest|{***}Defend the village of {s1}."
+    )
+    val oldTranslated = listOf(
+        "str_welcome|Selamat datang di Calradia!",
+        "str_removed|Teks lama"
+    )
+
+    val diff = WarbandTextProcessor.mergeModUpdateDiff(
+        newModLines = newModLines,
+        oldTranslatedLines = oldTranslated,
+        separator = "|",
+        stripTag = "{***}",
+        skipRegex = "^\\d+$"
+    )
+
+    assertEquals(1, diff.carriedOverCount)
+    assertEquals(1, diff.newOrChangedCount)
+    assertEquals(1, diff.skippedCount)
+    assertEquals("Selamat datang di Calradia!", diff.seededCachePairs["Welcome to Calradia!"])
+  }
+
+  @Test
+  fun findAndReplaceInLines_replacesOnlyRightOfSeparator() {
+    val lines = listOf(
+        "str_king_harlaus|King Harlaus rules Swadia.",
+        "str_king_yaroglek|King Yaroglek rules Vaegir."
+    )
+    val (updated, count) = WarbandTextProcessor.findAndReplaceInLines(
+        lines = lines,
+        findQuery = "king",
+        replaceWith = "Raja",
+        caseSensitive = false,
+        separator = "|"
+    )
+    assertEquals(2, count)
+    assertEquals("str_king_harlaus|Raja Harlaus rules Swadia.", updated[0])
+    assertEquals("str_king_yaroglek|Raja Yaroglek rules Vaegir.", updated[1])
   }
 }

@@ -27,8 +27,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -83,6 +85,8 @@ fun SettingsScreenContent(
     onExportSuffixChange: (String) -> Unit = {},
     onSelectUiLanguage: (UiLanguage) -> Unit,
     onClearCache: () -> Unit,
+    onExportCacheBackup: () -> Unit = {},
+    onImportCacheBackup: () -> Unit = {},
     onOpenHelp: (String) -> Unit
 ) {
   val sampleExport = remember(settings.separator, settings.exportDelimiter) {
@@ -237,7 +241,9 @@ fun SettingsScreenContent(
 
         val encodingMeta = listOf(
             ExportEncoding.UTF_8 to tr("encUtf8Desc"),
-            ExportEncoding.UTF_16 to tr("encUtf16Desc")
+            ExportEncoding.UTF_8_BOM to tr("encUtf8BomDesc"),
+            ExportEncoding.UTF_16_LE to tr("encUtf16LeDesc"),
+            ExportEncoding.UTF_16_BE to tr("encUtf16BeDesc")
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -559,6 +565,43 @@ fun SettingsScreenContent(
             Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
             Text(tr("btnClearCache"), fontSize = 12.sp)
+          }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          OutlinedButton(
+              onClick = onExportCacheBackup,
+              border = BorderStroke(1.dp, Burgundy),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = Parchment),
+              contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+              modifier = Modifier
+                  .weight(1f)
+                  .minimumInteractiveComponentSize()
+                  .testTag("export_cache_json_button")
+          ) {
+            Icon(Icons.Default.Download, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(tr("btnExpCacheJson"), fontSize = 11.sp, maxLines = 1)
+          }
+
+          OutlinedButton(
+              onClick = onImportCacheBackup,
+              border = BorderStroke(1.dp, Burgundy),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = Parchment),
+              contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+              modifier = Modifier
+                  .weight(1f)
+                  .minimumInteractiveComponentSize()
+                  .testTag("import_cache_json_button")
+          ) {
+            Icon(Icons.Default.UploadFile, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(tr("btnImpCacheJson"), fontSize = 11.sp, maxLines = 1)
           }
         }
       }

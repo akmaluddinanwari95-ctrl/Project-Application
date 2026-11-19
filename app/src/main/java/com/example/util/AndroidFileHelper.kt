@@ -8,15 +8,17 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import com.example.data.local.TranslationCacheEntity
+import com.example.domain.ExportEncoding
 import com.example.domain.FileQueueStatus
 import com.example.domain.QueuedFileItem
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class FileReadOutcome(
     val loaded: List<QueuedFileItem>,
@@ -32,6 +34,67 @@ sealed class SaveOutcome {
 
 object AndroidFileHelper {
   private val allowedExtensions = setOf(".csv", ".txt", ".tsv")
+
+  fun encodeExportContent(content: String, encoding: ExportEncoding): ByteArray {
+    return when (encoding) {
+      ExportEncoding.UTF_8 -> content.toByteArray(StandardCharsets.UTF_8)
+      ExportEncoding.UTF_8_BOM -> {
+        byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + content.toByteArray(StandardCharsets.UTF_8)
+      }
+      ExportEncoding.UTF_16_LE -> {
+        byteArrayOf(0xFF.toByte(), 0xFE.toByte()) + content.toByteArray(StandardCharsets.UTF_16LE)
+      }
+      ExportEncoding.UTF_16_BE -> {
+        byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + content.toByteArray(StandardCharsets.UTF_16BE)
+      }
+    }
+  }
+
+  fun serializeCacheBackupJson(entries: List<TranslationCacheEntity>): String {
+    val root = JSONObject()
+    root.put("version", 1)
+    root.put("exportedAt", System.currentTimeMillis())
+    val arr = JSONArray()
+    entries.forEach { entry ->
+      val obj = JSONObject()
+      obj.put("targetLang", entry.targetLang)
+      obj.put("sourceText", entry.sourceText)
+      obj.put("translatedText", entry.translatedText)
+      obj.put("updatedAt", entry.updatedAt)
+      arr.put(obj)
+    }
+    root.put("entries", arr)
+    return root.toString(2)
+  }
+
+  fun parseCacheBackupJson(jsonText: String): List<TranslationCacheEntity> {
+    val clean = jsonText.trim()
+    if (clean.isEmpty()) return emptyList()
+    val arr = if (clean.startsWith("[")) {
+      JSONArray(clean)
+    } else {
+      JSONObject(clean).optJSONArray("entries") ?: JSONArray()
+    }
+    val list = ArrayList<TranslationCacheEntity>(arr.length())
+    val now = System.currentTimeMillis()
+    for (i in 0 until arr.length()) {
+      val obj = arr.optJSONObject(i) ?: continue
+      val lang = obj.optString("targetLang", "").trim()
+      val src = obj.optString("sourceText", "")
+      val dst = obj.optString("translatedText", "")
+      if (lang.isNotEmpty() && src.isNotEmpty() && dst.isNotEmpty()) {
+        list.add(
+            TranslationCacheEntity(
+                targetLang = lang,
+                sourceText = src,
+                translatedText = dst,
+                updatedAt = obj.optLong("updatedAt", now)
+            )
+        )
+      }
+    }
+    return list
+  }
 
   suspend fun readQueuedFiles(context: Context, uris: List<Uri>): FileReadOutcome =
       withContext(Dispatchers.IO) {
@@ -99,14 +162,23 @@ object AndroidFileHelper {
         } ?: throw IllegalStateException("Tidak dapat membuka file")
       }
 
+  suspend fun readNonEmptyLinesFromUri(context: Context, uri: Uri): List<String> {
+    takePersistableReadPermission(context, uri)
+    return readTextFromUri(context, uri)
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .split('\n')
+        .filter { it.trim().isNotEmpty() }
+  }
+
   suspend fun writeTextToUri(
       context: Context,
       uri: Uri,
       content: String,
-      charset: Charset = StandardCharsets.UTF_8
+      encoding: ExportEncoding = ExportEncoding.UTF_8
   ) = withContext(Dispatchers.IO) {
     context.contentResolver.openOutputStream(uri, "wt")?.use { out ->
-      out.write(content.toByteArray(charset))
+      out.write(encodeExportContent(content, encoding))
       out.flush()
     } ?: throw IllegalStateException("Gagal menulis ke file tujuan")
   }
@@ -115,7 +187,7 @@ object AndroidFileHelper {
       context: Context,
       files: List<Pair<String, String>>,
       mimeType: String = "text/csv",
-      charset: Charset = StandardCharsets.UTF_8
+      encoding: ExportEncoding = ExportEncoding.UTF_8
   ): SaveOutcome = withContext(Dispatchers.IO) {
     if (files.isEmpty()) return@withContext SaveOutcome.Failed("Tidak ada file untuk disimpan")
 
@@ -140,7 +212,7 @@ object AndroidFileHelper {
 
         try {
           resolver.openOutputStream(uri, "w")?.use { out ->
-            out.write(content.toByteArray(charset))
+            out.write(encodeExportContent(content, encoding))
             out.flush()
           } ?: throw IllegalStateException("Gagal menulis isi $fileName")
 
@@ -165,7 +237,7 @@ object AndroidFileHelper {
       context: Context,
       treeUri: Uri,
       files: List<Pair<String, String>>,
-      charset: Charset = StandardCharsets.UTF_8
+      encoding: ExportEncoding = ExportEncoding.UTF_8
   ): SaveOutcome = withContext(Dispatchers.IO) {
     if (files.isEmpty()) return@withContext SaveOutcome.Failed("Tidak ada file untuk disimpan")
 
@@ -188,7 +260,7 @@ object AndroidFileHelper {
             ?: throw IllegalStateException("Gagal membuat file $fileName di folder pilihan")
 
         resolver.openOutputStream(targetUri, "wt")?.use { out ->
-          out.write(content.toByteArray(charset))
+          out.write(encodeExportContent(content, encoding))
           out.flush()
         } ?: throw IllegalStateException("Gagal menulis $fileName")
 

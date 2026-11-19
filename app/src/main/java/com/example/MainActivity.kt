@@ -61,6 +61,30 @@ class MainActivity : ComponentActivity() {
           uri?.let { viewModel.exportErrorLogToUri(it) }
         }
 
+        val cacheBackupExportLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json")
+        ) { uri ->
+          uri?.let { viewModel.exportCacheBackupToUri(it) }
+        }
+
+        val cacheBackupImportLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+          uri?.let { viewModel.importCacheBackupFromUri(it) }
+        }
+
+        val diffNewModLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+          uri?.let { viewModel.loadDiffNewModUri(it) }
+        }
+
+        val diffOldTransLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+          uri?.let { viewModel.loadDiffOldTranslatedUri(it) }
+        }
+
         val folderTreeLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.OpenDocumentTree()
         ) { treeUri ->
@@ -120,6 +144,18 @@ class MainActivity : ComponentActivity() {
             },
             onExportErrorLog = {
               errorLogExportLauncher.launch("warband_translation_errors.txt")
+            },
+            onExportCacheBackup = {
+              cacheBackupExportLauncher.launch("warband_cache_backup.json")
+            },
+            onImportCacheBackup = {
+              cacheBackupImportLauncher.launch(arrayOf("application/json", "text/plain", "text/*"))
+            },
+            onPickDiffNewMod = {
+              diffNewModLauncher.launch(csvMimeTypes)
+            },
+            onPickDiffOldTrans = {
+              diffOldTransLauncher.launch(csvMimeTypes)
             },
             onPickSaveFolder = {
               folderTreeLauncher.launch(null)

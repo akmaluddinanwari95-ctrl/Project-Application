@@ -9,6 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
@@ -41,6 +44,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Settings
@@ -91,8 +95,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.domain.BatchSizeOptions
 import com.example.domain.DelayOptions
 import com.example.domain.FileQueueStatus
+import com.example.domain.GlossaryPreset
 import com.example.domain.I18nStrings
 import com.example.domain.LogLevel
 import com.example.domain.PreviewRow
@@ -127,6 +133,7 @@ private enum class AppTab {
   SETTINGS
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TranslatorScreen(
     viewModel: TranslatorViewModel,
@@ -136,6 +143,10 @@ fun TranslatorScreen(
     onImportGlossary: () -> Unit,
     onExportGlossary: () -> Unit,
     onExportErrorLog: () -> Unit,
+    onExportCacheBackup: () -> Unit,
+    onImportCacheBackup: () -> Unit,
+    onPickDiffNewMod: () -> Unit,
+    onPickDiffOldTrans: () -> Unit,
     onPickSaveFolder: () -> Unit,
     onStartWithNotificationCheck: () -> Unit
 ) {
@@ -152,6 +163,11 @@ fun TranslatorScreen(
   val errorAlert by viewModel.errorAlert.collectAsStateWithLifecycle()
   val pendingExportPreviews by viewModel.pendingExportPreviews.collectAsStateWithLifecycle()
   val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
+  val qaAuditSummary by viewModel.qaAuditSummary.collectAsStateWithLifecycle()
+  val showModDiffDialog by viewModel.showModDiffDialog.collectAsStateWithLifecycle()
+  val diffNewModName by viewModel.diffNewModName.collectAsStateWithLifecycle()
+  val diffOldTransName by viewModel.diffOldTransName.collectAsStateWithLifecycle()
+  val diffMergePreview by viewModel.diffMergePreview.collectAsStateWithLifecycle()
 
   val lang = settings.uiLanguage
   fun tr(key: String) = I18nStrings.get(lang, key)
@@ -289,6 +305,8 @@ fun TranslatorScreen(
               onExportSuffixChange = { viewModel.setExportFilenameSuffix(it) },
               onSelectUiLanguage = { viewModel.setUiLanguage(it) },
               onClearCache = { viewModel.clearCache() },
+              onExportCacheBackup = onExportCacheBackup,
+              onImportCacheBackup = onImportCacheBackup,
               onOpenHelp = { activeHelpTopicKey = it }
           )
         }
@@ -324,6 +342,7 @@ fun TranslatorScreen(
               tr = ::tr,
               onSelectEngine = { viewModel.selectEngine(it) },
               onSelectDelay = { viewModel.setDelayMs(it) },
+              onSelectBatchSize = { viewModel.setBatchSize(it) },
               onToggleFallback = { viewModel.setAutoFallback(it) },
               onClearCache = { viewModel.clearCache() },
               onOpenHelp = { activeHelpTopicKey = it }
@@ -339,6 +358,7 @@ fun TranslatorScreen(
               onSeparatorChange = { viewModel.setSeparator(it) },
               onStripTagChange = { viewModel.setStripTag(it) },
               onSkipRegexChange = { viewModel.setSkipRegex(it) },
+              onToggleMedievalTone = { viewModel.setMedievalToneEnabled(it) },
               onOpenHelp = { activeHelpTopicKey = it }
           )
 
@@ -400,6 +420,34 @@ fun TranslatorScreen(
                     .fillMaxWidth()
                     .testTag("glossary_text_field")
             )
+            Text(
+                text = tr("lblGlossPresets"),
+                style = MaterialTheme.typography.labelSmall,
+                color = GoldAccent
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              WarbandTextProcessor.builtInGlossaryPresets.forEach { preset ->
+                OutlinedButton(
+                    onClick = { viewModel.applyGlossaryPreset(preset) },
+                    border = BorderStroke(1.dp, GoldMuted),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0xFF1F1211),
+                        contentColor = GoldAccent
+                    ),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .testTag("glossary_preset_${preset.id}")
+                ) {
+                  Text(tr(preset.titleKey), fontSize = 11.sp, maxLines = 1)
+                }
+              }
+            }
             Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -453,7 +501,9 @@ fun TranslatorScreen(
               tr = ::tr,
               onPickFiles = onPickCsvFiles,
               onPickSingleFile = onPickSingleCsvFile,
+              onOpenModDiff = { viewModel.openModDiffDialog() },
               onSelectPreviewFile = { viewModel.selectPreviewFile(it) },
+              onOpenQaEditor = { viewModel.openFullEditorForFile(it) },
               onMoveUp = { viewModel.moveQueueItemUp(it) },
               onMoveDown = { viewModel.moveQueueItemDown(it) },
               onRetryItem = { viewModel.retryQueueItem(it) },
@@ -482,6 +532,7 @@ fun TranslatorScreen(
               onStart = onStartWithNotificationCheck,
               onTogglePause = { viewModel.togglePause() },
               onStop = { viewModel.stopTranslation() },
+              onOpenQaEditor = { viewModel.openFullEditorForFirstDone() },
               onSaveAll = { viewModel.openSaveForAllDone() },
               onExportErrors = onExportErrorLog
           )
@@ -599,6 +650,27 @@ fun TranslatorScreen(
       onSaveToDownloads = { viewModel.savePendingToDownloads() },
       onPickFolder = onPickSaveFolder,
       onDismiss = { viewModel.dismissSaveDialog() }
+  )
+
+  FullEditorAndQaDialog(
+      summary = qaAuditSummary,
+      tr = ::tr,
+      onSaveLine = { fileId, lineIdx, newLine -> viewModel.saveFullEditorLine(fileId, lineIdx, newLine) },
+      onFindAndReplace = { fileId, find, rep, cs -> viewModel.applyFindAndReplace(fileId, find, rep, cs) },
+      onAutoFixMissingTokens = { fileId -> viewModel.autoFixQaMissingTokens(fileId) },
+      onDismiss = { viewModel.dismissFullEditor() }
+  )
+
+  ModDiffMergeDialog(
+      visible = showModDiffDialog,
+      newModName = diffNewModName,
+      oldTransName = diffOldTransName,
+      diffPreview = diffMergePreview,
+      tr = ::tr,
+      onPickNewModFile = onPickDiffNewMod,
+      onPickOldTranslatedFile = onPickDiffOldTrans,
+      onApplyDiff = { viewModel.applyModDiffToQueue() },
+      onDismiss = { viewModel.dismissModDiffDialog() }
   )
 }
 
@@ -753,6 +825,7 @@ private fun EngineSection(
     tr: (String) -> String,
     onSelectEngine: (TranslationEngine) -> Unit,
     onSelectDelay: (Long) -> Unit,
+    onSelectBatchSize: (Int) -> Unit,
     onToggleFallback: (Boolean) -> Unit,
     onClearCache: () -> Unit,
     onOpenHelp: (String) -> Unit
@@ -884,6 +957,21 @@ private fun EngineSection(
           onSelect = { onSelectDelay(it.ms) },
           testTag = "delay_dropdown"
       )
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(
+          text = tr("lblBatchSize"),
+          style = MaterialTheme.typography.labelMedium,
+          color = ParchmentDim
+      )
+      Spacer(modifier = Modifier.height(4.dp))
+      val activeBatch = BatchSizeOptions.all.firstOrNull { it.size == settings.batchSize } ?: BatchSizeOptions.all.first()
+      MedievalDropdown(
+          selectedLabel = tr(activeBatch.titleKey),
+          items = BatchSizeOptions.all,
+          itemLabel = { tr(it.titleKey) },
+          onSelect = { onSelectBatchSize(it.size) },
+          testTag = "batch_size_dropdown"
+      )
     }
 
     Spacer(modifier = Modifier.height(10.dp))
@@ -986,6 +1074,7 @@ private fun FormatSection(
     onSeparatorChange: (String) -> Unit,
     onStripTagChange: (String) -> Unit,
     onSkipRegexChange: (String) -> Unit,
+    onToggleMedievalTone: (Boolean) -> Unit,
     onOpenHelp: (String) -> Unit
 ) {
   MedievalCard {
@@ -1156,7 +1245,37 @@ private fun FormatSection(
       Text(regexMsg, style = MaterialTheme.typography.labelSmall, color = regexColor)
     }
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(10.dp))
+
+    // Medieval Tone Post-Processing Toggle
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFF160D0C))
+            .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+            .clickable { onToggleMedievalTone(!settings.medievalToneEnabled) }
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+      Checkbox(
+          checked = settings.medievalToneEnabled,
+          onCheckedChange = onToggleMedievalTone,
+          colors = CheckboxDefaults.colors(
+              checkedColor = Burgundy,
+              uncheckedColor = GoldMuted,
+              checkmarkColor = Parchment
+          ),
+          modifier = Modifier.testTag("medieval_tone_checkbox")
+      )
+      Text(
+          text = tr("chkMedievalTone"),
+          style = MaterialTheme.typography.bodySmall,
+          color = Parchment
+      )
+    }
+
+    Spacer(modifier = Modifier.height(10.dp))
 
     // Variable Guard Info Pill
     Row(
@@ -1191,7 +1310,9 @@ private fun QueueSection(
     tr: (String) -> String,
     onPickFiles: () -> Unit,
     onPickSingleFile: () -> Unit,
+    onOpenModDiff: () -> Unit,
     onSelectPreviewFile: (String) -> Unit,
+    onOpenQaEditor: (String) -> Unit,
     onMoveUp: (String) -> Unit,
     onMoveDown: (String) -> Unit,
     onRetryItem: (String) -> Unit,
@@ -1275,22 +1396,47 @@ private fun QueueSection(
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    OutlinedButton(
-        onClick = onPickSingleFile,
-        enabled = !isRunning,
-        border = BorderStroke(1.dp, BurgundyBorder),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = Color(0xFF170E0D),
-            contentColor = Parchment
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .minimumInteractiveComponentSize()
-            .testTag("pick_single_csv_button")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-      Icon(Icons.Default.NoteAdd, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(16.dp))
-      Spacer(modifier = Modifier.width(6.dp))
-      Text(tr("btnPickSingle"), fontSize = 12.sp)
+      OutlinedButton(
+          onClick = onPickSingleFile,
+          enabled = !isRunning,
+          border = BorderStroke(1.dp, BurgundyBorder),
+          colors = ButtonDefaults.outlinedButtonColors(
+              containerColor = Color(0xFF170E0D),
+              contentColor = Parchment
+          ),
+          contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+          modifier = Modifier
+              .weight(1f)
+              .minimumInteractiveComponentSize()
+              .testTag("pick_single_csv_button")
+      ) {
+        Icon(Icons.Default.NoteAdd, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(tr("btnPickSingle"), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      }
+
+      OutlinedButton(
+          onClick = onOpenModDiff,
+          enabled = !isRunning,
+          border = BorderStroke(1.dp, GoldMuted),
+          colors = ButtonDefaults.outlinedButtonColors(
+              containerColor = Color(0xFF1F1211),
+              contentColor = GoldAccent
+          ),
+          contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+          modifier = Modifier
+              .weight(1f)
+              .minimumInteractiveComponentSize()
+              .testTag("open_mod_diff_button")
+      ) {
+        Icon(Icons.Default.CompareArrows, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(tr("btnModDiff"), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      }
     }
 
     if (fileQueue.isNotEmpty()) {
@@ -1453,6 +1599,23 @@ private fun QueueSection(
 
               if (item.status == FileQueueStatus.DONE) {
                 OutlinedButton(
+                    onClick = { onOpenQaEditor(item.id) },
+                    border = BorderStroke(1.dp, GoldMuted),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = AmberBg,
+                        contentColor = GoldAccent
+                    ),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .testTag("qa_editor_file_${item.name}")
+                ) {
+                  Icon(Icons.Default.VerifiedUser, contentDescription = null, modifier = Modifier.size(14.dp))
+                  Spacer(modifier = Modifier.width(3.dp))
+                  Text(tr("btnQaEditor"), fontSize = 11.sp)
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                OutlinedButton(
                     onClick = { onSaveItem(item) },
                     border = BorderStroke(1.dp, Forest),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -1503,6 +1666,7 @@ private fun ControlsAndProgressSection(
     onStart: () -> Unit,
     onTogglePause: () -> Unit,
     onStop: () -> Unit,
+    onOpenQaEditor: () -> Unit,
     onSaveAll: () -> Unit,
     onExportErrors: () -> Unit
 ) {
@@ -1639,26 +1803,46 @@ private fun ControlsAndProgressSection(
     }
 
     if (hasDoneFiles) {
-      Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-        OutlinedButton(
-            onClick = onSaveAll,
-            border = BorderStroke(1.dp, GoldMuted),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Burgundy.copy(alpha = 0.35f),
-                contentColor = GoldAccent
-            ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .weight(1f)
-                .height(48.dp)
-                .testTag("preview_export_button")
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
-          Spacer(modifier = Modifier.width(6.dp))
-          Text(tr("btnPreviewExport"), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+          OutlinedButton(
+              onClick = onOpenQaEditor,
+              border = BorderStroke(1.dp, GoldMuted),
+              colors = ButtonDefaults.outlinedButtonColors(
+                  containerColor = AmberBg,
+                  contentColor = GoldAccent
+              ),
+              shape = RoundedCornerShape(12.dp),
+              modifier = Modifier
+                  .weight(1f)
+                  .height(48.dp)
+                  .testTag("open_qa_editor_button")
+          ) {
+            Icon(Icons.Default.VerifiedUser, contentDescription = null, modifier = Modifier.size(17.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(tr("btnQaEditor"), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+          }
+
+          OutlinedButton(
+              onClick = onSaveAll,
+              border = BorderStroke(1.dp, GoldMuted),
+              colors = ButtonDefaults.outlinedButtonColors(
+                  containerColor = Burgundy.copy(alpha = 0.35f),
+                  contentColor = GoldAccent
+              ),
+              shape = RoundedCornerShape(12.dp),
+              modifier = Modifier
+                  .weight(1f)
+                  .height(48.dp)
+                  .testTag("preview_export_button")
+          ) {
+            Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(tr("btnPreviewExport"), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+          }
         }
 
         Button(
@@ -1670,7 +1854,7 @@ private fun ControlsAndProgressSection(
             border = BorderStroke(1.dp, Forest),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
-                .weight(1f)
+                .fillMaxWidth()
                 .height(48.dp)
                 .testTag("save_all_button")
         ) {

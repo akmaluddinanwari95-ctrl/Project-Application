@@ -95,24 +95,47 @@ enum class ExportDelimiter(val id: String, val symbol: String, val displayLabel:
 }
 
 enum class ExportEncoding(val id: String, val charsetName: String, val displayLabel: String) {
-  UTF_8("utf8", "UTF-8", "UTF-8 (Standard)"),
-  UTF_16("utf16", "UTF-16", "UTF-16 (Unicode)");
+  UTF_8("utf8", "UTF-8", "UTF-8 (No BOM)"),
+  UTF_8_BOM("utf8_bom", "UTF-8 BOM", "UTF-8 with BOM"),
+  UTF_16_LE("utf16le", "UTF-16 LE", "UTF-16 LE + BOM"),
+  UTF_16_BE("utf16be", "UTF-16 BE", "UTF-16 BE + BOM");
 
   fun toCharset(): java.nio.charset.Charset = when (this) {
-    UTF_8 -> Charsets.UTF_8
-    UTF_16 -> Charsets.UTF_16
+    UTF_8, UTF_8_BOM -> Charsets.UTF_8
+    UTF_16_LE -> Charsets.UTF_16LE
+    UTF_16_BE -> Charsets.UTF_16BE
   }
 
   companion object {
-    fun fromId(id: String): ExportEncoding = entries.firstOrNull { it.id == id } ?: UTF_8
+    fun fromId(id: String): ExportEncoding = when (id.lowercase()) {
+      "utf8_bom" -> UTF_8_BOM
+      "utf16", "utf16le", "utf-16le" -> UTF_16_LE
+      "utf16be", "utf-16be" -> UTF_16_BE
+      else -> UTF_8
+    }
   }
+}
+
+data class BatchSizeOption(
+    val size: Int,
+    val titleKey: String
+)
+
+object BatchSizeOptions {
+  val all = listOf(
+      BatchSizeOption(1, "batchSize1"),
+      BatchSizeOption(5, "batchSize5"),
+      BatchSizeOption(10, "batchSize10")
+  )
 }
 
 data class TranslatorSettings(
     val uiLanguage: UiLanguage = UiLanguage.ID,
     val engine: TranslationEngine = TranslationEngine.GOOGLE,
     val delayMs: Long = 200L,
+    val batchSize: Int = 1,
     val autoFallback: Boolean = true,
+    val medievalToneEnabled: Boolean = true,
     val sourceLang: String = "en",
     val targetLang: String = "id",
     val separator: String = "|",
@@ -123,6 +146,48 @@ data class TranslatorSettings(
     val exportEncoding: ExportEncoding = ExportEncoding.UTF_8,
     val exportFilenamePrefix: String = "",
     val exportFilenameSuffix: String = ""
+)
+
+data class GlossaryPreset(
+    val id: String,
+    val titleKey: String,
+    val termsText: String
+)
+
+enum class QaIssueType {
+  MISSING_TOKEN,
+  EXTRA_TOKEN,
+  BROKEN_SEPARATOR,
+  LEFT_MARKER,
+  UNTRANSLATED
+}
+
+data class QaAuditRow(
+    val lineIndex: Int,
+    val codePart: String,
+    val originalLine: String,
+    val translatedLine: String,
+    val missingTokens: List<String>,
+    val extraTokens: List<String>,
+    val issues: List<QaIssueType>
+) {
+  val hasIssue: Boolean get() = issues.isNotEmpty()
+}
+
+data class QaAuditSummary(
+    val fileId: String,
+    val fileName: String,
+    val totalRows: Int,
+    val issueCount: Int,
+    val rows: List<QaAuditRow>
+)
+
+data class ModDiffMergeResult(
+    val mergedLines: List<String>,
+    val seededCachePairs: Map<String, String>,
+    val carriedOverCount: Int,
+    val newOrChangedCount: Int,
+    val skippedCount: Int
 )
 
 data class GlossaryPair(
