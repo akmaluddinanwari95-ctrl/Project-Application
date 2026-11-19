@@ -82,7 +82,67 @@ object I18nStrings {
           "saveToDownloadsSub" to "Langsung masuk ke Download/WarbandTranslator",
           "saveToFolder" to "Pilih Folder Tujuan (SAF)",
           "saveToFolderSub" to "Misalnya langsung ke folder languages/id/ mod Anda",
-          "lblErrExport" to "Ekspor Log Baris Gagal"
+          "lblErrExport" to "Ekspor Log Baris Gagal",
+          "btnPickSingle" to "Tambah 1 File",
+          "autoResumeReady" to "Auto-Resume",
+          "btnInspectCsv" to "Pratinjau 10 Baris",
+          "secCsvStruct" to "Pratinjau Struktur CSV (10 Baris Pertama)",
+          "csvStructHint" to "Periksa pemisahan kolom ID & teks sebelum memulai terjemahan",
+          "csvColIdx" to "#",
+          "csvColKey" to "Kolom 1 (ID / Kode)",
+          "csvColText" to "Kolom 2 (Teks Sumber)",
+          "csvColStatus" to "Info",
+          "csvSepMatchOk" to "baris cocok dengan pemisah",
+          "csvSepMatchWarn" to "Perhatian: sebagian besar baris tidak memiliki pemisah",
+          "csvSkipTag" to "SKIP",
+          "csvNoSepTag" to "Tanpa pemisah",
+          "secTelemetry" to "Grafik Kecepatan & Progres Real-Time",
+          "telemetryHint" to "Memantau kecepatan (baris/dtk) dan persentase selesai file aktif",
+          "legendSpeed" to "Kecepatan (baris/dtk)",
+          "legendProgress" to "Progres (%)",
+          "kpiCurSpeed" to "Kecepatan",
+          "kpiPeakSpeed" to "Puncak",
+          "kpiUnitRate" to "brs/dtk",
+          "telemetryEmpty" to "Grafik real-time akan aktif saat terjemahan berjalan",
+          "tabTranslator" to "Penerjemah",
+          "tabHistory" to "Riwayat",
+          "tabSettings" to "Pengaturan",
+          "secExportSettings" to "Pengaturan Ekspor File CSV",
+          "exportSettingsDesc" to "Atur pemisah kolom (delimiter) dan pengodean karakter saat menyimpan hasil terjemahan.",
+          "lblExportDelimiter" to "Pemisah CSV Ekspor (Delimiter)",
+          "delPipeDesc" to "Format asli game Mount & Blade: Warband (direkomendasikan untuk mod)",
+          "delCommaDesc" to "Standar CSV internasional (Excel / Google Sheets)",
+          "delTabDesc" to "Tab-Separated Values (.tsv / editor teks)",
+          "delSemicolonDesc" to "CSV Eropa / Excel regional titik koma",
+          "lblExportEncoding" to "Pengodean Karakter (Encoding)",
+          "encUtf8Desc" to "Standar universal Android & Warband modern (ringan & kompatibel luas)",
+          "encUtf16Desc" to "Unicode 16-bit dengan BOM (cocok untuk tools PC/Excel lama)",
+          "lblExportPreview" to "Contoh Baris Ekspor",
+          "secUiPref" to "Bahasa Antarmuka & Memori",
+          "secHistory" to "Riwayat Sesi Terjemahan",
+          "historyDesc" to "Catatan file CSV yang pernah diproses. Anda dapat membuka ulang ke antrean atau membersihkan log.",
+          "btnClearHistory" to "Bersihkan Riwayat",
+          "btnReopenFile" to "Buka Ulang",
+          "historyEmptyTitle" to "Belum Ada Riwayat Sesi",
+          "historyEmptySub" to "File CSV yang selesai atau dihentikan saat diterjemahkan akan tercatat otomatis di sini.",
+          "histStatusDone" to "Selesai",
+          "histStatusStopped" to "Dihentikan",
+          "histStatusError" to "Gagal",
+          "lblBatchRename" to "Penamaan Ulang File Output (Batch Rename)",
+          "hintBatchRename" to "Tambahkan awalan (prefix) atau akhiran (suffix) otomatis sebelum ekstensi file saat menyimpan.",
+          "lblFilePrefix" to "Awalan (Prefix)",
+          "lblFileSuffix" to "Akhiran (Suffix)",
+          "presetOriginal" to "Nama Asli",
+          "presetTranslated" to "_translated",
+          "presetLangSuffix" to "Kode Bahasa",
+          "lblRenamePreview" to "Contoh Nama File Output",
+          "btnPreviewExport" to "Pratinjau Ekspor",
+          "previewExportTitle" to "Pratinjau Ekspor & Simpan",
+          "previewExportDesc" to "Periksa contoh isi file hasil terjemahan dan nama file sebelum menyimpan ke perangkat.",
+          "lblSampleHeader" to "Contoh Isi File Ekspor (12 Baris Pertama)",
+          "lblOutputFile" to "Nama Output",
+          "lblQuickRename" to "Ubah Awalan / Akhiran Output",
+          "lblSaveDestination" to "Pilih Tujuan Penyimpanan"
       ),
       UiLanguage.EN to mapOf(
           "navTitle" to "M&B Warband Translator",
@@ -159,7 +219,67 @@ object I18nStrings {
           "saveToDownloadsSub" to "Saved into Download/WarbandTranslator",
           "saveToFolder" to "Choose Target Folder (SAF)",
           "saveToFolderSub" to "For example directly into your mod's languages/id/ folder",
-          "lblErrExport" to "Export Error Log"
+          "lblErrExport" to "Export Error Log",
+          "btnPickSingle" to "Add 1 File",
+          "autoResumeReady" to "Auto-Resume",
+          "btnInspectCsv" to "Preview 10 Rows",
+          "secCsvStruct" to "CSV Structure Preview (First 10 Rows)",
+          "csvStructHint" to "Verify ID and text column separation before starting translation",
+          "csvColIdx" to "#",
+          "csvColKey" to "Column 1 (ID / Key)",
+          "csvColText" to "Column 2 (Source Text)",
+          "csvColStatus" to "Info",
+          "csvSepMatchOk" to "rows match separator",
+          "csvSepMatchWarn" to "Warning: most rows do not contain separator",
+          "csvSkipTag" to "SKIP",
+          "csvNoSepTag" to "No separator",
+          "secTelemetry" to "Real-Time Speed & Progress Graph",
+          "telemetryHint" to "Live lines/sec throughput and completion percentage of the active CSV file",
+          "legendSpeed" to "Speed (lines/s)",
+          "legendProgress" to "Progress (%)",
+          "kpiCurSpeed" to "Current Speed",
+          "kpiPeakSpeed" to "Peak Speed",
+          "kpiUnitRate" to "lines/s",
+          "telemetryEmpty" to "Real-time graph activates once translation begins",
+          "tabTranslator" to "Translator",
+          "tabHistory" to "History",
+          "tabSettings" to "Settings",
+          "secExportSettings" to "CSV Export Settings",
+          "exportSettingsDesc" to "Choose the column delimiter and character encoding applied when exporting translated files.",
+          "lblExportDelimiter" to "Export CSV Delimiter",
+          "delPipeDesc" to "Original Mount & Blade: Warband format (recommended for mods)",
+          "delCommaDesc" to "Standard CSV format (Excel / Google Sheets)",
+          "delTabDesc" to "Tab-Separated Values (.tsv / spreadsheets)",
+          "delSemicolonDesc" to "Semicolon CSV (European Excel locale)",
+          "lblExportEncoding" to "Character Encoding",
+          "encUtf8Desc" to "Universal modern Android & Warband encoding (compact & widely supported)",
+          "encUtf16Desc" to "16-bit Unicode with BOM (for legacy desktop spreadsheets/tools)",
+          "lblExportPreview" to "Export Output Sample",
+          "secUiPref" to "Interface Language & Cache",
+          "secHistory" to "Translation Session History",
+          "historyDesc" to "Metadata log of previously processed CSV files. Re-open any session into the queue or clear logs.",
+          "btnClearHistory" to "Clear History",
+          "btnReopenFile" to "Re-open",
+          "historyEmptyTitle" to "No Session History Yet",
+          "historyEmptySub" to "Processed or stopped CSV translation sessions will automatically appear here.",
+          "histStatusDone" to "Completed",
+          "histStatusStopped" to "Stopped",
+          "histStatusError" to "Error",
+          "lblBatchRename" to "Batch Rename Output Files",
+          "hintBatchRename" to "Automatically add a prefix or suffix before the file extension when exporting files in the queue.",
+          "lblFilePrefix" to "Prefix",
+          "lblFileSuffix" to "Suffix",
+          "presetOriginal" to "Original",
+          "presetTranslated" to "_translated",
+          "presetLangSuffix" to "Language Suffix",
+          "lblRenamePreview" to "Output Filename Preview",
+          "btnPreviewExport" to "Preview Export",
+          "previewExportTitle" to "Preview Export & Save",
+          "previewExportDesc" to "Review a sample of your formatted Warband mod export and batch-renamed filenames before saving.",
+          "lblSampleHeader" to "Translated Output Sample (First 12 Rows)",
+          "lblOutputFile" to "Output File",
+          "lblQuickRename" to "Quick Batch Rename",
+          "lblSaveDestination" to "Choose Save Destination"
       ),
       UiLanguage.TR to mapOf(
           "navTitle" to "M&B Warband Çeviri Aracı",
@@ -236,7 +356,67 @@ object I18nStrings {
           "saveToDownloadsSub" to "Download/WarbandTranslator içine kaydedilir",
           "saveToFolder" to "Hedef Klasör Seç (SAF)",
           "saveToFolderSub" to "Örneğin doğrudan modunuzun languages/id/ klasörü",
-          "lblErrExport" to "Hata Günlüğünü Dışa Aktar"
+          "lblErrExport" to "Hata Günlüğünü Dışa Aktar",
+          "btnPickSingle" to "1 Dosya Ekle",
+          "autoResumeReady" to "Oto-Devam",
+          "btnInspectCsv" to "10 Satır Önizle",
+          "secCsvStruct" to "CSV Yapı Önizleyici (İlk 10 Satır)",
+          "csvStructHint" to "Çeviriye başlamadan önce kod ve metin sütunlarını doğrulayın",
+          "csvColIdx" to "#",
+          "csvColKey" to "Sütun 1 (ID / Kod)",
+          "csvColText" to "Sütun 2 (Kaynak Metin)",
+          "csvColStatus" to "Bilgi",
+          "csvSepMatchOk" to "satır ayraç ile eşleşiyor",
+          "csvSepMatchWarn" to "Uyarı: satırların çoğunda ayraç bulunamadı",
+          "csvSkipTag" to "ATLA",
+          "csvNoSepTag" to "Ayraç yok",
+          "secTelemetry" to "Gerçek Zamanlı Hız ve İlerleme Grafiği",
+          "telemetryHint" to "Aktif CSV dosyasının çeviri hızını (satır/sn) ve ilerleme yüzdesini gösterir",
+          "legendSpeed" to "Hız (satır/sn)",
+          "legendProgress" to "İlerleme (%)",
+          "kpiCurSpeed" to "Anlık Hız",
+          "kpiPeakSpeed" to "En Yüksek",
+          "kpiUnitRate" to "satır/sn",
+          "telemetryEmpty" to "Çeviri başladığında gerçek zamanlı grafik etkinleşir",
+          "tabTranslator" to "Çevirmen",
+          "tabHistory" to "Geçmiş",
+          "tabSettings" to "Ayarlar",
+          "secExportSettings" to "CSV Dışa Aktarma Ayarları",
+          "exportSettingsDesc" to "Çevrilen dosyalar kaydedilirken kullanılacak ayırıcıyı ve karakter kodlamasını seçin.",
+          "lblExportDelimiter" to "Dışa Aktarma CSV Ayracı",
+          "delPipeDesc" to "Orijinal Mount & Blade: Warband biçimi (modlar için önerilir)",
+          "delCommaDesc" to "Standart CSV biçimi (Virgül)",
+          "delTabDesc" to "Sekme ile ayrılmış değerler (Tab)",
+          "delSemicolonDesc" to "Noktalı virgül CSV biçimi",
+          "lblExportEncoding" to "Karakter Kodlaması",
+          "encUtf8Desc" to "Evrensel modern Android ve Warband kodlaması",
+          "encUtf16Desc" to "BOM içeren 16-bit Unicode kodlaması",
+          "lblExportPreview" to "Dışa Aktarım Örneği",
+          "secUiPref" to "Arayüz Dili ve Önbellek",
+          "secHistory" to "Çeviri Oturum Geçmişi",
+          "historyDesc" to "Daha önce işlenen CSV dosyalarının meta verileri. Yeniden açabilir veya geçmişi temizleyebilirsiniz.",
+          "btnClearHistory" to "Geçmişi Temizle",
+          "btnReopenFile" to "Yeniden Aç",
+          "historyEmptyTitle" to "Henüz Oturum Geçmişi Yok",
+          "historyEmptySub" to "Tamamlanan veya durdurulan CSV çeviri oturumları burada listelenir.",
+          "histStatusDone" to "Tamamlandı",
+          "histStatusStopped" to "Durduruldu",
+          "histStatusError" to "Hata",
+          "lblBatchRename" to "Toplu Çıktı Dosyası Yeniden Adlandırma",
+          "hintBatchRename" to "Kaydederken dosya uzantısından önce otomatik olarak ön ek veya son ek ekleyin.",
+          "lblFilePrefix" to "Ön Ek (Prefix)",
+          "lblFileSuffix" to "Son Ek (Suffix)",
+          "presetOriginal" to "Orijinal Ad",
+          "presetTranslated" to "_translated",
+          "presetLangSuffix" to "Dil Son Eki",
+          "lblRenamePreview" to "Çıktı Dosyası Önizlemesi",
+          "btnPreviewExport" to "Dışa Aktarımı Önizle",
+          "previewExportTitle" to "Dışa Aktarım Önizleme ve Kayıt",
+          "previewExportDesc" to "Kaydetmeden önce biçimlendirilmiş çıktı örneğini ve dosya adlarını kontrol edin.",
+          "lblSampleHeader" to "Çevrilmiş Çıktı Örneği (İlk 12 Satır)",
+          "lblOutputFile" to "Çıktı Dosyası",
+          "lblQuickRename" to "Hızlı Toplu Yeniden Adlandırma",
+          "lblSaveDestination" to "Kayıt Konumunu Seçin"
       )
   )
 
@@ -572,6 +752,86 @@ object I18nStrings {
           UiLanguage.TR to HelpTopicContent(
               "Mod Kurulum Kılavuzu",
               listOf("Çevrilen CSV dosyalarının modun languages/ klasörüne nasıl yerleştirileceğini adım adım açıklar.")
+          )
+      ),
+      "secCsvStruct" to mapOf(
+          UiLanguage.ID to HelpTopicContent(
+              "Pratinjau Struktur CSV (10 Baris Pertama)",
+              listOf(
+                  "Menampilkan 10 baris pertama dari file antrean yang dipilih dan memisahkan kolom ID (kiri) serta Teks Sumber (kanan) sesuai karakter pemisah aktif.",
+                  "Gunakan pratinjau ini sebelum memulai terjemahan untuk memastikan pemisah (misal '|') dan pola Regex skip sudah tepat."
+              )
+          ),
+          UiLanguage.EN to HelpTopicContent(
+              "CSV Structure Preview (First 10 Rows)",
+              listOf(
+                  "Displays the first 10 rows of the selected queued file parsed into ID (left) and Source Text (right) columns using your active separator.",
+                  "Verify your separator and skip regex here before starting batch translation."
+              )
+          ),
+          UiLanguage.TR to HelpTopicContent(
+              "CSV Yapı Önizleyici (İlk 10 Satır)",
+              listOf("Seçilen dosyanın ilk 10 satırını ID ve Kaynak Metin sütunlarına ayırarak çeviri öncesi yapıyı doğrulamanızı sağlar.")
+          )
+      ),
+      "secTelemetry" to mapOf(
+          UiLanguage.ID to HelpTopicContent(
+              "Grafik Kecepatan & Progres Real-Time",
+              listOf(
+                  "Menampilkan kurva kecepatan terjemahan (baris per detik) dan persentase kemajuan file yang sedang diproses secara langsung.",
+                  "Lonjakan kecepatan tinggi menandakan baris dipulihkan instan dari cache Auto-Resume."
+              )
+          ),
+          UiLanguage.EN to HelpTopicContent(
+              "Real-Time Speed & Progress Graph",
+              listOf(
+                  "Plots live translation throughput (lines per second) alongside completion percentage for the currently active CSV file.",
+                  "Sharp speed spikes indicate instant restoration from the on-device Auto-Resume cache."
+              )
+          ),
+          UiLanguage.TR to HelpTopicContent(
+              "Gerçek Zamanlı Hız ve İlerleme Grafiği",
+              listOf("İşlenmekte olan CSV dosyasının anlık çeviri hızını ve tamamlanma yüzdesini canlı olarak çizer.")
+          )
+      ),
+      "secExportSettings" to mapOf(
+          UiLanguage.ID to HelpTopicContent(
+              "Pengaturan Ekspor CSV & Encoding",
+              listOf(
+                  "Mengatur pemisah kolom (Koma, Tab, Titik Koma, atau Pipa '|') dan pengodean karakter (UTF-8 atau UTF-16) saat menyimpan file terjemahan.",
+                  "Untuk dipasang langsung ke mod Warband, disarankan tetap memakai '|' dan UTF-8. Gunakan Koma/Tab/Titik Koma atau UTF-16 jika ingin mengedit file di Excel atau software lain."
+              )
+          ),
+          UiLanguage.EN to HelpTopicContent(
+              "CSV Export Delimiter & Encoding",
+              listOf(
+                  "Configures the output column delimiter (Comma, Tab, Semicolon, or Warband Pipe '|') and character encoding (UTF-8 or UTF-16) used when saving files.",
+                  "Keep '|' and UTF-8 for direct Warband mod installation, or pick Comma/Tab/Semicolon for spreadsheet editing."
+              )
+          ),
+          UiLanguage.TR to HelpTopicContent(
+              "CSV Dışa Aktarma Ayarları",
+              listOf("Kaydedilen çeviri dosyaları için sütun ayracını (Virgül, Sekme, Noktalı Virgül veya '|') ve karakter kodlamasını (UTF-8 / UTF-16) seçmenizi sağlar.")
+          )
+      ),
+      "secHistory" to mapOf(
+          UiLanguage.ID to HelpTopicContent(
+              "Riwayat Sesi Terjemahan",
+              listOf(
+                  "Menyimpan daftar file CSV yang pernah diproses beserta waktu dan statusnya secara lokal di perangkat.",
+                  "Ketuk 'Buka Ulang' untuk memuat kembali file ke antrean penerjemah (termasuk hasil terjemahan atau cache Auto-Resume)."
+              )
+          ),
+          UiLanguage.EN to HelpTopicContent(
+              "Translation Session History",
+              listOf(
+                  "Stores local metadata (filename, timestamp, status) of processed CSV files.",
+                  "Tap 'Re-open' to load any past file back into the translation queue with its results or Auto-Resume cache."
+              )
+          ),
+          UiLanguage.TR to HelpTopicContent(
+              "Çeviri Oturum Geçmişi",
+              listOf("İşlenen CSV dosyalarının adını, zamanını ve durumunu saklar. Herhangi bir oturumu kuyruğa yeniden açabilirsiniz.")
           )
       )
   )

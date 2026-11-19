@@ -1,5 +1,6 @@
 package com.example.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -26,14 +26,25 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -43,6 +54,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -107,11 +121,18 @@ import com.example.ui.theme.ObsidianDeep
 import com.example.ui.theme.Parchment
 import com.example.ui.theme.ParchmentDim
 
+private enum class AppTab {
+  TRANSLATOR,
+  HISTORY,
+  SETTINGS
+}
+
 @Composable
 fun TranslatorScreen(
     viewModel: TranslatorViewModel,
     snackbarHostState: SnackbarHostState,
     onPickCsvFiles: () -> Unit,
+    onPickSingleCsvFile: () -> Unit,
     onImportGlossary: () -> Unit,
     onExportGlossary: () -> Unit,
     onExportErrorLog: () -> Unit,
@@ -120,22 +141,29 @@ fun TranslatorScreen(
 ) {
   val settings by viewModel.settings.collectAsStateWithLifecycle()
   val cacheCount by viewModel.cacheCount.collectAsStateWithLifecycle()
+  val historyEntries by viewModel.historyEntries.collectAsStateWithLifecycle()
   val fileQueue by viewModel.fileQueue.collectAsStateWithLifecycle()
   val progressState by viewModel.progressState.collectAsStateWithLifecycle()
   val previewRows by viewModel.previewRows.collectAsStateWithLifecycle()
+  val csvStructurePreview by viewModel.csvStructurePreview.collectAsStateWithLifecycle()
   val logs by viewModel.logs.collectAsStateWithLifecycle()
   val failedRows by viewModel.failedRows.collectAsStateWithLifecycle()
   val connectionStatus by viewModel.connectionStatus.collectAsStateWithLifecycle()
   val errorAlert by viewModel.errorAlert.collectAsStateWithLifecycle()
-  val pendingSaveFiles by viewModel.pendingSaveFiles.collectAsStateWithLifecycle()
+  val pendingExportPreviews by viewModel.pendingExportPreviews.collectAsStateWithLifecycle()
   val showSaveDialog by viewModel.showSaveDialog.collectAsStateWithLifecycle()
 
   val lang = settings.uiLanguage
   fun tr(key: String) = I18nStrings.get(lang, key)
 
+  var activeTab by remember { mutableStateOf(AppTab.TRANSLATOR) }
   var activeHelpTopicKey by remember { mutableStateOf<String?>(null) }
   var glossaryExpanded by remember { mutableStateOf(false) }
   var guideExpanded by remember { mutableStateOf(false) }
+
+  BackHandler(enabled = activeTab != AppTab.TRANSLATOR) {
+    activeTab = AppTab.TRANSLATOR
+  }
 
   val glossaryRules = remember(settings.glossaryText) {
     WarbandTextProcessor.parseGlossary(settings.glossaryText)
@@ -158,13 +186,67 @@ fun TranslatorScreen(
         )
       },
       bottomBar = {
-        AnimatedVisibility(visible = progressState.isRunning) {
-          StickyProgressControlBar(
-              progress = progressState,
-              pauseLabel = if (progressState.isPaused) tr("btnResume") else tr("btnPause"),
-              onTogglePause = { viewModel.togglePause() },
-              onStop = { viewModel.stopTranslation() }
-          )
+        Column(modifier = Modifier.fillMaxWidth()) {
+          AnimatedVisibility(visible = progressState.isRunning) {
+            StickyProgressControlBar(
+                progress = progressState,
+                pauseLabel = if (progressState.isPaused) tr("btnResume") else tr("btnPause"),
+                onTogglePause = { viewModel.togglePause() },
+                onStop = { viewModel.stopTranslation() }
+            )
+          }
+          HorizontalDivider(color = BurgundyBorder, thickness = 1.dp)
+          NavigationBar(
+              containerColor = MahoganyHeader,
+              contentColor = Parchment
+          ) {
+            val navColors = NavigationBarItemDefaults.colors(
+                selectedIconColor = GoldAccent,
+                selectedTextColor = GoldAccent,
+                indicatorColor = Burgundy.copy(alpha = 0.55f),
+                unselectedIconColor = ParchmentDim,
+                unselectedTextColor = ParchmentDim
+            )
+            NavigationBarItem(
+                selected = activeTab == AppTab.TRANSLATOR,
+                onClick = { activeTab = AppTab.TRANSLATOR },
+                icon = {
+                  Icon(
+                      imageVector = if (activeTab == AppTab.TRANSLATOR) Icons.Filled.Translate else Icons.Outlined.Translate,
+                      contentDescription = tr("tabTranslator")
+                  )
+                },
+                label = { Text(tr("tabTranslator"), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                colors = navColors,
+                modifier = Modifier.testTag("nav_tab_translator")
+            )
+            NavigationBarItem(
+                selected = activeTab == AppTab.HISTORY,
+                onClick = { activeTab = AppTab.HISTORY },
+                icon = {
+                  Icon(
+                      imageVector = if (activeTab == AppTab.HISTORY) Icons.Filled.History else Icons.Outlined.History,
+                      contentDescription = tr("tabHistory")
+                  )
+                },
+                label = { Text(tr("tabHistory"), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                colors = navColors,
+                modifier = Modifier.testTag("nav_tab_history")
+            )
+            NavigationBarItem(
+                selected = activeTab == AppTab.SETTINGS,
+                onClick = { activeTab = AppTab.SETTINGS },
+                icon = {
+                  Icon(
+                      imageVector = if (activeTab == AppTab.SETTINGS) Icons.Filled.Settings else Icons.Outlined.Settings,
+                      contentDescription = tr("tabSettings")
+                  )
+                },
+                label = { Text(tr("tabSettings"), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                colors = navColors,
+                modifier = Modifier.testTag("nav_tab_settings")
+            )
+          }
         }
       }
   ) { innerPadding ->
@@ -180,17 +262,48 @@ fun TranslatorScreen(
             )
             .padding(innerPadding)
     ) {
-      Column(
-          modifier = Modifier
-              .fillMaxSize()
-              .verticalScroll(rememberScrollState())
-              .padding(horizontal = 14.dp, vertical = 14.dp),
-          horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Column(
-            modifier = Modifier.widthIn(max = 720.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+      when (activeTab) {
+        AppTab.HISTORY -> {
+          HistoryScreenContent(
+              historyEntries = historyEntries,
+              isRunning = progressState.isRunning,
+              tr = ::tr,
+              onReopenEntry = { entry ->
+                viewModel.reopenHistoryEntry(entry) {
+                  activeTab = AppTab.TRANSLATOR
+                }
+              },
+              onDeleteEntry = { viewModel.deleteHistoryEntry(it) },
+              onClearAll = { viewModel.clearHistory() },
+              onOpenHelp = { activeHelpTopicKey = it }
+          )
+        }
+        AppTab.SETTINGS -> {
+          SettingsScreenContent(
+              settings = settings,
+              cacheCount = cacheCount,
+              tr = ::tr,
+              onSelectExportDelimiter = { viewModel.setExportDelimiter(it) },
+              onSelectExportEncoding = { viewModel.setExportEncoding(it) },
+              onExportPrefixChange = { viewModel.setExportFilenamePrefix(it) },
+              onExportSuffixChange = { viewModel.setExportFilenameSuffix(it) },
+              onSelectUiLanguage = { viewModel.setUiLanguage(it) },
+              onClearCache = { viewModel.clearCache() },
+              onOpenHelp = { activeHelpTopicKey = it }
+          )
+        }
+        AppTab.TRANSLATOR -> {
+          Column(
+              modifier = Modifier
+                  .fillMaxSize()
+                  .verticalScroll(rememberScrollState())
+                  .padding(horizontal = 14.dp, vertical = 14.dp),
+              horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            Column(
+                modifier = Modifier.widthIn(max = 720.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
           ErrorAlertBanner(
               alert = errorAlert,
               onDismiss = { viewModel.dismissErrorAlert() }
@@ -333,12 +446,29 @@ fun TranslatorScreen(
           // 4. Unggah & Antrean File CSV
           QueueSection(
               fileQueue = fileQueue,
+              selectedPreviewFileId = csvStructurePreview?.fileId,
               isRunning = progressState.isRunning,
+              exportPrefix = settings.exportFilenamePrefix,
+              exportSuffix = settings.exportFilenameSuffix,
               tr = ::tr,
               onPickFiles = onPickCsvFiles,
+              onPickSingleFile = onPickSingleCsvFile,
+              onSelectPreviewFile = { viewModel.selectPreviewFile(it) },
+              onMoveUp = { viewModel.moveQueueItemUp(it) },
+              onMoveDown = { viewModel.moveQueueItemDown(it) },
+              onRetryItem = { viewModel.retryQueueItem(it) },
               onClearQueue = { viewModel.clearQueue() },
               onRemoveItem = { viewModel.removeQueueItem(it) },
               onSaveItem = { viewModel.openSaveForSingleFile(it) },
+              onOpenHelp = { activeHelpTopicKey = it }
+          )
+
+          // 4b. Pratinjau Struktur CSV (10 Baris Pertama)
+          CsvPreviewerCard(
+              fileQueue = fileQueue,
+              preview = csvStructurePreview,
+              tr = ::tr,
+              onSelectFile = { viewModel.selectPreviewFile(it) },
               onOpenHelp = { activeHelpTopicKey = it }
           )
 
@@ -354,6 +484,13 @@ fun TranslatorScreen(
               onStop = { viewModel.stopTranslation() },
               onSaveAll = { viewModel.openSaveForAllDone() },
               onExportErrors = onExportErrorLog
+          )
+
+          // 5b. Grafik Kecepatan & Progres Real-Time
+          TelemetryChartCard(
+              progress = progressState,
+              tr = ::tr,
+              onOpenHelp = { activeHelpTopicKey = it }
           )
 
           // 6. Live Preview & Edit Cepat
@@ -434,7 +571,9 @@ fun TranslatorScreen(
             )
           }
 
-          Spacer(modifier = Modifier.height(if (progressState.isRunning) 72.dp else 16.dp))
+          Spacer(modifier = Modifier.height(16.dp))
+            }
+          }
         }
       }
     }
@@ -446,16 +585,17 @@ fun TranslatorScreen(
       onDismiss = { activeHelpTopicKey = null }
   )
 
-  SaveDestinationDialog(
+  ExportPreviewAndSaveDialog(
       visible = showSaveDialog,
-      fileCount = pendingSaveFiles.size,
-      title = tr("saveDialogTitle"),
-      description = tr("saveDialogDesc"),
-      downloadsLabel = tr("saveToDownloads"),
-      downloadsSub = tr("saveToDownloadsSub"),
-      folderLabel = tr("saveToFolder"),
-      folderSub = tr("saveToFolderSub"),
-      cancelLabel = tr("btnCancel"),
+      previewItems = pendingExportPreviews,
+      exportDelimiter = settings.exportDelimiter,
+      exportEncoding = settings.exportEncoding,
+      prefix = settings.exportFilenamePrefix,
+      suffix = settings.exportFilenameSuffix,
+      targetLang = settings.targetLang,
+      tr = ::tr,
+      onPrefixChange = { viewModel.setExportFilenamePrefix(it) },
+      onSuffixChange = { viewModel.setExportFilenameSuffix(it) },
       onSaveToDownloads = { viewModel.savePendingToDownloads() },
       onPickFolder = onPickSaveFolder,
       onDismiss = { viewModel.dismissSaveDialog() }
@@ -1044,9 +1184,17 @@ private fun FormatSection(
 @Composable
 private fun QueueSection(
     fileQueue: List<QueuedFileItem>,
+    selectedPreviewFileId: String?,
     isRunning: Boolean,
+    exportPrefix: String,
+    exportSuffix: String,
     tr: (String) -> String,
     onPickFiles: () -> Unit,
+    onPickSingleFile: () -> Unit,
+    onSelectPreviewFile: (String) -> Unit,
+    onMoveUp: (String) -> Unit,
+    onMoveDown: (String) -> Unit,
+    onRetryItem: (String) -> Unit,
     onClearQueue: () -> Unit,
     onRemoveItem: (String) -> Unit,
     onSaveItem: (QueuedFileItem) -> Unit,
@@ -1078,7 +1226,7 @@ private fun QueueSection(
 
     HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
 
-    // Dashed Dropzone CTA
+    // Dashed Dropzone CTA (OpenMultipleDocuments SAF)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -1096,7 +1244,7 @@ private fun QueueSection(
               )
             }
             .clickable(enabled = !isRunning) { onPickFiles() }
-            .padding(horizontal = 16.dp, vertical = 22.dp)
+            .padding(horizontal = 16.dp, vertical = 20.dp)
             .testTag("pick_csv_files_button"),
         contentAlignment = Alignment.Center
     ) {
@@ -1125,16 +1273,37 @@ private fun QueueSection(
       }
     }
 
+    Spacer(modifier = Modifier.height(8.dp))
+
+    OutlinedButton(
+        onClick = onPickSingleFile,
+        enabled = !isRunning,
+        border = BorderStroke(1.dp, BurgundyBorder),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = Color(0xFF170E0D),
+            contentColor = Parchment
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .minimumInteractiveComponentSize()
+            .testTag("pick_single_csv_button")
+    ) {
+      Icon(Icons.Default.NoteAdd, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(16.dp))
+      Spacer(modifier = Modifier.width(6.dp))
+      Text(tr("btnPickSingle"), fontSize = 12.sp)
+    }
+
     if (fileQueue.isNotEmpty()) {
       Spacer(modifier = Modifier.height(12.dp))
       val totalLines = fileQueue.sumOf { it.lines.size }
+      val doneFiles = fileQueue.count { it.status == FileQueueStatus.DONE }
       Row(
           modifier = Modifier.fillMaxWidth(),
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.SpaceBetween
       ) {
         Text(
-            text = "${fileQueue.size} file ($totalLines baris)",
+            text = "${fileQueue.size} file ($doneFiles/${fileQueue.size} selesai · $totalLines baris)",
             style = MaterialTheme.typography.labelSmall,
             color = ParchmentDim
         )
@@ -1148,85 +1317,171 @@ private fun QueueSection(
       }
 
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        fileQueue.forEach { item ->
-          Row(
+        fileQueue.forEachIndexed { index, item ->
+          val isSelectedForPreview = item.id == selectedPreviewFileId
+          val borderClr = if (isSelectedForPreview) GoldAccent else Color(0xFF3E231F)
+
+          Column(
               modifier = Modifier
                   .fillMaxWidth()
                   .clip(RoundedCornerShape(10.dp))
-                  .background(Color(0xFF170E0D))
-                  .border(1.dp, Color(0xFF3E231F), RoundedCornerShape(10.dp))
+                  .background(if (isSelectedForPreview) Color(0xFF211311) else Color(0xFF170E0D))
+                  .border(1.dp, borderClr, RoundedCornerShape(10.dp))
+                  .clickable { onSelectPreviewFile(item.id) }
                   .padding(horizontal = 12.dp, vertical = 10.dp)
                   .testTag("queue_item_${item.name}"),
-              verticalAlignment = Alignment.CenterVertically
+              verticalArrangement = Arrangement.spacedBy(6.dp)
           ) {
-            Column(modifier = Modifier.weight(1f)) {
-              Text(
-                  text = item.name,
-                  style = MaterialTheme.typography.titleSmall,
-                  color = Parchment,
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis
-              )
-              Text(
-                  text = "${item.lines.size} baris",
-                  style = MaterialTheme.typography.labelSmall,
-                  color = ParchmentDim
-              )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            val (badgeBg, badgeBorder, badgeTextColor, badgeLabel) = when (item.status) {
-              FileQueueStatus.WAIT -> Quad(Color(0xFF261715), BurgundyBorder, ParchmentDim, tr("stWait"))
-              FileQueueStatus.RUN -> Quad(AmberBg, GoldMuted, AmberText, tr("stRun"))
-              FileQueueStatus.DONE -> Quad(Color(0xFF0E2914), Forest, ForestText, tr("stDone"))
-              FileQueueStatus.ERROR -> Quad(Color(0xFF331015), Crimson, CrimsonText, tr("stErr"))
-            }
-
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = badgeBg,
-                border = BorderStroke(1.dp, badgeBorder)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-              Text(
-                  text = badgeLabel,
-                  color = badgeTextColor,
-                  style = MaterialTheme.typography.labelSmall,
-                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-              )
-            }
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${index + 1}. ${item.name}",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Parchment,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                val resumeInfo = if (item.status == FileQueueStatus.WAIT && item.cachedLinesCount > 0) {
+                  " · ${tr("autoResumeReady")}: ${item.cachedLinesCount}/${item.lines.size} (${item.resumePercentage}%)"
+                } else if (item.status == FileQueueStatus.RUN) {
+                  " · ${item.processedCount}/${item.lines.size} (${item.resumePercentage}%)"
+                } else {
+                  ""
+                }
+                Text(
+                    text = "${item.lines.size} baris$resumeInfo",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (item.cachedLinesCount > 0 && item.status == FileQueueStatus.WAIT) GoldAccent else ParchmentDim
+                )
+                val renamedOutput = WarbandTextProcessor.buildExportFileName(
+                    originalName = item.name,
+                    prefix = exportPrefix,
+                    suffix = exportSuffix
+                )
+                if (renamedOutput != item.name) {
+                  Text(
+                      text = "→ $renamedOutput",
+                      style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                      color = GoldAccent,
+                      maxLines = 1,
+                      overflow = TextOverflow.Ellipsis
+                  )
+                }
+              }
 
-            if (item.status == FileQueueStatus.DONE) {
-              Spacer(modifier = Modifier.width(6.dp))
-              OutlinedButton(
-                  onClick = { onSaveItem(item) },
-                  border = BorderStroke(1.dp, Forest),
-                  colors = ButtonDefaults.outlinedButtonColors(
-                      containerColor = Forest.copy(alpha = 0.45f),
-                      contentColor = ForestText
-                  ),
-                  contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                  modifier = Modifier
-                      .minimumInteractiveComponentSize()
-                      .testTag("save_file_${item.name}")
+              Spacer(modifier = Modifier.width(8.dp))
+
+              val (badgeBg, badgeBorder, badgeTextColor, badgeLabel) = when (item.status) {
+                FileQueueStatus.WAIT -> Quad(Color(0xFF261715), BurgundyBorder, ParchmentDim, tr("stWait"))
+                FileQueueStatus.RUN -> Quad(AmberBg, GoldMuted, AmberText, tr("stRun"))
+                FileQueueStatus.DONE -> Quad(Color(0xFF0E2914), Forest, ForestText, tr("stDone"))
+                FileQueueStatus.ERROR -> Quad(Color(0xFF331015), Crimson, CrimsonText, tr("stErr"))
+              }
+
+              Surface(
+                  shape = RoundedCornerShape(6.dp),
+                  color = badgeBg,
+                  border = BorderStroke(1.dp, badgeBorder)
               ) {
-                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(tr("btnDlFile"), fontSize = 11.sp)
+                Text(
+                    text = badgeLabel,
+                    color = badgeTextColor,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
               }
             }
 
-            if (!isRunning) {
-              IconButton(
-                  onClick = { onRemoveItem(item.id) },
-                  modifier = Modifier.testTag("remove_file_${item.name}")
-              ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Remove",
-                    tint = ParchmentDim,
-                    modifier = Modifier.size(18.dp)
-                )
+            if (item.resumePercentage > 0 && item.status != FileQueueStatus.DONE) {
+              LinearProgressIndicator(
+                  progress = { item.resumePercentage / 100f },
+                  color = if (item.status == FileQueueStatus.RUN) GoldAccent else GoldMuted,
+                  trackColor = Color(0xFF110808),
+                  modifier = Modifier
+                      .fillMaxWidth()
+                      .height(4.dp)
+                      .clip(CircleShape)
+              )
+            }
+
+            // Queue item quick action bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+              if (!isRunning && fileQueue.size > 1) {
+                IconButton(
+                    onClick = { onMoveUp(item.id) },
+                    enabled = index > 0,
+                    modifier = Modifier.testTag("move_up_${item.name}")
+                ) {
+                  Icon(
+                      imageVector = Icons.Default.ArrowUpward,
+                      contentDescription = "Move Up",
+                      tint = if (index > 0) ParchmentDim else ParchmentDim.copy(alpha = 0.25f),
+                      modifier = Modifier.size(18.dp)
+                  )
+                }
+                IconButton(
+                    onClick = { onMoveDown(item.id) },
+                    enabled = index < fileQueue.lastIndex,
+                    modifier = Modifier.testTag("move_down_${item.name}")
+                ) {
+                  Icon(
+                      imageVector = Icons.Default.ArrowDownward,
+                      contentDescription = "Move Down",
+                      tint = if (index < fileQueue.lastIndex) ParchmentDim else ParchmentDim.copy(alpha = 0.25f),
+                      modifier = Modifier.size(18.dp)
+                  )
+                }
+              }
+
+              if (!isRunning && item.status == FileQueueStatus.ERROR) {
+                OutlinedButton(
+                    onClick = { onRetryItem(item.id) },
+                    border = BorderStroke(1.dp, GoldMuted),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.minimumInteractiveComponentSize()
+                ) {
+                  Icon(Icons.Default.Refresh, contentDescription = "Retry", tint = GoldAccent, modifier = Modifier.size(14.dp))
+                }
+              }
+
+              if (item.status == FileQueueStatus.DONE) {
+                OutlinedButton(
+                    onClick = { onSaveItem(item) },
+                    border = BorderStroke(1.dp, Forest),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Forest.copy(alpha = 0.45f),
+                        contentColor = ForestText
+                    ),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .testTag("save_file_${item.name}")
+                ) {
+                  Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
+                  Spacer(modifier = Modifier.width(4.dp))
+                  Text(tr("btnDlFile"), fontSize = 11.sp)
+                }
+              }
+
+              if (!isRunning) {
+                IconButton(
+                    onClick = { onRemoveItem(item.id) },
+                    modifier = Modifier.testTag("remove_file_${item.name}")
+                ) {
+                  Icon(
+                      imageVector = Icons.Default.Close,
+                      contentDescription = "Remove",
+                      tint = ParchmentDim,
+                      modifier = Modifier.size(18.dp)
+                  )
+                }
               }
             }
           }
@@ -1384,22 +1639,45 @@ private fun ControlsAndProgressSection(
     }
 
     if (hasDoneFiles) {
-      Button(
-          onClick = onSaveAll,
-          colors = ButtonDefaults.buttonColors(
-              containerColor = Forest.copy(alpha = 0.65f),
-              contentColor = ForestText
-          ),
-          border = BorderStroke(1.dp, Forest),
-          shape = RoundedCornerShape(12.dp),
-          modifier = Modifier
-              .fillMaxWidth()
-              .height(48.dp)
-              .testTag("save_all_button")
+      Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(tr("btnDlAll"))
+        OutlinedButton(
+            onClick = onSaveAll,
+            border = BorderStroke(1.dp, GoldMuted),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Burgundy.copy(alpha = 0.35f),
+                contentColor = GoldAccent
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+                .testTag("preview_export_button")
+        ) {
+          Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(tr("btnPreviewExport"), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+        }
+
+        Button(
+            onClick = onSaveAll,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Forest.copy(alpha = 0.65f),
+                contentColor = ForestText
+            ),
+            border = BorderStroke(1.dp, Forest),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+                .testTag("save_all_button")
+        ) {
+          Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(tr("btnDlAll"), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 12.sp)
+        }
       }
     }
 
@@ -1616,9 +1894,7 @@ private fun StickyProgressControlBar(
       color = Color(0xFF160D0C).copy(alpha = 0.96f),
       border = BorderStroke(1.dp, GoldAccent),
       shadowElevation = 12.dp,
-      modifier = Modifier
-          .fillMaxWidth()
-          .navigationBarsPadding()
+      modifier = Modifier.fillMaxWidth()
   ) {
     Row(
         modifier = Modifier

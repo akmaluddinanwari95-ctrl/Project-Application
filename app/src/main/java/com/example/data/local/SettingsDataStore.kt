@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.domain.ExportDelimiter
+import com.example.domain.ExportEncoding
 import com.example.domain.TranslationEngine
 import com.example.domain.TranslatorSettings
 import com.example.domain.UiLanguage
@@ -29,6 +31,10 @@ class SettingsDataStore(private val context: Context) {
     val STRIP_TAG = stringPreferencesKey("strip_tag")
     val SKIP_REGEX = stringPreferencesKey("skip_regex")
     val GLOSSARY_TEXT = stringPreferencesKey("glossary_text")
+    val EXPORT_DELIMITER = stringPreferencesKey("export_delimiter")
+    val EXPORT_ENCODING = stringPreferencesKey("export_encoding")
+    val EXPORT_FILENAME_PREFIX = stringPreferencesKey("export_filename_prefix")
+    val EXPORT_FILENAME_SUFFIX = stringPreferencesKey("export_filename_suffix")
   }
 
   val settingsFlow: Flow<TranslatorSettings> =
@@ -43,7 +49,11 @@ class SettingsDataStore(private val context: Context) {
             separator = prefs[Keys.SEPARATOR] ?: "|",
             stripTag = prefs[Keys.STRIP_TAG] ?: "{***}",
             skipRegex = prefs[Keys.SKIP_REGEX] ?: "^\\d+$",
-            glossaryText = prefs[Keys.GLOSSARY_TEXT] ?: ""
+            glossaryText = prefs[Keys.GLOSSARY_TEXT] ?: "",
+            exportDelimiter = ExportDelimiter.fromId(prefs[Keys.EXPORT_DELIMITER] ?: "pipe"),
+            exportEncoding = ExportEncoding.fromId(prefs[Keys.EXPORT_ENCODING] ?: "utf8"),
+            exportFilenamePrefix = prefs[Keys.EXPORT_FILENAME_PREFIX] ?: "",
+            exportFilenameSuffix = prefs[Keys.EXPORT_FILENAME_SUFFIX] ?: ""
         )
       }
 
@@ -59,7 +69,11 @@ class SettingsDataStore(private val context: Context) {
           separator = prefs[Keys.SEPARATOR] ?: "|",
           stripTag = prefs[Keys.STRIP_TAG] ?: "{***}",
           skipRegex = prefs[Keys.SKIP_REGEX] ?: "^\\d+$",
-          glossaryText = prefs[Keys.GLOSSARY_TEXT] ?: ""
+          glossaryText = prefs[Keys.GLOSSARY_TEXT] ?: "",
+          exportDelimiter = ExportDelimiter.fromId(prefs[Keys.EXPORT_DELIMITER] ?: "pipe"),
+          exportEncoding = ExportEncoding.fromId(prefs[Keys.EXPORT_ENCODING] ?: "utf8"),
+          exportFilenamePrefix = prefs[Keys.EXPORT_FILENAME_PREFIX] ?: "",
+          exportFilenameSuffix = prefs[Keys.EXPORT_FILENAME_SUFFIX] ?: ""
       )
       val updated = transform(current)
       prefs[Keys.UI_LANG] = updated.uiLanguage.code
@@ -72,6 +86,10 @@ class SettingsDataStore(private val context: Context) {
       prefs[Keys.STRIP_TAG] = updated.stripTag
       prefs[Keys.SKIP_REGEX] = updated.skipRegex
       prefs[Keys.GLOSSARY_TEXT] = updated.glossaryText
+      prefs[Keys.EXPORT_DELIMITER] = updated.exportDelimiter.id
+      prefs[Keys.EXPORT_ENCODING] = updated.exportEncoding.id
+      prefs[Keys.EXPORT_FILENAME_PREFIX] = updated.exportFilenamePrefix
+      prefs[Keys.EXPORT_FILENAME_SUFFIX] = updated.exportFilenameSuffix
     }
   }
 }

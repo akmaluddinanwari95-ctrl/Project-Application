@@ -37,6 +37,12 @@ class MainActivity : ComponentActivity() {
           }
         }
 
+        val singleCsvPickerLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+          uri?.let { viewModel.handlePickedFiles(listOf(it)) }
+        }
+
         val glossaryImportLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.OpenDocument()
         ) { uri ->
@@ -87,13 +93,24 @@ class MainActivity : ComponentActivity() {
           }
         }
 
+        val csvMimeTypes = arrayOf(
+            "text/csv",
+            "text/comma-separated-values",
+            "application/csv",
+            "text/tab-separated-values",
+            "text/plain",
+            "text/*",
+            "application/octet-stream"
+        )
+
         TranslatorScreen(
             viewModel = viewModel,
             snackbarHostState = snackbarHostState,
             onPickCsvFiles = {
-              csvPickerLauncher.launch(
-                  arrayOf("text/*", "text/csv", "text/comma-separated-values", "application/octet-stream")
-              )
+              csvPickerLauncher.launch(csvMimeTypes)
+            },
+            onPickSingleCsvFile = {
+              singleCsvPickerLauncher.launch(csvMimeTypes)
             },
             onImportGlossary = {
               glossaryImportLauncher.launch(arrayOf("text/plain", "text/*"))

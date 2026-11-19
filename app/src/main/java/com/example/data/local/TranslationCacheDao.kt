@@ -13,6 +13,9 @@ interface TranslationCacheDao {
   )
   suspend fun getTranslation(targetLang: String, sourceText: String): String?
 
+  @Query("SELECT sourceText FROM translation_cache WHERE targetLang = :targetLang")
+  suspend fun getCachedSourcesForLang(targetLang: String): List<String>
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun upsert(entry: TranslationCacheEntity)
 

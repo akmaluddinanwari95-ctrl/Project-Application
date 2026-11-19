@@ -3,6 +3,8 @@ package com.example.service
 import android.content.Context
 import com.example.data.local.AppDatabase
 import com.example.data.local.TranslationCacheEntity
+import com.example.data.local.TranslationHistoryEntity
+import com.example.data.local.TranslationHistoryRepository
 import com.example.data.remote.TranslationApiClient
 import com.example.domain.ConnectionBadgeType
 import com.example.domain.ConnectionStatus
@@ -12,6 +14,7 @@ import com.example.domain.LogEntry
 import com.example.domain.LogLevel
 import com.example.domain.PreviewRow
 import com.example.domain.QueuedFileItem
+import com.example.domain.TelemetrySample
 import com.example.domain.TranslationEngine
 import com.example.domain.TranslationProgressState
 import com.example.domain.TranslatorSettings
@@ -21,11 +24,13 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 
 object TranslationCoordinator {
   private val apiClient = TranslationApiClient()
@@ -73,9 +78,91 @@ object TranslationCoordinator {
     }
   }
 
+  fun enqueueRestoredItem(restored: QueuedFileItem) {
+    _fileQueue.update { it + restored }
+    if (restored.results.isNotEmpty()) {
+      _activePreviewFileId.value = restored.id
+      refreshPreviewFromLists(restored.lines, restored.results)
+    }
+    appendLog("Dibuka kembali dari riwayat: ${restored.name} (${restored.lines.size} baris)", LogLevel.INFO)
+  }
+
+  suspend fun refreshAutoResumeCounts(context: Context, settings: TranslatorSettings) {
+    val queueSnapshot = _fileQueue.value
+    if (queueSnapshot.isEmpty()) return
+
+    val cachedSet = withContext(Dispatchers.IO) {
+      AppDatabase.getInstance(context)
+          .translationCacheDao()
+          .getCachedSourcesForLang(settings.targetLang)
+          .toHashSet()
+    }
+    val sep = settings.separator.ifEmpty { "|" }
+
+    val updated = withContext(Dispatchers.Default) {
+      queueSnapshot.map { item ->
+        if (item.status == FileQueueStatus.DONE) {
+          item.copy(cachedLinesCount = item.lines.size, processedCount = item.lines.size)
+        } else {
+          var cachedMatches = 0
+          item.lines.forEach { raw ->
+            if (WarbandTextProcessor.matchesSkipRegex(raw, settings.skipRegex)) {
+              cachedMatches++
+            } else {
+              val split = WarbandTextProcessor.splitLine(raw, sep, settings.stripTag)
+              if (split.textPart.isEmpty() || cachedSet.contains(split.textPart)) {
+                cachedMatches++
+              }
+            }
+          }
+          item.copy(cachedLinesCount = cachedMatches)
+        }
+      }
+    }
+
+    _fileQueue.update { current ->
+      val byId = updated.associateBy { it.id }
+      current.map { existing ->
+        val calculated = byId[existing.id]
+        if (calculated != null && existing.status != FileQueueStatus.RUN) {
+          existing.copy(cachedLinesCount = calculated.cachedLinesCount)
+        } else {
+          existing
+        }
+      }
+    }
+  }
+
   fun removeQueueItem(id: String) {
     if (_progressState.value.isRunning) return
     _fileQueue.update { list -> list.filterNot { it.id == id } }
+  }
+
+  fun moveQueueItem(id: String, delta: Int) {
+    if (_progressState.value.isRunning) return
+    _fileQueue.update { list ->
+      val idx = list.indexOfFirst { it.id == id }
+      if (idx == -1) return@update list
+      val target = (idx + delta).coerceIn(0, list.lastIndex)
+      if (target == idx) return@update list
+      val mutable = list.toMutableList()
+      val item = mutable.removeAt(idx)
+      mutable.add(target, item)
+      mutable
+    }
+  }
+
+  fun retryQueueItem(id: String) {
+    if (_progressState.value.isRunning) return
+    _fileQueue.update { list ->
+      list.map { item ->
+        if (item.id == id) {
+          item.copy(status = FileQueueStatus.WAIT, errorMessage = null)
+        } else {
+          item
+        }
+      }
+    }
   }
 
   fun clearQueue() {
@@ -175,7 +262,9 @@ object TranslationCoordinator {
     val pendingFiles = _fileQueue.value.filter { it.status == FileQueueStatus.WAIT }
     if (pendingFiles.isEmpty()) return
 
-    val dao = AppDatabase.getInstance(context).translationCacheDao()
+    val db = AppDatabase.getInstance(context)
+    val dao = db.translationCacheDao()
+    val historyRepo = TranslationHistoryRepository(db.translationHistoryDao())
     isPausedFlag.set(false)
     shouldStopFlag.set(false)
     _failedRows.value = emptyList()
@@ -185,7 +274,7 @@ object TranslationCoordinator {
     val sep = settings.separator.ifEmpty { "|" }
 
     appendLog(
-        "Memulai terjemahan ${pendingFiles.size} file menggunakan ${settings.engine.displayName}...",
+        "Memulai batch ${pendingFiles.size} file menggunakan ${settings.engine.displayName}...",
         LogLevel.OK
     )
 
@@ -194,14 +283,100 @@ object TranslationCoordinator {
     for ((fIdx, pendingItem) in pendingFiles.withIndex()) {
       if (shouldStopFlag.get()) break
 
-      updateQueueItem(pendingItem.id) { it.copy(status = FileQueueStatus.RUN, results = emptyList()) }
+      updateQueueItem(pendingItem.id) {
+        it.copy(status = FileQueueStatus.RUN, results = emptyList(), processedCount = 0, errorMessage = null)
+      }
       _activePreviewFileId.value = pendingItem.id
 
       val lines = pendingItem.lines
       val total = lines.size
       val results = ArrayList<String>(total)
       var cacheHits = 0
-      val startTimeMs = System.currentTimeMillis()
+      var activeElapsedMs = 0L
+      var lastTickMs = System.currentTimeMillis()
+      var lastSampleMs = 0L
+      var peakSpeed = 0f
+      val samples = mutableListOf(
+          TelemetrySample(
+              elapsedSec = 0f,
+              speedLinesPerSec = 0f,
+              progressPercent = 0f,
+              processedLines = 0
+          )
+      )
+      val windowEvents = ArrayDeque<Pair<Long, Int>>() // (activeMs, processedCount)
+
+      fun sampleTelemetry(done: Int, forceSample: Boolean): TranslationProgressState {
+        val now = System.currentTimeMillis()
+        activeElapsedMs += (now - lastTickMs).coerceAtLeast(0L)
+        lastTickMs = now
+
+        windowEvents.addLast(activeElapsedMs to done)
+        while (windowEvents.size > 1 && (activeElapsedMs - windowEvents.first().first) > 4000L) {
+          windowEvents.removeFirst()
+        }
+
+        val instantSpeed = if (windowEvents.size >= 2) {
+          val dtSec = (windowEvents.last().first - windowEvents.first().first) / 1000f
+          val dLines = (windowEvents.last().second - windowEvents.first().second).coerceAtLeast(0)
+          if (dtSec > 0.15f) dLines / dtSec else {
+            val totalSec = (activeElapsedMs / 1000f).coerceAtLeast(0.2f)
+            done / totalSec
+          }
+        } else {
+          val totalSec = (activeElapsedMs / 1000f).coerceAtLeast(0.2f)
+          if (done > 0) done / totalSec else 0f
+        }
+
+        if (instantSpeed > peakSpeed && done > 2) {
+          peakSpeed = instantSpeed
+        }
+
+        val pct = if (total > 0) ((done.toFloat() / total) * 100f).coerceIn(0f, 100f) else 0f
+        if (forceSample || (activeElapsedMs - lastSampleMs) >= 350L) {
+          lastSampleMs = activeElapsedMs
+          samples.add(
+              TelemetrySample(
+                  elapsedSec = activeElapsedMs / 1000f,
+                  speedLinesPerSec = instantSpeed,
+                  progressPercent = pct,
+                  processedLines = done
+              )
+          )
+          if (samples.size > 48) {
+            samples.removeAt(0)
+          }
+        }
+
+        val avgSpeed = if (activeElapsedMs > 1000L && done > 3) {
+          done / (activeElapsedMs / 1000.0)
+        } else {
+          instantSpeed.toDouble()
+        }
+        val etaStr = if (done > 3 && avgSpeed > 0.05 && total > done) {
+          val remSec = ((total - done) / avgSpeed).toLong().coerceAtLeast(0L)
+          val mins = remSec / 60
+          val secs = remSec % 60
+          "~${mins}m ${secs}d"
+        } else {
+          ""
+        }
+
+        return TranslationProgressState(
+            isRunning = true,
+            isPaused = isPausedFlag.get(),
+            currentFileIndex = fIdx + 1,
+            totalPendingFiles = pendingFiles.size,
+            currentFileName = pendingItem.name,
+            processedLines = done,
+            totalLines = total,
+            cacheHits = cacheHits,
+            etaText = etaStr,
+            currentSpeedLinesPerSec = instantSpeed,
+            peakSpeedLinesPerSec = peakSpeed,
+            telemetrySamples = samples.toList()
+        )
+      }
 
       val initialProgress = TranslationProgressState(
           isRunning = true,
@@ -212,14 +387,20 @@ object TranslationCoordinator {
           processedLines = 0,
           totalLines = total,
           cacheHits = 0,
-          etaText = ""
+          etaText = "",
+          currentSpeedLinesPerSec = 0f,
+          peakSpeedLinesPerSec = 0f,
+          telemetrySamples = samples.toList()
       )
       _progressState.value = initialProgress
       onProgressUpdate(initialProgress)
 
       for (i in lines.indices) {
-        while (isPausedFlag.get() && !shouldStopFlag.get()) {
-          delay(250L)
+        if (isPausedFlag.get() && !shouldStopFlag.get()) {
+          while (isPausedFlag.get() && !shouldStopFlag.get()) {
+            delay(250L)
+          }
+          lastTickMs = System.currentTimeMillis()
         }
         if (shouldStopFlag.get()) break
 
@@ -227,17 +408,13 @@ object TranslationCoordinator {
 
         if (WarbandTextProcessor.matchesSkipRegex(originalLine, settings.skipRegex)) {
           results.add(originalLine)
-          val p = buildProgress(
-              fIdx + 1,
-              pendingFiles.size,
-              pendingItem.name,
-              i + 1,
-              total,
-              cacheHits,
-              startTimeMs
-          )
+          val force = (i == total - 1) || ((i + 1) % 25 == 0)
+          val p = sampleTelemetry(i + 1, forceSample = force)
           _progressState.value = p
-          if ((i + 1) % 5 == 0 || i == total - 1) onProgressUpdate(p)
+          if ((i + 1) % 10 == 0 || i == total - 1) {
+            updateQueueItem(pendingItem.id) { it.copy(processedCount = i + 1) }
+            onProgressUpdate(p)
+          }
           continue
         }
 
@@ -246,17 +423,13 @@ object TranslationCoordinator {
           val emptyOut = if (split.hasCode) "${split.codePart}$sep" else ""
           results.add(emptyOut)
           cacheHits++
-          val p = buildProgress(
-              fIdx + 1,
-              pendingFiles.size,
-              pendingItem.name,
-              i + 1,
-              total,
-              cacheHits,
-              startTimeMs
-          )
+          val force = (i == total - 1) || ((i + 1) % 25 == 0)
+          val p = sampleTelemetry(i + 1, forceSample = force)
           _progressState.value = p
-          if ((i + 1) % 5 == 0 || i == total - 1) onProgressUpdate(p)
+          if ((i + 1) % 10 == 0 || i == total - 1) {
+            updateQueueItem(pendingItem.id) { it.copy(processedCount = i + 1, cachedLinesCount = maxOf(it.cachedLinesCount, cacheHits)) }
+            onProgressUpdate(p)
+          }
           continue
         }
 
@@ -265,18 +438,17 @@ object TranslationCoordinator {
           val out = if (split.hasCode) "${split.codePart}$sep$cached" else cached
           results.add(out)
           cacheHits++
-          val p = buildProgress(
-              fIdx + 1,
-              pendingFiles.size,
-              pendingItem.name,
-              i + 1,
-              total,
-              cacheHits,
-              startTimeMs
-          )
+          val force = (i == total - 1) || ((i + 1) % 25 == 0)
+          val p = sampleTelemetry(i + 1, forceSample = force)
           _progressState.value = p
           if ((i + 1) % 5 == 0 || i == total - 1) {
-            updateQueueItem(pendingItem.id) { it.copy(results = results.toList()) }
+            updateQueueItem(pendingItem.id) {
+              it.copy(
+                  results = results.toList(),
+                  processedCount = i + 1,
+                  cachedLinesCount = maxOf(it.cachedLinesCount, cacheHits)
+              )
+            }
             refreshPreviewFromLists(lines, results)
             onProgressUpdate(p)
           }
@@ -368,24 +540,23 @@ object TranslationCoordinator {
 
         results.add(finalOut)
 
-        if (pendingBuffer.size >= 25) {
+        if (pendingBuffer.size >= 15) {
           dao.upsertAll(pendingBuffer.toList())
           pendingBuffer.clear()
         }
 
-        val p = buildProgress(
-            fIdx + 1,
-            pendingFiles.size,
-            pendingItem.name,
-            i + 1,
-            total,
-            cacheHits,
-            startTimeMs
-        )
+        val force = (i == total - 1)
+        val p = sampleTelemetry(i + 1, forceSample = force)
         _progressState.value = p
 
-        if ((i + 1) % 5 == 0 || i == total - 1) {
-          updateQueueItem(pendingItem.id) { it.copy(results = results.toList()) }
+        if ((i + 1) % 3 == 0 || i == total - 1) {
+          updateQueueItem(pendingItem.id) {
+            it.copy(
+                results = results.toList(),
+                processedCount = i + 1,
+                cachedLinesCount = maxOf(it.cachedLinesCount, results.size)
+            )
+          }
           refreshPreviewFromLists(lines, results)
           onProgressUpdate(p)
         }
@@ -400,18 +571,64 @@ object TranslationCoordinator {
       dao.trimOldEntries(15000)
 
       if (!shouldStopFlag.get()) {
+        val completedResults = results.toList()
         updateQueueItem(pendingItem.id) {
-          it.copy(status = FileQueueStatus.DONE, results = results.toList())
+          it.copy(
+              status = FileQueueStatus.DONE,
+              results = completedResults,
+              processedCount = total,
+              cachedLinesCount = total
+          )
         }
-        refreshPreviewFromLists(lines, results)
+        refreshPreviewFromLists(lines, completedResults)
         appendLog("Selesai: ${pendingItem.name} ($total baris)", LogLevel.OK)
+
+        val srcJoin = lines.joinToString("\n").let { if (it.length <= 500_000) it else "" }
+        val trJoin = completedResults.joinToString("\n").let { if (it.length <= 500_000) it else "" }
+        historyRepo.recordSession(
+            TranslationHistoryEntity(
+                fileName = pendingItem.name,
+                timestamp = System.currentTimeMillis(),
+                status = "DONE",
+                uriString = pendingItem.uriString,
+                totalLines = total,
+                processedLines = total,
+                sourceLang = settings.sourceLang,
+                targetLang = settings.targetLang,
+                engineName = settings.engine.displayName,
+                sourceSnapshot = srcJoin,
+                translatedSnapshot = trJoin
+            )
+        )
       } else {
         updateQueueItem(pendingItem.id) {
-          it.copy(status = FileQueueStatus.WAIT, results = emptyList())
+          it.copy(
+              status = FileQueueStatus.WAIT,
+              results = emptyList(),
+              processedCount = results.size,
+              cachedLinesCount = maxOf(it.cachedLinesCount, results.size)
+          )
         }
         appendLog(
-            "Dibatalkan pada ${pendingItem.name}. Progres tersimpan di cache!",
+            "Dijeda/Dihentikan pada ${pendingItem.name} (${results.size}/$total baris). Auto-Resume siap!",
             LogLevel.WARN
+        )
+
+        val srcJoin = lines.joinToString("\n").let { if (it.length <= 500_000) it else "" }
+        historyRepo.recordSession(
+            TranslationHistoryEntity(
+                fileName = pendingItem.name,
+                timestamp = System.currentTimeMillis(),
+                status = "STOPPED",
+                uriString = pendingItem.uriString,
+                totalLines = total,
+                processedLines = results.size,
+                sourceLang = settings.sourceLang,
+                targetLang = settings.targetLang,
+                engineName = settings.engine.displayName,
+                sourceSnapshot = srcJoin,
+                translatedSnapshot = ""
+            )
         )
       }
     }
@@ -420,41 +637,10 @@ object TranslationCoordinator {
     isPausedFlag.set(false)
     shouldStopFlag.set(false)
     _progressState.update { it.copy(isRunning = false, isPaused = false) }
+    refreshAutoResumeCounts(context, settings)
     if (!stoppedByUser) {
-      _completionToast.value = "Semua file selesai diterjemahkan!"
+      _completionToast.value = "Semua file dalam antrean selesai diterjemahkan!"
     }
-  }
-
-  private fun buildProgress(
-      fileIdx: Int,
-      totalFiles: Int,
-      fileName: String,
-      done: Int,
-      total: Int,
-      cacheHits: Int,
-      startTimeMs: Long
-  ): TranslationProgressState {
-    val elapsedSec = (System.currentTimeMillis() - startTimeMs) / 1000.0
-    val etaStr = if (done > 5 && elapsedSec > 1.0 && total > done) {
-      val rate = done / elapsedSec
-      val remSec = ((total - done) / rate).toLong().coerceAtLeast(0L)
-      val mins = remSec / 60
-      val secs = remSec % 60
-      "~${mins}m ${secs}d"
-    } else {
-      ""
-    }
-    return TranslationProgressState(
-        isRunning = true,
-        isPaused = isPausedFlag.get(),
-        currentFileIndex = fileIdx,
-        totalPendingFiles = totalFiles,
-        currentFileName = fileName,
-        processedLines = done,
-        totalLines = total,
-        cacheHits = cacheHits,
-        etaText = etaStr
-    )
   }
 
   private fun updateQueueItem(id: String, transform: (QueuedFileItem) -> QueuedFileItem) {

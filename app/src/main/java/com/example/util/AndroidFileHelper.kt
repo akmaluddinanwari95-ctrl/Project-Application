@@ -12,6 +12,7 @@ import com.example.domain.FileQueueStatus
 import com.example.domain.QueuedFileItem
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +48,7 @@ object AndroidFileHelper {
             return@forEach
           }
           try {
+            takePersistableReadPermission(context, uri)
             val content = readTextFromUri(context, uri)
             val lines = content
                 .replace("\r\n", "\n")
@@ -58,6 +60,7 @@ object AndroidFileHelper {
                 QueuedFileItem(
                     id = UUID.randomUUID().toString(),
                     name = displayName,
+                    uriString = uri.toString(),
                     lines = lines,
                     results = emptyList(),
                     status = FileQueueStatus.WAIT
@@ -71,25 +74,48 @@ object AndroidFileHelper {
         FileReadOutcome(loaded = loaded, rejectedNames = rejected, failedNames = failed)
       }
 
+  fun takePersistableReadPermission(context: Context, uri: Uri) {
+    try {
+      context.contentResolver.takePersistableUriPermission(
+          uri,
+          android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+      )
+    } catch (_: SecurityException) {
+      // Some providers (e.g., temporary document URIs) do not support persistable grants
+    } catch (_: Exception) {
+    }
+  }
+
   suspend fun readTextFromUri(context: Context, uri: Uri): String =
       withContext(Dispatchers.IO) {
         context.contentResolver.openInputStream(uri)?.use { stream ->
-          BufferedReader(InputStreamReader(stream, StandardCharsets.UTF_8)).readText()
+          val bytes = stream.readBytes()
+          val detectedCharset = when {
+            bytes.size >= 2 && bytes[0] == 0xFE.toByte() && bytes[1] == 0xFF.toByte() -> StandardCharsets.UTF_16BE
+            bytes.size >= 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xFE.toByte() -> StandardCharsets.UTF_16LE
+            else -> StandardCharsets.UTF_8
+          }
+          String(bytes, detectedCharset).removePrefix("\uFEFF")
         } ?: throw IllegalStateException("Tidak dapat membuka file")
       }
 
-  suspend fun writeTextToUri(context: Context, uri: Uri, content: String) =
-      withContext(Dispatchers.IO) {
-        context.contentResolver.openOutputStream(uri, "wt")?.use { out ->
-          out.write(content.toByteArray(StandardCharsets.UTF_8))
-          out.flush()
-        } ?: throw IllegalStateException("Gagal menulis ke file tujuan")
-      }
+  suspend fun writeTextToUri(
+      context: Context,
+      uri: Uri,
+      content: String,
+      charset: Charset = StandardCharsets.UTF_8
+  ) = withContext(Dispatchers.IO) {
+    context.contentResolver.openOutputStream(uri, "wt")?.use { out ->
+      out.write(content.toByteArray(charset))
+      out.flush()
+    } ?: throw IllegalStateException("Gagal menulis ke file tujuan")
+  }
 
   suspend fun saveToDownloads(
       context: Context,
       files: List<Pair<String, String>>,
-      mimeType: String = "text/csv"
+      mimeType: String = "text/csv",
+      charset: Charset = StandardCharsets.UTF_8
   ): SaveOutcome = withContext(Dispatchers.IO) {
     if (files.isEmpty()) return@withContext SaveOutcome.Failed("Tidak ada file untuk disimpan")
 
@@ -114,7 +140,7 @@ object AndroidFileHelper {
 
         try {
           resolver.openOutputStream(uri, "w")?.use { out ->
-            out.write(content.toByteArray(StandardCharsets.UTF_8))
+            out.write(content.toByteArray(charset))
             out.flush()
           } ?: throw IllegalStateException("Gagal menulis isi $fileName")
 
@@ -138,7 +164,8 @@ object AndroidFileHelper {
   suspend fun saveToFolderTree(
       context: Context,
       treeUri: Uri,
-      files: List<Pair<String, String>>
+      files: List<Pair<String, String>>,
+      charset: Charset = StandardCharsets.UTF_8
   ): SaveOutcome = withContext(Dispatchers.IO) {
     if (files.isEmpty()) return@withContext SaveOutcome.Failed("Tidak ada file untuk disimpan")
 
@@ -161,7 +188,7 @@ object AndroidFileHelper {
             ?: throw IllegalStateException("Gagal membuat file $fileName di folder pilihan")
 
         resolver.openOutputStream(targetUri, "wt")?.use { out ->
-          out.write(content.toByteArray(StandardCharsets.UTF_8))
+          out.write(content.toByteArray(charset))
           out.flush()
         } ?: throw IllegalStateException("Gagal menulis $fileName")
 
