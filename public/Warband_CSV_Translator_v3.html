@@ -1,0 +1,2814 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warband CSV Translator v3 — Alat Terjemahan Mod Tanpa API Key</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          obsidian: '#120A0A',
+          obsidianDeep: '#0D0707',
+          mahogany: '#1D1110',
+          mahoganyLight: '#281715',
+          burgundy: '#663A32',
+          burgundyHover: '#7E483E',
+          parchment: '#EADCC2',
+          parchmentDim: '#C2B194',
+          goldAccent: '#D4AF37',
+          goldMuted: '#9A7D4A',
+          forest: '#2E5A27',
+          crimson: '#8B2635'
+        },
+        fontFamily: {
+          medieval: ['Cinzel', 'serif'],
+          serifBody: ['Crimson Pro', 'Georgia', 'serif'],
+          sans: ['Inter', 'sans-serif']
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body {
+    background-color: #120A0A;
+    background-image:
+      radial-gradient(ellipse 80% 45% at 50% 0%, rgba(102, 58, 50, 0.28) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 100% 100%, rgba(74, 38, 32, 0.18) 0%, transparent 60%);
+    color: #EADCC2;
+    font-family: 'Inter', sans-serif;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #140B0B; }
+  ::-webkit-scrollbar-thumb { background: #4A2A24; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #663A32; }
+
+  .card-medieval {
+    background: linear-gradient(165deg, #1E1211 0%, #160D0C 100%);
+    border: 1px solid #4A2A24;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(234, 220, 194, 0.08);
+  }
+
+  .btn-gold {
+    background: linear-gradient(135deg, #754339 0%, #522C25 100%);
+    border: 1px solid #9A7D4A;
+    color: #EADCC2;
+    transition: all 0.2s ease;
+  }
+  .btn-gold:hover:not(:disabled) {
+    background: linear-gradient(135deg, #8B5044 0%, #66372E 100%);
+    border-color: #EADCC2;
+    box-shadow: 0 0 16px rgba(212, 175, 55, 0.25);
+  }
+  .btn-gold:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .help-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background-color: #2B1816;
+    border: 1px solid #9A7D4A;
+    color: #D4AF37;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    vertical-align: middle;
+    margin-left: 5px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+  .help-btn:hover, .help-btn:focus-visible {
+    background-color: #663A32;
+    color: #EADCC2;
+    border-color: #EADCC2;
+    transform: scale(1.08);
+    outline: none;
+  }
+
+  @keyframes pulseSlow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .animate-pulse-slow { animation: pulseSlow 2s infinite; }
+
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(18px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .animate-slide-in { animation: slideInRight 0.22s ease-out; }
+</style>
+</head>
+<body class="min-h-screen pb-32 antialiased selection:bg-burgundy selection:text-parchment">
+
+  <!-- Top Navigation / Language Switcher -->
+  <header class="sticky top-0 z-40 bg-[#140B0B]/95 backdrop-blur-md border-b border-[#4A2A24] px-4 py-2.5 shadow-lg">
+    <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-burgundy/40 border border-goldMuted flex items-center justify-center text-goldAccent font-medieval font-bold text-lg shadow-inner">
+          ⚔
+        </div>
+        <div>
+          <span class="font-medieval font-bold text-sm sm:text-base tracking-wide text-parchment block leading-tight" data-i18n="navTitle">M&B Warband Translator</span>
+          <span class="text-[11px] text-parchmentDim/70 block leading-none" data-i18n="navSub">Gratis · Tanpa API Key · Auto-Resume</span>
+        </div>
+      </div>
+
+      <!-- Language Switcher -->
+      <div class="flex items-center gap-1.5">
+        <div class="flex items-center bg-[#1A0F0E] border border-[#4A2A24] rounded-lg p-0.5">
+          <button type="button" onclick="setLanguage('id')" id="lang-id" class="px-2.5 py-1 text-xs font-semibold rounded-md transition bg-burgundy text-parchment">ID</button>
+          <button type="button" onclick="setLanguage('en')" id="lang-en" class="px-2.5 py-1 text-xs font-semibold rounded-md transition text-parchmentDim hover:text-parchment">EN</button>
+          <button type="button" onclick="setLanguage('tr')" id="lang-tr" class="px-2.5 py-1 text-xs font-semibold rounded-md transition text-parchmentDim hover:text-parchment">TR</button>
+        </div>
+        <button type="button" onclick="openHelpModal('uiLang', event)" class="help-btn" aria-label="Bantuan Bahasa UI">?</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-4xl mx-auto px-3 sm:px-6 pt-5">
+
+    <!-- ==================== TAB 1: TRANSLATOR ==================== -->
+    <div id="tab-translator" class="space-y-5">
+      <!-- Hero Title Banner -->
+      <section class="text-center space-y-2 py-2">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-burgundy/25 border border-[#5A342D] text-xs text-parchmentDim">
+          <span>🛡️</span>
+          <span data-i18n="heroBadge">Mendukung Mod PC & Android (Dynasties of Calradia, Diplomacy, dll.)</span>
+        </div>
+        <h1 class="font-medieval text-2xl sm:text-4xl font-bold text-parchment tracking-wide drop-shadow" data-i18n="heroTitle">
+          Penerjemah CSV Warband
+        </h1>
+        <p class="font-serifBody italic text-sm sm:text-base text-parchmentDim max-w-2xl mx-auto" data-i18n="heroDesc">
+          Terjemahkan ribuan baris dialogs.csv, game_strings.csv, dan troops.csv secara massal langsung di browser HP/PC tanpa kunci API berbayar.
+        </p>
+      </section>
+
+      <!-- 1. Mesin Terjemahan & Kecepatan -->
+      <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#3A201C] pb-2.5">
+          <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+            <span>⚙️</span>
+            <span data-i18n="secEngine">1. Mesin Terjemahan Gratis & Kecepatan</span>
+            <button type="button" onclick="openHelpModal('secEngine', event)" class="help-btn" aria-label="Info Mesin Terjemahan">?</button>
+          </h2>
+          <span id="connStatus" class="text-xs px-2.5 py-0.5 rounded-full bg-[#1F1312] border border-[#4A2A24] text-parchmentDim" data-i18n="statusReady">
+            Siap digunakan
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div class="relative">
+            <button type="button" onclick="selectEngine('google')" id="eng-google" class="w-full eng-card p-3 pr-8 rounded-xl border-2 border-goldAccent bg-[#2B1917] text-left transition flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-[#140B0B] border border-[#4A2A24] flex items-center justify-center text-xl shrink-0">🌐</div>
+              <div class="min-w-0">
+                <div class="font-semibold text-sm text-parchment truncate">Google Translate</div>
+                <div class="text-[11px] text-green-400 truncate" data-i18n="engGoogleSub">Tercepat · Auto-Proxy</div>
+              </div>
+            </button>
+            <button type="button" onclick="openHelpModal('engGoogle', event)" class="help-btn absolute top-2 right-2" aria-label="Info Google Translate">?</button>
+          </div>
+
+          <div class="relative">
+            <button type="button" onclick="selectEngine('lingva')" id="eng-lingva" class="w-full eng-card p-3 pr-8 rounded-xl border border-[#4A2A24] bg-[#190F0E] hover:border-burgundy text-left transition flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-[#140B0B] border border-[#4A2A24] flex items-center justify-center text-xl shrink-0">🦅</div>
+              <div class="min-w-0">
+                <div class="font-semibold text-sm text-parchment truncate">Lingva Mirror</div>
+                <div class="text-[11px] text-parchmentDim truncate" data-i18n="engLingvaSub">Alternatif Google · Stabil</div>
+              </div>
+            </button>
+            <button type="button" onclick="openHelpModal('engLingva', event)" class="help-btn absolute top-2 right-2" aria-label="Info Lingva Mirror">?</button>
+          </div>
+
+          <div class="relative">
+            <button type="button" onclick="selectEngine('mymemory')" id="eng-mymemory" class="w-full eng-card p-3 pr-8 rounded-xl border border-[#4A2A24] bg-[#190F0E] hover:border-burgundy text-left transition flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-[#140B0B] border border-[#4A2A24] flex items-center justify-center text-xl shrink-0">🧠</div>
+              <div class="min-w-0">
+                <div class="font-semibold text-sm text-parchment truncate">MyMemory API</div>
+                <div class="text-[11px] text-parchmentDim truncate" data-i18n="engMmSub">~1000 baris/hari · Cadangan</div>
+              </div>
+            </button>
+            <button type="button" onclick="openHelpModal('engMyMemory', event)" class="help-btn absolute top-2 right-2" aria-label="Info MyMemory API">?</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div class="bg-[#160D0C] border border-[#3A201C] rounded-lg p-3">
+            <label class="flex items-center text-xs font-medium text-parchmentDim mb-1.5">
+              <span data-i18n="lblSpeed">Jeda Permintaan (Anti-Blokir HTTP 429)</span>
+              <button type="button" onclick="openHelpModal('lblSpeed', event)" class="help-btn" aria-label="Info Jeda Permintaan">?</button>
+            </label>
+            <select id="delaySelect" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs sm:text-sm text-parchment focus:outline-none focus:border-goldAccent">
+              <option value="80" data-i18n="spdFast">⚡ Cepat (80 ms) — Cocok untuk file kecil</option>
+              <option value="200" selected data-i18n="spdNormal">⚖️ Normal (200 ms) — Direkomendasikan</option>
+              <option value="500" data-i18n="spdSafe">🛡️ Aman (500 ms) — Anti-limit untuk ribuan baris</option>
+            </select>
+          </div>
+
+          <div class="bg-[#160D0C] border border-[#3A201C] rounded-lg p-3 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-parchmentDim flex items-center">
+                <span data-i18n="lblCache">Memori Cache (Auto-Resume)</span>
+                <button type="button" onclick="openHelpModal('lblCache', event)" class="help-btn" aria-label="Info Memori Cache">?</button>
+              </span>
+              <span id="cacheBadge" class="text-xs font-mono font-semibold text-goldAccent">0 baris</span>
+            </div>
+            <div class="flex items-center justify-between gap-2 mt-2">
+              <div class="inline-flex items-center gap-1.5 text-xs text-parchment">
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" id="autoFallbackChk" checked class="rounded accent-burgundy w-4 h-4">
+                  <span data-i18n="chkFallback">Auto-Fallback ke mesin lain jika gagal</span>
+                </label>
+                <button type="button" onclick="openHelpModal('chkFallback', event)" class="help-btn" aria-label="Info Auto-Fallback">?</button>
+              </div>
+              <button type="button" onclick="clearCacheStorage()" class="text-[11px] px-2.5 py-1 rounded bg-crimson/30 hover:bg-crimson/50 border border-crimson text-red-200 transition shrink-0" data-i18n="btnClearCache">
+                Hapus Cache
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Pengaturan Bahasa & Format Warband -->
+      <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-4">
+        <div class="border-b border-[#3A201C] pb-2.5">
+          <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+            <span>📜</span>
+            <span data-i18n="secFormat">2. Bahasa & Struktur Teks Warband</span>
+            <button type="button" onclick="openHelpModal('secFormat', event)" class="help-btn" aria-label="Info Bahasa & Struktur Teks">?</button>
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-11 gap-2.5 items-center">
+          <div class="sm:col-span-5">
+            <label class="flex items-center text-xs text-parchmentDim mb-1">
+              <span data-i18n="lblSrcLang">Bahasa Sumber (Mod Asli)</span>
+              <button type="button" onclick="openHelpModal('lblSrcLang', event)" class="help-btn" aria-label="Info Bahasa Sumber">?</button>
+            </label>
+            <select id="srcLang" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2.5 text-sm text-parchment focus:outline-none focus:border-goldAccent">
+              <option value="en" selected>English (Inggris)</option>
+              <option value="auto" data-i18n="optAuto">Deteksi Otomatis</option>
+              <option value="tr">Türkçe (Turki)</option>
+              <option value="ru">Русский (Rusia)</option>
+              <option value="zh">中文 (Mandarin)</option>
+              <option value="de">Deutsch (Jerman)</option>
+              <option value="fr">Français (Prancis)</option>
+              <option value="es">Español (Spanyol)</option>
+              <option value="ja">日本語 (Jepang)</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-1 text-center text-goldAccent font-bold text-lg pt-2 sm:pt-5">➔</div>
+
+          <div class="sm:col-span-5">
+            <label class="flex items-center text-xs text-parchmentDim mb-1">
+              <span data-i18n="lblTgtLang">Bahasa Tujuan (Hasil)</span>
+              <button type="button" onclick="openHelpModal('lblTgtLang', event)" class="help-btn" aria-label="Info Bahasa Tujuan">?</button>
+            </label>
+            <select id="tgtLang" onchange="onSettingsChanged()" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2.5 text-sm text-parchment focus:outline-none focus:border-goldAccent">
+              <option value="id" selected>Bahasa Indonesia (id)</option>
+              <option value="ms">Bahasa Melayu (ms)</option>
+              <option value="en">English (en)</option>
+              <option value="tr">Türkçe (tr)</option>
+              <option value="ar">العربية (ar)</option>
+              <option value="ru">Русский (ru)</option>
+              <option value="zh">中文 (zh)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div>
+            <label class="flex items-center text-xs text-parchmentDim mb-1">
+              <span data-i18n="lblSep">Pemisah Kode (Separator)</span>
+              <button type="button" onclick="openHelpModal('lblSep', event)" class="help-btn" aria-label="Info Pemisah Kode">?</button>
+            </label>
+            <input type="text" id="sepChar" value="|" maxlength="3" oninput="onSettingsChanged()" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-sm font-mono text-center text-goldAccent focus:outline-none focus:border-goldAccent">
+            <p class="text-[11px] text-parchmentDim/70 mt-1" data-i18n="hintSep">Kode di kiri (str_...) tidak diterjemahkan.</p>
+          </div>
+
+          <div>
+            <label class="flex items-center text-xs text-parchmentDim mb-1">
+              <span data-i18n="lblStrip">Hapus Tag (Opsional)</span>
+              <button type="button" onclick="openHelpModal('lblStrip', event)" class="help-btn" aria-label="Info Hapus Tag">?</button>
+            </label>
+            <input type="text" id="stripTag" value="{***}" maxlength="16" placeholder="{***}" oninput="onSettingsChanged()" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-sm font-mono text-center text-parchment focus:outline-none focus:border-goldAccent">
+            <p class="text-[11px] text-parchmentDim/70 mt-1" data-i18n="hintStrip">Kosongkan jika tag {***} ingin dipertahankan.</p>
+          </div>
+
+          <div>
+            <label class="flex items-center text-xs text-parchmentDim mb-1">
+              <span data-i18n="lblRegex">Lewati Baris (Regex)</span>
+              <button type="button" onclick="openHelpModal('lblRegex', event)" class="help-btn" aria-label="Info Lewati Baris Regex">?</button>
+            </label>
+            <input type="text" id="skipRegex" value="^\d+$" placeholder="^\d+$" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-sm font-mono text-center text-parchment focus:outline-none focus:border-goldAccent">
+            <p id="regexStatus" class="text-[11px] text-parchmentDim/70 mt-1" data-i18n="hintRegex">Baris angka saja dilewati otomatis.</p>
+          </div>
+        </div>
+
+        <div class="bg-[#160D0C] border border-[#3A201C] rounded-lg p-2.5 flex items-start justify-between gap-2.5 text-xs text-parchmentDim">
+          <div class="flex items-start gap-2.5">
+            <span class="text-base">🛡️</span>
+            <span data-i18n="varProtDesc">
+              <strong>Pelindung Variabel Aktif:</strong> Token seperti <code class="text-goldAccent">{s0}</code>, <code class="text-goldAccent">{reg1}</code>, <code class="text-goldAccent">{playername}</code>, <code class="text-goldAccent">{lord}</code>, <code class="text-goldAccent">^^</code>, dan <code class="text-goldAccent">^</code> dikunci otomatis agar tidak rusak atau ikut diterjemahkan.
+            </span>
+          </div>
+          <button type="button" onclick="openHelpModal('varProt', event)" class="help-btn mt-0.5" aria-label="Info Pelindung Variabel">?</button>
+        </div>
+      </section>
+
+      <!-- 3. Glosarium Kustom -->
+      <section class="card-medieval rounded-xl overflow-hidden">
+        <div class="w-full p-4 sm:px-5 flex items-center justify-between gap-2 hover:bg-mahoganyLight/40 transition">
+          <div class="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer" onclick="toggleAccordion('glossBody', 'glossArrow')">
+            <span>📖</span>
+            <span class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent truncate" data-i18n="secGloss">3. Glosarium Istilah (Opsional)</span>
+            <button type="button" onclick="openHelpModal('secGloss', event)" class="help-btn" aria-label="Info Glosarium Istilah">?</button>
+            <span id="glossCountBadge" class="ml-1.5 px-2 py-0.5 rounded-full bg-[#190F0E] border border-[#4A2A24] text-[11px] font-mono text-parchmentDim shrink-0">0 istilah</span>
+          </div>
+          <button type="button" onclick="toggleAccordion('glossBody', 'glossArrow')" class="p-1 text-goldAccent text-sm shrink-0" aria-label="Buka/Tutup Glosarium">
+            <span id="glossArrow" class="inline-block transition-transform duration-200">▼</span>
+          </button>
+        </div>
+
+        <div id="glossBody" class="hidden px-4 pb-4 sm:px-5 sm:pb-5 border-t border-[#3A201C] pt-3 space-y-3">
+          <p class="text-xs text-parchmentDim" data-i18n="glossHint">
+            Kosong secara default agar Anda bebas mengisi istilah sendiri. Tulis 1 istilah per baris: tanpa <code class="text-parchment">=</code> (misal: <code class="text-parchment">Swadia</code>) agar <strong>tidak diterjemahkan</strong>, atau dengan <code class="text-parchment">=</code> (misal: <code class="text-parchment">Vassal=Vasali</code>) untuk terjemahan khusus.
+          </p>
+          <textarea id="glossaryText" rows="5" placeholder="Contoh (1 istilah per baris):&#10;Swadia&#10;Calradia&#10;Vassal=Vasali&#10;Fief=Tanah Wilayah" class="w-full bg-[#150C0B] border border-[#4A2A24] rounded-lg p-3 text-xs sm:text-sm font-mono text-parchment placeholder-parchmentDim/40 focus:outline-none focus:border-goldAccent leading-relaxed"></textarea>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="exportGlossary()" class="px-3 py-1.5 rounded-lg bg-[#241514] hover:bg-[#321E1C] border border-[#5A342D] text-xs text-parchment transition flex items-center gap-1.5">
+              <span>📤</span> <span data-i18n="btnExpGloss">Ekspor Glosarium (.txt)</span>
+            </button>
+            <button type="button" onclick="document.getElementById('glossFileInput').click()" class="px-3 py-1.5 rounded-lg bg-[#241514] hover:bg-[#321E1C] border border-[#5A342D] text-xs text-parchment transition flex items-center gap-1.5">
+              <span>📥</span> <span data-i18n="btnImpGloss">Impor Glosarium (.txt)</span>
+            </button>
+            <button type="button" onclick="clearGlossaryText()" class="px-3 py-1.5 rounded-lg bg-crimson/25 hover:bg-crimson/45 border border-crimson/70 text-xs text-red-200 transition flex items-center gap-1.5">
+              <span>🗑️</span> <span data-i18n="btnClearGloss">Kosongkan</span>
+            </button>
+            <input type="file" id="glossFileInput" accept=".txt" class="hidden" onchange="importGlossary(event)">
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Unggah & Antrean Batch File CSV -->
+      <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-[#3A201C] pb-2.5">
+          <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+            <span>📂</span>
+            <span data-i18n="secQueue">4. Unggah File CSV / TXT / TSV</span>
+            <button type="button" onclick="openHelpModal('secQueue', event)" class="help-btn" aria-label="Info Unggah File">?</button>
+          </h2>
+          <span class="text-xs text-parchmentDim" data-i18n="queueHint">Bisa pilih banyak file sekaligus</span>
+        </div>
+
+        <div id="dropZone" onclick="document.getElementById('csvFileInput').click()" class="border-2 border-dashed border-[#663A32] hover:border-goldAccent bg-[#160D0C] hover:bg-[#1F1211] rounded-xl p-5 sm:p-7 text-center cursor-pointer transition group">
+          <input type="file" id="csvFileInput" accept=".csv,.txt,.tsv" multiple class="hidden" onchange="handleFileSelect(event)">
+          <input type="file" id="csvSingleInput" accept=".csv,.txt,.tsv" class="hidden" onchange="handleFileSelect(event)">
+          <div class="text-3xl sm:text-4xl mb-2 group-hover:scale-110 transition-transform">📜</div>
+          <div class="font-semibold text-sm sm:text-base text-parchment" data-i18n="dropTitle">
+            Ketuk di sini atau seret file modul Warband
+          </div>
+          <div class="text-xs text-parchmentDim mt-1" data-i18n="dropSub">
+            Contoh: dialogs.csv, game_strings.csv, quick_strings.csv, troops.csv, factions.csv
+          </div>
+        </div>
+
+        <button type="button" onclick="document.getElementById('csvSingleInput').click()" class="w-full py-2.5 px-4 rounded-lg bg-[#170E0D] hover:bg-[#241514] border border-[#4A2A24] text-xs font-medium text-parchment transition flex items-center justify-center gap-2">
+          <span class="text-goldAccent">➕</span>
+          <span data-i18n="btnPickSingle">Tambah 1 File</span>
+        </button>
+
+        <div id="queueContainer" class="hidden space-y-2.5">
+          <div class="flex items-center justify-between text-xs text-parchmentDim px-1">
+            <span id="queueSummary">0 file</span>
+            <button type="button" onclick="clearQueue()" class="text-red-300 hover:underline" data-i18n="btnClearQueue">Kosongkan Antrean</button>
+          </div>
+          <ul id="queueList" class="space-y-2"></ul>
+        </div>
+      </section>
+
+      <!-- 4b. Pratinjau Struktur CSV (10 Baris Pertama) -->
+      <section id="csvPreviewerCard" class="hidden card-medieval rounded-xl p-4 sm:p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#3A201C] pb-2.5">
+          <div class="min-w-0">
+            <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+              <span>🔍</span>
+              <span data-i18n="secCsvStruct">Pratinjau Struktur CSV (10 Baris Pertama)</span>
+              <button type="button" onclick="openHelpModal('secCsvStruct', event)" class="help-btn" aria-label="Info Pratinjau Struktur CSV">?</button>
+            </h2>
+            <p class="text-xs text-parchmentDim mt-0.5" data-i18n="csvStructHint">Periksa pemisahan kolom ID & teks sebelum memulai terjemahan</p>
+          </div>
+        </div>
+
+        <div id="csvPreviewFileTabs" class="flex flex-wrap gap-1.5"></div>
+        <div id="csvMatchBanner" class="rounded-lg px-3 py-2 text-xs border"></div>
+
+        <div class="overflow-x-auto rounded-xl border border-[#4A2A24] bg-[#100808]">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-[#231413] text-goldAccent font-semibold border-b border-[#4A2A24]">
+              <tr>
+                <th class="px-2.5 py-2 w-10" data-i18n="csvColIdx">#</th>
+                <th class="px-2.5 py-2 min-w-[130px]" data-i18n="csvColKey">Kolom 1 (ID / Kode)</th>
+                <th class="px-2.5 py-2 min-w-[220px]" data-i18n="csvColText">Kolom 2 (Teks Sumber)</th>
+                <th class="px-2.5 py-2 w-28" data-i18n="csvColStatus">Info</th>
+              </tr>
+            </thead>
+            <tbody id="csvPreviewTableBody" class="divide-y divide-[#2B1816] font-mono text-[11px]"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 5. Kontrol Proses & Progress Bar -->
+      <section class="space-y-3">
+        <div id="progressCard" class="hidden card-medieval rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between text-xs sm:text-sm">
+            <span id="currentFileLabel" class="font-semibold text-goldAccent truncate max-w-[60%]">Memproses...</span>
+            <span id="progressCounter" class="font-mono text-parchment">0% (0 / 0)</span>
+          </div>
+          <div class="w-full h-3 bg-[#110808] rounded-full overflow-hidden border border-[#4A2A24]">
+            <div id="progressBar" class="h-full w-0 bg-gradient-to-r from-burgundy via-goldMuted to-goldAccent transition-all duration-200"></div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-parchmentDim">
+            <span id="cacheHitLabel">Dari cache: 0 baris</span>
+            <span id="etaLabel">Estimasi waktu: menghitung...</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+          <button type="button" id="btnStart" onclick="startTranslation()" disabled class="sm:col-span-6 btn-gold py-3.5 px-5 rounded-xl font-medieval font-bold text-sm sm:text-base tracking-wide shadow-lg flex items-center justify-center gap-2">
+            <span>▶</span> <span data-i18n="btnStart">Mulai Terjemahkan</span>
+          </button>
+
+          <button type="button" id="btnPause" onclick="togglePause()" disabled class="sm:col-span-3 py-3 px-4 rounded-xl bg-[#2A1D12] hover:bg-[#3A2819] disabled:opacity-40 border border-goldMuted text-goldAccent font-semibold text-sm transition flex items-center justify-center gap-1.5">
+            <span>⏸</span> <span id="lblPauseBtn" data-i18n="btnPause">Jeda</span>
+          </button>
+
+          <button type="button" id="btnStop" onclick="stopTranslation()" disabled class="sm:col-span-3 py-3 px-4 rounded-xl bg-[#2A1114] hover:bg-[#3D181D] disabled:opacity-40 border border-crimson text-red-300 font-semibold text-sm transition flex items-center justify-center gap-1.5">
+            <span>⏹</span> <span data-i18n="btnStop">Berhenti</span>
+          </button>
+        </div>
+
+        <!-- Batch Preview Export + Download All + Error Log -->
+        <div id="postActionRow" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <button type="button" onclick="openExportPreviewForAllDone()" class="py-2.5 px-4 rounded-xl bg-burgundy/40 hover:bg-burgundy/65 border border-goldMuted text-goldAccent font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2">
+            <span>👁️</span> <span data-i18n="btnPreviewExport">Pratinjau Ekspor</span>
+          </button>
+          <button type="button" onclick="openExportPreviewForAllDone()" class="py-2.5 px-4 rounded-xl bg-forest/45 hover:bg-forest/70 border border-green-600/60 text-green-200 font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2">
+            <span>📦</span> <span data-i18n="btnDlAll">Simpan Semua File Selesai</span>
+          </button>
+          <button type="button" id="btnExportErrors" onclick="exportErrorLog()" class="hidden sm:col-span-2 py-2.5 px-4 rounded-xl bg-crimson/30 hover:bg-crimson/50 border border-crimson text-red-200 font-semibold text-xs sm:text-sm transition flex items-center justify-center gap-2">
+            <span>⚠️</span> <span id="lblErrCount">Ekspor Log Baris Gagal (0)</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 5b. Grafik Kecepatan & Progres Real-Time -->
+      <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#3A201C] pb-2">
+          <div>
+            <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+              <span>📈</span>
+              <span data-i18n="secTelemetry">Grafik Kecepatan & Progres Real-Time</span>
+              <button type="button" onclick="openHelpModal('secTelemetry', event)" class="help-btn" aria-label="Info Grafik Telemetri">?</button>
+            </h2>
+            <p class="text-xs text-parchmentDim" data-i18n="telemetryHint">Memantau kecepatan (baris/dtk) dan persentase selesai file aktif</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs font-mono">
+            <span class="px-2.5 py-1 rounded-lg bg-[#160D0C] border border-[#3A201C]">
+              <span class="text-parchmentDim" data-i18n="kpiCurSpeed">Kecepatan</span>:
+              <strong id="kpiCurSpeedVal" class="text-goldAccent">0.0</strong> <span class="text-parchmentDim" data-i18n="kpiUnitRate">brs/dtk</span>
+            </span>
+            <span class="px-2.5 py-1 rounded-lg bg-[#160D0C] border border-[#3A201C]">
+              <span class="text-parchmentDim" data-i18n="kpiPeakSpeed">Puncak</span>:
+              <strong id="kpiPeakSpeedVal" class="text-green-300">0.0</strong> <span class="text-parchmentDim" data-i18n="kpiUnitRate">brs/dtk</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 text-[11px] text-parchmentDim">
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-1 rounded-full bg-goldAccent inline-block"></span><span data-i18n="legendSpeed">Kecepatan (baris/dtk)</span></span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-3 h-1 rounded-full bg-green-400 inline-block"></span><span data-i18n="legendProgress">Progres (%)</span></span>
+        </div>
+
+        <div class="relative rounded-xl bg-[#0D0707] border border-[#3A201C] p-2">
+          <canvas id="telemetryCanvas" height="170" class="w-full h-[170px] block"></canvas>
+          <div id="telemetryEmptyState" class="absolute inset-0 flex items-center justify-center text-xs text-parchmentDim/70 pointer-events-none" data-i18n="telemetryEmpty">
+            Grafik real-time akan aktif saat terjemahan berjalan
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Live Preview -->
+      <section id="previewSection" class="hidden card-medieval rounded-xl p-4 sm:p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#3A201C] pb-2">
+          <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+            <span>👁️</span>
+            <span data-i18n="secPreview">Pratinjau & Edit Cepat (5 Baris Terakhir)</span>
+            <button type="button" onclick="openHelpModal('secPreview', event)" class="help-btn" aria-label="Info Pratinjau Langsung">?</button>
+          </h2>
+          <span class="text-[11px] text-parchmentDim" data-i18n="previewHint">Klik Edit untuk revisi manual sebelum simpan</span>
+        </div>
+        <div id="previewList" class="space-y-2.5 max-h-96 overflow-y-auto pr-1"></div>
+      </section>
+
+      <!-- 7. Log Aktivitas -->
+      <section id="logSection" class="hidden card-medieval rounded-xl p-4 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-parchmentDim flex items-center">
+            <span data-i18n="secLog">Log Aktivitas Sistem</span>
+            <button type="button" onclick="openHelpModal('secLog', event)" class="help-btn" aria-label="Info Log Aktivitas">?</button>
+          </span>
+          <button type="button" onclick="clearSystemLog()" class="text-[11px] text-parchmentDim hover:text-parchment" data-i18n="btnClearLog">Bersihkan Log</button>
+        </div>
+        <div id="systemLog" class="bg-[#100707] border border-[#321B18] rounded-lg p-3 max-h-44 overflow-y-auto font-mono text-[11px] sm:text-xs space-y-1 leading-relaxed"></div>
+      </section>
+
+      <!-- 8. Panduan Pemasangan ke Folder Mod Android -->
+      <section class="card-medieval rounded-xl overflow-hidden">
+        <div class="w-full p-4 sm:px-5 flex items-center justify-between hover:bg-mahoganyLight/40 transition">
+          <div class="flex items-center gap-1.5 flex-1 cursor-pointer" onclick="toggleAccordion('guideBody', 'guideArrow')">
+            <span>📱</span>
+            <span class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent" data-i18n="secGuide">Panduan Memasang Hasil Terjemahan ke Warband Android</span>
+            <button type="button" onclick="openHelpModal('secGuide', event)" class="help-btn" aria-label="Info Panduan Android">?</button>
+          </div>
+          <button type="button" onclick="toggleAccordion('guideBody', 'guideArrow')" class="p-1 text-goldAccent text-sm" aria-label="Buka/Tutup Panduan">
+            <span id="guideArrow" class="inline-block transition-transform duration-200">▼</span>
+          </button>
+        </div>
+
+        <div id="guideBody" class="hidden px-4 pb-4 sm:px-5 sm:pb-5 border-t border-[#3A201C] pt-3 space-y-2 text-xs sm:text-sm text-parchmentDim leading-relaxed">
+          <ol class="list-decimal list-inside space-y-1.5">
+            <li data-i18n="gStep1">Unduh file CSV yang sudah selesai diterjemahkan (misalnya dialogs.csv, game_strings.csv, dll.).</li>
+            <li data-i18n="gStep2">Buka ZArchiver, lalu masuk ke folder mod Anda di: /Penyimpanan Internal/mnb/Modules/Dynasties_of_Calradia/languages/.</li>
+            <li data-i18n="gStep3">Buat folder baru bernama id (atau salin isi folder en ke dalam folder id).</li>
+            <li data-i18n="gStep4">Tempel dan timpa file CSV hasil terjemahan ke dalam folder languages/id/ tersebut.</li>
+            <li data-i18n="gStep5">Buka MnBTool atau pengaturan bahasa di dalam game dan pilih bahasa Indonesian (id).</li>
+          </ol>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== TAB 2: HISTORY ==================== -->
+    <div id="tab-history" class="hidden space-y-4">
+      <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#3A201C] pb-2.5">
+          <div>
+            <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+              <span>🕘</span>
+              <span data-i18n="secHistory">Riwayat Sesi Terjemahan</span>
+              <button type="button" onclick="openHelpModal('secHistory', event)" class="help-btn" aria-label="Info Riwayat Sesi">?</button>
+            </h2>
+            <p class="text-xs text-parchmentDim mt-0.5" data-i18n="historyDesc">Catatan file CSV yang pernah diproses. Anda dapat membuka ulang ke antrean atau membersihkan log.</p>
+          </div>
+          <button type="button" onclick="clearHistoryLog()" class="px-3 py-1.5 rounded-lg bg-crimson/25 hover:bg-crimson/45 border border-crimson text-xs text-red-200 transition" data-i18n="btnClearHistory">
+            Bersihkan Riwayat
+          </button>
+        </div>
+        <div id="historyListContainer" class="space-y-2.5"></div>
+      </section>
+    </div>
+
+    <!-- ==================== TAB 3: SETTINGS ==================== -->
+    <div id="tab-settings" class="hidden space-y-4">
+      <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-4">
+        <div class="border-b border-[#3A201C] pb-2.5">
+          <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+            <span>⚙️</span>
+            <span data-i18n="secExportSettings">Pengaturan Ekspor File CSV</span>
+            <button type="button" onclick="openHelpModal('secExportSettings', event)" class="help-btn" aria-label="Info Pengaturan Ekspor">?</button>
+          </h2>
+          <p class="text-xs text-parchmentDim mt-0.5" data-i18n="exportSettingsDesc">Atur pemisah kolom (delimiter), pengodean karakter, dan penamaan ulang file saat menyimpan.</p>
+        </div>
+
+        <!-- Export Delimiter -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold text-goldAccent uppercase tracking-wider" data-i18n="lblExportDelimiter">Pemisah CSV Ekspor (Delimiter)</h3>
+          <div id="exportDelimiterOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+        </div>
+
+        <!-- Export Encoding -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold text-goldAccent uppercase tracking-wider" data-i18n="lblExportEncoding">Pengodean Karakter (Encoding)</h3>
+          <div id="exportEncodingOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+        </div>
+
+        <!-- Batch Rename Output Files -->
+        <div class="space-y-2.5 border-t border-[#3A201C] pt-4">
+          <h3 class="text-xs font-bold text-goldAccent uppercase tracking-wider flex items-center gap-1.5">
+            <span>🏷️</span>
+            <span data-i18n="lblBatchRename">Penamaan Ulang File Output (Batch Rename)</span>
+          </h3>
+          <p class="text-xs text-parchmentDim" data-i18n="hintBatchRename">Tambahkan awalan (prefix) atau akhiran (suffix) otomatis sebelum ekstensi file saat menyimpan.</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label class="text-[11px] text-parchmentDim block mb-1" data-i18n="lblFilePrefix">Awalan (Prefix)</label>
+              <input type="text" id="settingsPrefixInput" maxlength="24" placeholder="id_" oninput="updateBatchRenameFromInputs(this.value, document.getElementById('settingsSuffixInput').value)" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs font-mono text-parchment focus:outline-none focus:border-goldAccent">
+            </div>
+            <div>
+              <label class="text-[11px] text-parchmentDim block mb-1" data-i18n="lblFileSuffix">Akhiran (Suffix)</label>
+              <input type="text" id="settingsSuffixInput" maxlength="24" placeholder="_translated" oninput="updateBatchRenameFromInputs(document.getElementById('settingsPrefixInput').value, this.value)" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs font-mono text-parchment focus:outline-none focus:border-goldAccent">
+            </div>
+          </div>
+
+          <div id="settingsRenamePresets" class="flex flex-wrap gap-2"></div>
+
+          <div class="rounded-lg bg-[#0D0707] border border-[#4A2A24] p-2.5 space-y-1">
+            <div class="text-[11px] text-parchmentDim" data-i18n="lblRenamePreview">Contoh Nama File Output</div>
+            <div id="settingsRenamePreviewText" class="text-xs font-mono font-semibold text-goldAccent">dialogs.csv  →  dialogs.csv</div>
+          </div>
+        </div>
+
+        <!-- Live Formatted Sample Preview -->
+        <div class="space-y-1.5 border-t border-[#3A201C] pt-3">
+          <div class="text-[11px] text-parchmentDim" data-i18n="lblExportPreview">Contoh Baris Ekspor</div>
+          <pre id="settingsExportSampleBox" class="rounded-lg bg-[#0D0707] border border-[#4A2A24] p-3 text-[11px] font-mono text-green-300 overflow-x-auto leading-relaxed"></pre>
+        </div>
+      </section>
+
+      <!-- Interface Language & Cache Maintenance -->
+      <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-3">
+        <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent border-b border-[#3A201C] pb-2" data-i18n="secUiPref">Bahasa Antarmuka & Memori</h2>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" onclick="setLanguage('id')" class="settings-lang-btn py-2 rounded-lg border border-[#4A2A24] bg-[#170E0D] text-xs font-bold text-parchmentDim transition">ID</button>
+          <button type="button" onclick="setLanguage('en')" class="settings-lang-btn py-2 rounded-lg border border-[#4A2A24] bg-[#170E0D] text-xs font-bold text-parchmentDim transition">EN</button>
+          <button type="button" onclick="setLanguage('tr')" class="settings-lang-btn py-2 rounded-lg border border-[#4A2A24] bg-[#170E0D] text-xs font-bold text-parchmentDim transition">TR</button>
+        </div>
+        <div class="flex items-center justify-between bg-[#160D0C] border border-[#3A201C] rounded-lg p-3">
+          <div>
+            <div class="text-xs font-semibold text-parchment" data-i18n="lblCache">Memori Cache (Auto-Resume)</div>
+            <div id="settingsCacheBadge" class="text-[11px] font-mono text-goldAccent">0 baris</div>
+          </div>
+          <button type="button" onclick="clearCacheStorage()" class="px-3 py-1.5 rounded-lg bg-crimson/25 hover:bg-crimson/45 border border-crimson text-xs text-red-200 transition" data-i18n="btnClearCache">
+            Hapus Cache
+          </button>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Sticky Mobile/Desktop Quick Control Bar + 3-Tab Bottom Navigation -->
+  <div class="fixed bottom-0 inset-x-0 z-40">
+    <div id="stickyProgressBar" class="hidden bg-[#160D0C]/95 backdrop-blur-md border-t-2 border-goldAccent px-3 py-2 shadow-2xl">
+      <div class="max-w-4xl mx-auto flex items-center justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between text-[11px] sm:text-xs mb-1">
+            <span id="stickyFileName" class="font-semibold text-goldAccent truncate max-w-[55%]">Memproses...</span>
+            <span id="stickyPctText" class="font-mono text-parchment">0% (0/0)</span>
+          </div>
+          <div class="w-full h-2 bg-[#110808] rounded-full overflow-hidden border border-[#4A2A24]">
+            <div id="stickyBarFill" class="h-full w-0 bg-gradient-to-r from-burgundy via-goldMuted to-goldAccent transition-all duration-200"></div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="togglePause()" id="stickyPauseBtn" class="px-3 py-1.5 rounded-lg bg-[#2A1D12] hover:bg-[#3A2819] border border-goldMuted text-goldAccent font-semibold text-xs transition">
+            ⏸ <span id="stickyPauseLbl">Jeda</span>
+          </button>
+          <button type="button" onclick="stopTranslation()" class="px-3 py-1.5 rounded-lg bg-[#2A1114] hover:bg-[#3D181D] border border-crimson text-red-300 font-semibold text-xs transition">
+            ⏹
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="bg-[#140B0B]/95 backdrop-blur-md border-t border-[#4A2A24] px-2 py-1.5">
+      <div class="max-w-4xl mx-auto grid grid-cols-3 gap-1">
+        <button type="button" onclick="switchTab('translator')" id="nav-tab-translator" class="py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-semibold bg-burgundy/50 text-goldAccent transition">
+          <span>🌐</span>
+          <span data-i18n="tabTranslator">Penerjemah</span>
+        </button>
+        <button type="button" onclick="switchTab('history')" id="nav-tab-history" class="py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-semibold text-parchmentDim hover:text-parchment transition">
+          <span>🕘</span>
+          <span data-i18n="tabHistory">Riwayat</span>
+        </button>
+        <button type="button" onclick="switchTab('settings')" id="nav-tab-settings" class="py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-semibold text-parchmentDim hover:text-parchment transition">
+          <span>⚙️</span>
+          <span data-i18n="tabSettings">Pengaturan</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Modal: Preview Export & Download + Inline Batch Rename -->
+  <div id="exportPreviewOverlay" onclick="closeExportPreviewModal()" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div onclick="event.stopPropagation()" class="w-full max-w-xl rounded-2xl bg-[#1D1110] border-2 border-[#4A2A24] shadow-2xl p-4 sm:p-5 space-y-3 text-parchment max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-[#3A201C] pb-2.5">
+        <h3 id="exportModalTitle" class="font-medieval text-sm sm:text-base font-bold text-goldAccent flex items-center gap-2">
+          <span>👁️</span>
+          <span data-i18n="previewExportTitle">Pratinjau Ekspor & Simpan</span>
+        </h3>
+        <button type="button" onclick="closeExportPreviewModal()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold">✕</button>
+      </div>
+
+      <div class="overflow-y-auto space-y-3 pr-1 flex-1">
+        <p class="text-xs text-parchmentDim" data-i18n="previewExportDesc">Periksa contoh isi file hasil terjemahan dan nama file sebelum menyimpan ke perangkat.</p>
+
+        <div id="exportModalFileChips" class="flex flex-wrap gap-1.5"></div>
+
+        <div class="rounded-xl bg-[#150C0B] border border-[#3A201C] p-3 space-y-1.5">
+          <div class="text-[11px] text-parchmentDim" data-i18n="lblOutputFile">Nama Output</div>
+          <div id="exportModalOutputName" class="font-mono text-xs sm:text-sm font-bold text-goldAccent break-all">dialogs.csv</div>
+          <div id="exportModalMetaBadges" class="flex flex-wrap gap-1.5 pt-0.5"></div>
+        </div>
+
+        <div class="rounded-xl bg-[#150C0B] border border-[#3A201C] p-3 space-y-2">
+          <div class="text-xs font-semibold text-goldAccent flex items-center gap-1.5">
+            <span>🏷️</span>
+            <span data-i18n="lblQuickRename">Ubah Awalan / Akhiran Output</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] text-parchmentDim block mb-0.5" data-i18n="lblFilePrefix">Awalan (Prefix)</label>
+              <input type="text" id="modalPrefixInput" maxlength="24" placeholder="id_" oninput="updateBatchRenameFromInputs(this.value, document.getElementById('modalSuffixInput').value)" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-2.5 py-1.5 text-xs font-mono text-parchment focus:outline-none focus:border-goldAccent">
+            </div>
+            <div>
+              <label class="text-[10px] text-parchmentDim block mb-0.5" data-i18n="lblFileSuffix">Akhiran (Suffix)</label>
+              <input type="text" id="modalSuffixInput" maxlength="24" placeholder="_translated" oninput="updateBatchRenameFromInputs(document.getElementById('modalPrefixInput').value, this.value)" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-2.5 py-1.5 text-xs font-mono text-parchment focus:outline-none focus:border-goldAccent">
+            </div>
+          </div>
+          <div id="modalRenamePresets" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="text-[11px] font-semibold text-goldAccent" data-i18n="lblSampleHeader">Contoh Isi File Ekspor (12 Baris Pertama)</div>
+          <pre id="exportModalSampleBox" class="h-36 rounded-xl bg-[#0D0707] border border-[#4A2A24] p-3 text-[11px] font-mono text-green-300 overflow-auto leading-relaxed whitespace-pre"></pre>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-end gap-2 border-t border-[#3A201C] pt-3">
+        <button type="button" onclick="closeExportPreviewModal()" class="px-3.5 py-2 rounded-xl border border-[#4A2A24] text-xs font-semibold text-parchmentDim hover:text-parchment" data-i18n="btnCancel">Batal</button>
+        <button type="button" onclick="downloadActivePreviewFile()" class="px-3.5 py-2 rounded-xl bg-burgundy/60 hover:bg-burgundy border border-goldMuted text-xs font-semibold text-parchment" data-i18n="btnDlSelected">Unduh File Ini</button>
+        <button type="button" onclick="downloadAllModalFiles()" class="px-4 py-2 rounded-xl bg-forest/70 hover:bg-forest border border-green-500 text-xs font-bold text-green-100" data-i18n="btnDlAllModal">Unduh Semua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pop-up Bantuan Ikon (?) Modal -->
+  <div id="helpModalOverlay" onclick="closeHelpModal()" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="helpModalCard" onclick="event.stopPropagation()" class="w-full max-w-md rounded-2xl bg-gradient-to-b from-[#231413] to-[#160D0C] border-2 border-goldAccent shadow-2xl p-5 space-y-3 text-parchment relative">
+      <div class="flex items-start justify-between gap-3 border-b border-[#4A2A24] pb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-burgundy/60 border border-goldAccent text-goldAccent flex items-center justify-center text-xs font-bold shrink-0">?</span>
+          <h3 id="helpModalTitle" class="font-medieval text-sm sm:text-base font-bold text-goldAccent leading-snug">Informasi Bantuan</h3>
+        </div>
+        <button type="button" id="helpModalCloseX" onclick="closeHelpModal()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white flex items-center justify-center text-sm font-bold transition shrink-0" aria-label="Tutup Pop-up">✕</button>
+      </div>
+      <div id="helpModalBody" class="text-xs sm:text-sm text-parchmentDim leading-relaxed space-y-2"></div>
+      <div class="pt-1 flex justify-end">
+        <button type="button" onclick="closeHelpModal()" class="px-3.5 py-1.5 rounded-lg bg-burgundy/60 hover:bg-burgundy border border-goldMuted text-xs font-semibold text-parchment transition" data-i18n="btnCloseHelp">Mengerti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pop-up Notifikasi Error -->
+  <div id="errorPopupContainer" class="fixed top-16 right-3 sm:right-5 z-50 w-[calc(100vw-1.5rem)] max-w-sm space-y-2 pointer-events-none"></div>
+
+  <!-- Toast Notification -->
+  <div id="toastBox" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-xl bg-[#2B1816] border border-goldAccent text-parchment text-xs sm:text-sm shadow-2xl transition-all"></div>
+
+  <!-- Footer -->
+  <footer class="max-w-4xl mx-auto px-4 mt-8 mb-6 text-center text-xs text-parchmentDim/60 space-y-1">
+    <p data-i18n="footerCredit">Terinspirasi dari Warband CSV Translator (Abdullah Zubeyr Akyüz) · Dioptimalkan untuk Komunitas Mount & Blade Indonesia</p>
+    <p>100% Client-Side Browser Processing · Zero API Key Required</p>
+  </footer>
+
+<script>
+/**
+ * ============================================================================
+ * 1. KAMUS MULTI-BAHASA (ID / EN / TR) & KONTEN BANTUAN (?)
+ * ============================================================================
+ */
+let currentLang = 'id';
+let activeTab = 'translator';
+
+const I18N = {
+  id: {
+    navTitle: 'M&B Warband Translator',
+    navSub: 'Gratis · Tanpa API Key · Auto-Resume',
+    heroBadge: 'Mendukung Mod PC & Android (Dynasties of Calradia, Diplomacy, dll.)',
+    heroTitle: 'Penerjemah CSV Warband',
+    heroDesc: 'Terjemahkan ribuan baris dialogs.csv, game_strings.csv, dan troops.csv secara massal langsung di browser HP/PC tanpa kunci API berbayar.',
+    secEngine: '1. Mesin Terjemahan Gratis & Kecepatan',
+    statusReady: 'Siap digunakan',
+    engGoogleSub: 'Tercepat · Auto-Proxy',
+    engLingvaSub: 'Alternatif Google · Stabil',
+    engMmSub: '~1000 baris/hari · Cadangan',
+    lblSpeed: 'Jeda Permintaan (Anti-Blokir HTTP 429)',
+    spdFast: '⚡ Cepat (80 ms) — Cocok untuk file kecil',
+    spdNormal: '⚖️ Normal (200 ms) — Direkomendasikan',
+    spdSafe: '🛡️ Aman (500 ms) — Anti-limit untuk ribuan baris',
+    lblCache: 'Memori Cache (Auto-Resume)',
+    chkFallback: 'Auto-Fallback ke mesin lain jika gagal',
+    btnClearCache: 'Hapus Cache',
+    secFormat: '2. Bahasa & Struktur Teks Warband',
+    lblSrcLang: 'Bahasa Sumber (Mod Asli)',
+    optAuto: 'Deteksi Otomatis',
+    lblTgtLang: 'Bahasa Tujuan (Hasil)',
+    lblSep: 'Pemisah Kode (Separator)',
+    hintSep: 'Kode di kiri (str_...) tidak diterjemahkan.',
+    lblStrip: 'Hapus Tag (Opsional)',
+    hintStrip: 'Kosongkan jika tag {***} ingin dipertahankan.',
+    lblRegex: 'Lewati Baris (Regex)',
+    hintRegex: 'Baris angka saja dilewati otomatis.',
+    varProtDesc: '<strong>Pelindung Variabel Aktif:</strong> Token seperti <code class="text-goldAccent">{s0}</code>, <code class="text-goldAccent">{reg1}</code>, <code class="text-goldAccent">{playername}</code>, <code class="text-goldAccent">{lord}</code>, <code class="text-goldAccent">^^</code>, dan <code class="text-goldAccent">^</code> dikunci otomatis agar tidak rusak atau ikut diterjemahkan.',
+    secGloss: '3. Glosarium Istilah (Opsional)',
+    glossHint: 'Kosong secara default agar Anda bebas mengisi istilah sendiri. Tulis 1 istilah per baris: tanpa <code class="text-parchment">=</code> (misal: <code class="text-parchment">Swadia</code>) agar <strong>tidak diterjemahkan</strong>, atau dengan <code class="text-parchment">=</code> (misal: <code class="text-parchment">Vassal=Vasali</code>) untuk terjemahan khusus.',
+    btnExpGloss: 'Ekspor (.txt)',
+    btnImpGloss: 'Impor (.txt)',
+    btnClearGloss: 'Kosongkan',
+    secQueue: '4. Unggah File CSV / TXT / TSV',
+    queueHint: 'Bisa pilih banyak file sekaligus',
+    dropTitle: 'Ketuk di sini atau seret file modul Warband',
+    dropSub: 'Contoh: dialogs.csv, game_strings.csv, quick_strings.csv, troops.csv, factions.csv',
+    btnPickSingle: 'Tambah 1 File',
+    btnClearQueue: 'Kosongkan Antrean',
+    btnStart: 'Mulai Terjemahkan',
+    btnPause: 'Jeda',
+    btnResume: 'Lanjutkan',
+    btnStop: 'Berhenti',
+    btnDlAll: 'Simpan Semua File Selesai',
+    btnPreviewExport: 'Pratinjau Ekspor',
+    secPreview: 'Pratinjau & Edit Cepat (5 Baris Terakhir)',
+    previewHint: 'Klik Edit untuk revisi manual sebelum simpan',
+    secLog: 'Log Aktivitas Sistem',
+    btnClearLog: 'Bersihkan Log',
+    secGuide: 'Panduan Memasang Hasil Terjemahan ke Warband Android',
+    gStep1: 'Unduh file CSV yang sudah selesai diterjemahkan (misalnya dialogs.csv, game_strings.csv, dll.).',
+    gStep2: 'Buka ZArchiver, lalu masuk ke folder mod Anda di: /Penyimpanan Internal/mnb/Modules/Dynasties_of_Calradia/languages/.',
+    gStep3: 'Buat folder baru bernama id (atau salin isi folder en ke dalam folder id).',
+    gStep4: 'Tempel dan timpa file CSV hasil terjemahan ke dalam folder languages/id/ tersebut.',
+    gStep5: 'Buka MnBTool atau pengaturan bahasa di dalam game dan pilih bahasa Indonesian (id).',
+    footerCredit: 'Terinspirasi dari Warband CSV Translator (Abdullah Zubeyr Akyüz) · Dioptimalkan untuk Komunitas Mount & Blade Indonesia',
+    stWait: 'Menunggu',
+    stRun: 'Menerjemahkan...',
+    stDone: 'Selesai',
+    stErr: 'Gagal',
+    btnDlFile: 'Simpan',
+    btnCloseHelp: 'Mengerti',
+    glossBadgeUnit: 'istilah',
+    cacheUnit: 'baris',
+    autoResumeReady: 'Auto-Resume',
+    secCsvStruct: 'Pratinjau Struktur CSV (10 Baris Pertama)',
+    csvStructHint: 'Periksa pemisahan kolom ID & teks sebelum memulai terjemahan',
+    csvColIdx: '#',
+    csvColKey: 'Kolom 1 (ID / Kode)',
+    csvColText: 'Kolom 2 (Teks Sumber)',
+    csvColStatus: 'Info',
+    csvSepMatchOk: 'baris cocok dengan pemisah',
+    csvSepMatchWarn: 'Perhatian: sebagian besar baris tidak memiliki pemisah',
+    csvSkipTag: 'SKIP',
+    csvNoSepTag: 'Tanpa pemisah',
+    secTelemetry: 'Grafik Kecepatan & Progres Real-Time',
+    telemetryHint: 'Memantau kecepatan (baris/dtk) dan persentase selesai file aktif',
+    legendSpeed: 'Kecepatan (baris/dtk)',
+    legendProgress: 'Progres (%)',
+    kpiCurSpeed: 'Kecepatan',
+    kpiPeakSpeed: 'Puncak',
+    kpiUnitRate: 'brs/dtk',
+    telemetryEmpty: 'Grafik real-time akan aktif saat terjemahan berjalan',
+    tabTranslator: 'Penerjemah',
+    tabHistory: 'Riwayat',
+    tabSettings: 'Pengaturan',
+    secExportSettings: 'Pengaturan Ekspor File CSV',
+    exportSettingsDesc: 'Atur pemisah kolom (delimiter), pengodean karakter, dan penamaan ulang file saat menyimpan.',
+    lblExportDelimiter: 'Pemisah CSV Ekspor (Delimiter)',
+    delPipeDesc: 'Format asli game Mount & Blade: Warband (direkomendasikan untuk mod)',
+    delCommaDesc: 'Standar CSV internasional (Excel / Google Sheets)',
+    delTabDesc: 'Tab-Separated Values (.tsv / editor teks)',
+    delSemicolonDesc: 'CSV Eropa / Excel regional titik koma',
+    lblExportEncoding: 'Pengodean Karakter (Encoding)',
+    encUtf8Desc: 'Standar universal Android & Warband modern (ringan & kompatibel luas)',
+    encUtf16Desc: 'Unicode 16-bit dengan BOM (cocok untuk tools PC/Excel lama)',
+    lblExportPreview: 'Contoh Baris Ekspor',
+    secUiPref: 'Bahasa Antarmuka & Memori',
+    secHistory: 'Riwayat Sesi Terjemahan',
+    historyDesc: 'Catatan file CSV yang pernah diproses. Anda dapat membuka ulang ke antrean atau membersihkan log.',
+    btnClearHistory: 'Bersihkan Riwayat',
+    btnReopenFile: 'Buka Ulang',
+    historyEmptyTitle: 'Belum Ada Riwayat Sesi',
+    historyEmptySub: 'File CSV yang selesai atau dihentikan saat diterjemahkan akan tercatat otomatis di sini.',
+    histStatusDone: 'Selesai',
+    histStatusStopped: 'Dihentikan',
+    histStatusError: 'Gagal',
+    lblBatchRename: 'Penamaan Ulang File Output (Batch Rename)',
+    hintBatchRename: 'Tambahkan awalan (prefix) atau akhiran (suffix) otomatis sebelum ekstensi file saat menyimpan.',
+    lblFilePrefix: 'Awalan (Prefix)',
+    lblFileSuffix: 'Akhiran (Suffix)',
+    presetOriginal: 'Nama Asli',
+    presetTranslated: '_translated',
+    lblRenamePreview: 'Contoh Nama File Output',
+    previewExportTitle: 'Pratinjau Ekspor & Simpan',
+    previewExportDesc: 'Periksa contoh isi file hasil terjemahan dan nama file sebelum menyimpan ke perangkat.',
+    lblSampleHeader: 'Contoh Isi File Ekspor (12 Baris Pertama)',
+    lblOutputFile: 'Nama Output',
+    lblQuickRename: 'Ubah Awalan / Akhiran Output',
+    btnCancel: 'Batal',
+    btnDlSelected: 'Unduh File Ini',
+    btnDlAllModal: 'Unduh Semua'
+  },
+  en: {
+    navTitle: 'M&B Warband Translator',
+    navSub: 'Free · No API Key · Auto-Resume',
+    heroBadge: 'Supports PC & Android Mods (Dynasties of Calradia, Diplomacy, etc.)',
+    heroTitle: 'Warband CSV Translator',
+    heroDesc: 'Batch translate thousands of lines from dialogs.csv, game_strings.csv, and troops.csv right in your browser without paid API keys.',
+    secEngine: '1. Free Translation Engine & Speed',
+    statusReady: 'Ready to use',
+    engGoogleSub: 'Fastest · Auto-Proxy',
+    engLingvaSub: 'Google Mirror · Stable',
+    engMmSub: '~1000 lines/day · Backup',
+    lblSpeed: 'Request Delay (Anti-HTTP 429 Rate Limit)',
+    spdFast: '⚡ Fast (80 ms) — Best for small files',
+    spdNormal: '⚖️ Normal (200 ms) — Recommended',
+    spdSafe: '🛡️ Safe (500 ms) — Anti-ban for thousands of lines',
+    lblCache: 'Cache Memory (Auto-Resume)',
+    chkFallback: 'Auto-Fallback to other engines on error',
+    btnClearCache: 'Clear Cache',
+    secFormat: '2. Language & Warband Text Structure',
+    lblSrcLang: 'Source Language (Original Mod)',
+    optAuto: 'Auto-Detect',
+    lblTgtLang: 'Target Language (Output)',
+    lblSep: 'Code Separator',
+    hintSep: 'Left-side ID (str_...) is never translated.',
+    lblStrip: 'Strip Tag (Optional)',
+    hintStrip: 'Leave empty to preserve {***} tags.',
+    lblRegex: 'Skip Lines (Regex)',
+    hintRegex: 'Number-only lines are skipped automatically.',
+    varProtDesc: '<strong>Variable Guard Active:</strong> Tokens like <code class="text-goldAccent">{s0}</code>, <code class="text-goldAccent">{reg1}</code>, <code class="text-goldAccent">{playername}</code>, <code class="text-goldAccent">{lord}</code>, <code class="text-goldAccent">^^</code>, and <code class="text-goldAccent">^</code> are locked safely.',
+    secGloss: '3. Custom Glossary (Optional)',
+    glossHint: 'Empty by default so you can add your own terms freely. One term per line: without "=" (e.g., <code class="text-parchment">Swadia</code>) to keep untranslated, or with "=" (e.g., <code class="text-parchment">Vassal=Vasali</code>) for custom translation.',
+    btnExpGloss: 'Export (.txt)',
+    btnImpGloss: 'Import (.txt)',
+    btnClearGloss: 'Clear',
+    secQueue: '4. Upload CSV / TXT / TSV Files',
+    queueHint: 'Select multiple files at once',
+    dropTitle: 'Tap here or drag & drop Warband module files',
+    dropSub: 'Example: dialogs.csv, game_strings.csv, quick_strings.csv, troops.csv, factions.csv',
+    btnPickSingle: 'Add 1 File',
+    btnClearQueue: 'Clear Queue',
+    btnStart: 'Start Translating',
+    btnPause: 'Pause',
+    btnResume: 'Resume',
+    btnStop: 'Stop',
+    btnDlAll: 'Save All Completed Files',
+    btnPreviewExport: 'Preview Export',
+    secPreview: 'Live Preview & Quick Edit (Last 5 Lines)',
+    previewHint: 'Click Edit to manually tweak any line before saving',
+    secLog: 'System Activity Log',
+    btnClearLog: 'Clear Log',
+    secGuide: 'How to Install Translated Files on Warband Android',
+    gStep1: 'Download the translated CSV files (e.g., dialogs.csv, game_strings.csv, etc.).',
+    gStep2: 'Open ZArchiver and navigate to: /Internal Storage/mnb/Modules/Dynasties_of_Calradia/languages/.',
+    gStep3: 'Create a folder named id (or copy the contents of en folder into id).',
+    gStep4: 'Paste and overwrite the translated CSV files inside languages/id/.',
+    gStep5: 'Open MnBTool or in-game language settings and select Indonesian (id).',
+    footerCredit: 'Inspired by Warband CSV Translator (Abdullah Zubeyr Akyüz) · Enhanced for Mount & Blade Modders',
+    stWait: 'Waiting',
+    stRun: 'Translating...',
+    stDone: 'Done',
+    stErr: 'Error',
+    btnDlFile: 'Save',
+    btnCloseHelp: 'Got it',
+    glossBadgeUnit: 'terms',
+    cacheUnit: 'lines',
+    autoResumeReady: 'Auto-Resume',
+    secCsvStruct: 'CSV Structure Preview (First 10 Rows)',
+    csvStructHint: 'Verify ID and text column separation before starting translation',
+    csvColIdx: '#',
+    csvColKey: 'Column 1 (ID / Key)',
+    csvColText: 'Column 2 (Source Text)',
+    csvColStatus: 'Info',
+    csvSepMatchOk: 'rows match separator',
+    csvSepMatchWarn: 'Warning: most rows do not contain separator',
+    csvSkipTag: 'SKIP',
+    csvNoSepTag: 'No separator',
+    secTelemetry: 'Real-Time Speed & Progress Graph',
+    telemetryHint: 'Live lines/sec throughput and completion percentage of the active CSV file',
+    legendSpeed: 'Speed (lines/s)',
+    legendProgress: 'Progress (%)',
+    kpiCurSpeed: 'Current Speed',
+    kpiPeakSpeed: 'Peak Speed',
+    kpiUnitRate: 'lines/s',
+    telemetryEmpty: 'Real-time graph activates once translation begins',
+    tabTranslator: 'Translator',
+    tabHistory: 'History',
+    tabSettings: 'Settings',
+    secExportSettings: 'CSV Export Settings',
+    exportSettingsDesc: 'Choose column delimiter, character encoding, and batch filename rules applied when saving.',
+    lblExportDelimiter: 'Export CSV Delimiter',
+    delPipeDesc: 'Original Mount & Blade: Warband format (recommended for mods)',
+    delCommaDesc: 'Standard CSV format (Excel / Google Sheets)',
+    delTabDesc: 'Tab-Separated Values (.tsv / spreadsheets)',
+    delSemicolonDesc: 'Semicolon CSV (European Excel locale)',
+    lblExportEncoding: 'Character Encoding',
+    encUtf8Desc: 'Universal modern Android & Warband encoding (compact & widely supported)',
+    encUtf16Desc: '16-bit Unicode with BOM (for legacy desktop spreadsheets/tools)',
+    lblExportPreview: 'Export Output Sample',
+    secUiPref: 'Interface Language & Cache',
+    secHistory: 'Translation Session History',
+    historyDesc: 'Metadata log of previously processed CSV files. Re-open any session into the queue or clear logs.',
+    btnClearHistory: 'Clear History',
+    btnReopenFile: 'Re-open',
+    historyEmptyTitle: 'No Session History Yet',
+    historyEmptySub: 'Processed or stopped CSV translation sessions will automatically appear here.',
+    histStatusDone: 'Completed',
+    histStatusStopped: 'Stopped',
+    histStatusError: 'Error',
+    lblBatchRename: 'Batch Rename Output Files',
+    hintBatchRename: 'Automatically add a prefix or suffix before the file extension when exporting files in the queue.',
+    lblFilePrefix: 'Prefix',
+    lblFileSuffix: 'Suffix',
+    presetOriginal: 'Original',
+    presetTranslated: '_translated',
+    lblRenamePreview: 'Output Filename Preview',
+    previewExportTitle: 'Preview Export & Save',
+    previewExportDesc: 'Review a sample of your formatted Warband mod export and batch-renamed filenames before saving.',
+    lblSampleHeader: 'Translated Output Sample (First 12 Rows)',
+    lblOutputFile: 'Output File',
+    lblQuickRename: 'Quick Batch Rename',
+    btnCancel: 'Cancel',
+    btnDlSelected: 'Download This File',
+    btnDlAllModal: 'Download All'
+  },
+  tr: {
+    navTitle: 'M&B Warband Çeviri Aracı',
+    navSub: 'Ücretsiz · API Anahtarsız · Otomatik Devam',
+    heroBadge: 'PC ve Android Modlarını Destekler (Dynasties of Calradia, Diplomacy vb.)',
+    heroTitle: 'Warband CSV Çeviri Aracı',
+    heroDesc: 'dialogs.csv, game_strings.csv ve troops.csv dosyalarındaki binlerce satırı API anahtarı olmadan doğrudan tarayıcıda topluca çevirin.',
+    secEngine: '1. Ücretsiz Çeviri Motoru ve Hız',
+    statusReady: 'Kullanıma hazır',
+    engGoogleSub: 'En Hızlı · Otomatik Proxy',
+    engLingvaSub: 'Google Aynası · Kararlı',
+    engMmSub: '~1000 satır/gün · Yedek',
+    lblSpeed: 'İstek Gecikmesi (HTTP 429 Koruması)',
+    spdFast: '⚡ Hızlı (80 ms) — Küçük dosyalar için',
+    spdNormal: '⚖️ Normal (200 ms) — Önerilen',
+    spdSafe: '🛡️ Güvenli (500 ms) — Binlerce satır için güvenli',
+    lblCache: 'Önbellek (Otomatik Devam)',
+    chkFallback: 'Hata durumunda otomatik yedek motora geç',
+    btnClearCache: 'Önbelleği Temizle',
+    secFormat: '2. Dil ve Warband Metin Biçimi',
+    lblSrcLang: 'Kaynak Dil (Orijinal Mod)',
+    optAuto: 'Otomatik Algıla',
+    lblTgtLang: 'Hedef Dil (Çıktı)',
+    lblSep: 'Kod Ayracı (Separator)',
+    hintSep: 'Soldaki kod (str_...) çevrilmez.',
+    lblStrip: 'Silinecek Etiket (İsteğe Bağlı)',
+    hintStrip: '{***} etiketini korumak için boş bırakın.',
+    lblRegex: 'Satır Atla (Regex)',
+    hintRegex: 'Sadece rakam içeren satırlar atlanır.',
+    varProtDesc: '<strong>Değişken Koruması Aktif:</strong> <code class="text-goldAccent">{s0}</code>, <code class="text-goldAccent">{reg1}</code>, <code class="text-goldAccent">{playername}</code>, <code class="text-goldAccent">{lord}</code>, <code class="text-goldAccent">^^</code> ve <code class="text-goldAccent">^</code> belirteçleri bozulmaya karşı kilitlenir.',
+    secGloss: '3. Özel Sözlük (İsteğe Bağlı)',
+    glossHint: 'Kendi terimlerinizi serbestçe girebilmeniz için varsayılan olarak boştur. Her satıra bir terim yazın: "=" olmadan (ör. <code class="text-parchment">Swadia</code>) çevrilmez, "=" ile (ör. <code class="text-parchment">Vassal=Vasali</code>) özel çeviri uygulanır.',
+    btnExpGloss: 'Dışa Aktar (.txt)',
+    btnImpGloss: 'İçe Aktar (.txt)',
+    btnClearGloss: 'Temizle',
+    secQueue: '4. CSV / TXT / TSV Dosyalarını Yükle',
+    queueHint: 'Aynı anda birden fazla dosya seçilebilir',
+    dropTitle: 'Buraya dokunun veya Warband mod dosyalarını sürükleyin',
+    dropSub: 'Örnek: dialogs.csv, game_strings.csv, quick_strings.csv, troops.csv, factions.csv',
+    btnPickSingle: '1 Dosya Ekle',
+    btnClearQueue: 'Kuyruğu Temizle',
+    btnStart: 'Çeviriyi Başlat',
+    btnPause: 'Duraklat',
+    btnResume: 'Devam Et',
+    btnStop: 'Durdur',
+    btnDlAll: 'Tamamlanan Tüm Dosyaları Kaydet',
+    btnPreviewExport: 'Dışa Aktarımı Önizle',
+    secPreview: 'Canlı Önizleme ve Hızlı Düzenleme (Son 5 Satır)',
+    previewHint: 'Kaydetmeden önce manuel düzenlemek için Düzenle düğmesine tıklayın',
+    secLog: 'Sistem Etkinlik Günlüğü',
+    btnClearLog: 'Günlüğü Temizle',
+    secGuide: 'Çevrilen Dosyaları Warband Android Moduna Kurma',
+    gStep1: 'Çevirisi tamamlanan CSV dosyalarını indirin (ör. dialogs.csv, game_strings.csv).',
+    gStep2: 'ZArchiver uygulamasını açın ve /Dahili Depolama/mnb/Modules/Dynasties_of_Calradia/languages/ dizinine gidin.',
+    gStep3: 'id adında yeni bir klasör oluşturun (veya en klasörünün içeriğini id içine kopyalayın).',
+    gStep4: 'Çevrilen CSV dosyalarını languages/id/ klasörüne yapıştırıp üzerine yazın.',
+    gStep5: 'MnBTool veya oyun içi dil ayarlarından Indonesian (id) dilini seçin.',
+    footerCredit: 'Warband CSV Translator (Abdullah Zubeyr Akyüz) temel alınarak geliştirilmiştir',
+    stWait: 'Bekliyor',
+    stRun: 'Çevriliyor...',
+    stDone: 'Tamamlandı',
+    stErr: 'Hata',
+    btnDlFile: 'Kaydet',
+    btnCloseHelp: 'Anladım',
+    glossBadgeUnit: 'terim',
+    cacheUnit: 'satır',
+    autoResumeReady: 'Oto-Devam',
+    secCsvStruct: 'CSV Yapı Önizleyici (İlk 10 Satır)',
+    csvStructHint: 'Çeviriye başlamadan önce kod ve metin sütunlarını doğrulayın',
+    csvColIdx: '#',
+    csvColKey: 'Sütun 1 (ID / Kod)',
+    csvColText: 'Sütun 2 (Kaynak Metin)',
+    csvColStatus: 'Bilgi',
+    csvSepMatchOk: 'satır ayraç ile eşleşiyor',
+    csvSepMatchWarn: 'Uyarı: satırların çoğunda ayraç bulunamadı',
+    csvSkipTag: 'ATLA',
+    csvNoSepTag: 'Ayraç yok',
+    secTelemetry: 'Gerçek Zamanlı Hız ve İlerleme Grafiği',
+    telemetryHint: 'Aktif CSV dosyasının çeviri hızını (satır/sn) ve ilerleme yüzdesini gösterir',
+    legendSpeed: 'Hız (satır/sn)',
+    legendProgress: 'İlerleme (%)',
+    kpiCurSpeed: 'Anlık Hız',
+    kpiPeakSpeed: 'En Yüksek',
+    kpiUnitRate: 'satır/sn',
+    telemetryEmpty: 'Çeviri başladığında gerçek zamanlı grafik etkinleşir',
+    tabTranslator: 'Çevirmen',
+    tabHistory: 'Geçmiş',
+    tabSettings: 'Ayarlar',
+    secExportSettings: 'CSV Dışa Aktarma Ayarları',
+    exportSettingsDesc: 'Çevrilen dosyalar kaydedilirken kullanılacak ayırıcıyı, kodlamayı ve adlandırma kurallarını seçin.',
+    lblExportDelimiter: 'Dışa Aktarma CSV Ayracı',
+    delPipeDesc: 'Orijinal Mount & Blade: Warband biçimi (modlar için önerilir)',
+    delCommaDesc: 'Standart CSV biçimi (Virgül)',
+    delTabDesc: 'Sekme ile ayrılmış değerler (Tab)',
+    delSemicolonDesc: 'Noktalı virgül CSV biçimi',
+    lblExportEncoding: 'Karakter Kodlaması',
+    encUtf8Desc: 'Evrensel modern Android ve Warband kodlaması',
+    encUtf16Desc: 'BOM içeren 16-bit Unicode kodlaması',
+    lblExportPreview: 'Dışa Aktarım Örneği',
+    secUiPref: 'Arayüz Dili ve Önbellek',
+    secHistory: 'Çeviri Oturum Geçmişi',
+    historyDesc: 'Daha önce işlenen CSV dosyalarının meta verileri. Yeniden açabilir veya geçmişi temizleyebilirsiniz.',
+    btnClearHistory: 'Geçmişi Temizle',
+    btnReopenFile: 'Yeniden Aç',
+    historyEmptyTitle: 'Henüz Oturum Geçmişi Yok',
+    historyEmptySub: 'Tamamlanan veya durdurulan CSV çeviri oturumları burada listelenir.',
+    histStatusDone: 'Tamamlandı',
+    histStatusStopped: 'Durduruldu',
+    histStatusError: 'Hata',
+    lblBatchRename: 'Toplu Çıktı Dosyası Yeniden Adlandırma',
+    hintBatchRename: 'Kaydederken dosya uzantısından önce otomatik olarak ön ek veya son ek ekleyin.',
+    lblFilePrefix: 'Ön Ek (Prefix)',
+    lblFileSuffix: 'Son Ek (Suffix)',
+    presetOriginal: 'Orijinal Ad',
+    presetTranslated: '_translated',
+    lblRenamePreview: 'Çıktı Dosyası Önizlemesi',
+    previewExportTitle: 'Dışa Aktarım Önizleme ve Kayıt',
+    previewExportDesc: 'Kaydetmeden önce biçimlendirilmiş çıktı örneğini ve dosya adlarını kontrol edin.',
+    lblSampleHeader: 'Çevrilmiş Çıktı Örneği (İlk 12 Satır)',
+    lblOutputFile: 'Çıktı Dosyası',
+    lblQuickRename: 'Hızlı Toplu Yeniden Adlandırma',
+    btnCancel: 'İptal',
+    btnDlSelected: 'Bu Dosyayı İndir',
+    btnDlAllModal: 'Tümünü İndir'
+  }
+};
+
+const HELP_TOPICS = {
+  uiLang: {
+    id: { title: 'Bahasa Antarmuka (UI)', body: '<p>Mengubah bahasa tampilan menu, tombol, dan panduan antara <strong>ID</strong>, <strong>EN</strong>, dan <strong>TR</strong>.</p>' },
+    en: { title: 'Interface Language (UI)', body: '<p>Switches display language between <strong>ID</strong>, <strong>EN</strong>, and <strong>TR</strong>.</p>' },
+    tr: { title: 'Arayüz Dili (UI)', body: '<p>Menülerin dilini <strong>ID</strong>, <strong>EN</strong> ve <strong>TR</strong> arasında değiştirir.</p>' }
+  },
+  secEngine: {
+    id: { title: 'Mesin Terjemahan Gratis & Kecepatan', body: '<p>Memilih layanan penerjemah daring gratis tanpa API Key. Gunakan Google Translate untuk kecepatan tertinggi, atau Lingva/MyMemory saat butuh cadangan.</p>' },
+    en: { title: 'Free Translation Engine & Speed', body: '<p>Selects which free online translation service is used without a paid API key.</p>' },
+    tr: { title: 'Ücretsiz Çeviri Motoru ve Hız', body: '<p>Ücretli API anahtarı gerektirmeyen çeviri servisini seçer.</p>' }
+  },
+  engGoogle: {
+    id: { title: 'Google Translate (Auto-Proxy)', body: '<p>Menggunakan endpoint Google Translate dengan rotasi proxy CORS otomatis bila browser membatasi akses langsung.</p>' },
+    en: { title: 'Google Translate (Auto-Proxy)', body: '<p>Uses Google Translate endpoints with automatic CORS proxy rotation when needed.</p>' },
+    tr: { title: 'Google Translate (Otomatik Proxy)', body: '<p>Otomatik proxy geçişli hızlı Google Çeviri bağlantısı sağlar.</p>' }
+  },
+  engLingva: {
+    id: { title: 'Lingva Mirror', body: '<p>Antarmuka alternatif sumber terbuka untuk Google Translate sebagai cadangan yang stabil.</p>' },
+    en: { title: 'Lingva Mirror', body: '<p>Open-source Google Translate front-end ideal as a reliable backup engine.</p>' },
+    tr: { title: 'Lingva Mirror', body: '<p>Açık kaynaklı güvenilir yedek çeviri motorudur.</p>' }
+  },
+  engMyMemory: {
+    id: { title: 'MyMemory API', body: '<p>Layanan memori terjemahan gratis dengan batas wajar sekitar 1.000 baris per hari per IP.</p>' },
+    en: { title: 'MyMemory API', body: '<p>Free collaborative translation API offering ~1,000 lines/day per IP.</p>' },
+    tr: { title: 'MyMemory API', body: '<p>Günlük yaklaşık 1.000 satır sunan ücretsiz yedek çeviri servisidir.</p>' }
+  },
+  lblSpeed: {
+    id: { title: 'Jeda Permintaan (Anti-HTTP 429)', body: '<p>Menentukan waktu jeda antarterjemahan agar tidak terkena limit sementara (HTTP 429). Gunakan 200–500 ms untuk file besar.</p>' },
+    en: { title: 'Request Delay', body: '<p>Sets pause interval between requests to avoid HTTP 429 rate limits.</p>' },
+    tr: { title: 'İstek Gecikmesi', body: '<p>HTTP 429 engelini önlemek için istekler arası bekleme süresidir.</p>' }
+  },
+  lblCache: {
+    id: { title: 'Memori Cache (Auto-Resume)', body: '<p>Setiap baris tersimpan di browser agar pemrosesan yang terhenti dapat dilanjutkan instan tanpa mengulang permintaan jaringan.</p>' },
+    en: { title: 'Cache Memory (Auto-Resume)', body: '<p>Saves every translated row locally so stopped sessions resume instantly.</p>' },
+    tr: { title: 'Önbellek (Otomatik Devam)', body: '<p>Çevrilen satırları saklayarak yarıda kalan dosyaları anında devam ettirir.</p>' }
+  },
+  chkFallback: {
+    id: { title: 'Auto-Fallback ke Mesin Lain', body: '<p>Otomatis berpindah ke mesin cadangan jika mesin utama gagal setelah 3 percobaan.</p>' },
+    en: { title: 'Auto-Fallback', body: '<p>Automatically switches to backup engines if the primary fails after 3 retries.</p>' },
+    tr: { title: 'Otomatik Yedek Motor', body: '<p>Ana motor hata verirse otomatik olarak yedek motorları dener.</p>' }
+  },
+  secFormat: {
+    id: { title: 'Bahasa & Struktur Teks Warband', body: '<p>Mengatur bahasa sumber, bahasa tujuan, serta pemisahan kode ID string agar game tidak crash.</p>' },
+    en: { title: 'Language & Text Structure', body: '<p>Configures source/target languages and Warband ID parsing rules.</p>' },
+    tr: { title: 'Dil ve Metin Biçimi', body: '<p>Kaynak/hedef dil ve Warband kod ayrıştırma ayarlarını belirler.</p>' }
+  },
+  lblSrcLang: {
+    id: { title: 'Bahasa Sumber', body: '<p>Pilih bahasa asli teks mod yang diunggah.</p>' },
+    en: { title: 'Source Language', body: '<p>Select the original language of the uploaded mod files.</p>' },
+    tr: { title: 'Kaynak Dil', body: '<p>Yüklenen mod dosyasının orijinal dilini seçin.</p>' }
+  },
+  lblTgtLang: {
+    id: { title: 'Bahasa Tujuan', body: '<p>Pilih bahasa terjemahan hasil keluaran.</p>' },
+    en: { title: 'Target Language', body: '<p>Select the desired translated output language.</p>' },
+    tr: { title: 'Hedef Dil', body: '<p>İstenen çeviri çıktı dilini seçin.</p>' }
+  },
+  lblSep: {
+    id: { title: 'Pemisah Kode', body: '<p>Karakter pemisah default adalah pipa (<code>|</code>). Teks sebelah kiri ID dijaga tetap utuh.</p>' },
+    en: { title: 'Code Separator', body: '<p>Default is pipe (<code>|</code>). Everything on the left side stays untouched.</p>' },
+    tr: { title: 'Kod Ayracı', body: '<p>Varsayılan ayraç (<code>|</code>) işaretidir. Soldaki kodlar korunur.</p>' }
+  },
+  lblStrip: {
+    id: { title: 'Hapus Tag', body: '<p>Menghapus penanda mentah seperti <code>{***}</code> sebelum menerjemahkan.</p>' },
+    en: { title: 'Strip Tag', body: '<p>Automatically strips unfinished template tags like <code>{***}</code>.</p>' },
+    tr: { title: 'Silinecek Etiket', body: '<p><code>{***}</code> gibi taslak etiketleri otomatik temizler.</p>' }
+  },
+  lblRegex: {
+    id: { title: 'Lewati Baris (Regex)', body: '<p>Pola Regex untuk melewati baris tertentu. Default <code>^\\d+$</code> melewati baris angka saja.</p>' },
+    en: { title: 'Skip Lines (Regex)', body: '<p>Regex pattern to skip matching lines. Default <code>^\\d+$</code> skips number-only rows.</p>' },
+    tr: { title: 'Satır Atla (Regex)', body: '<p>Eşleşen satırları çevirmeden atlamak için düzenli ifade deseni.</p>' }
+  },
+  varProt: {
+    id: { title: 'Pelindung Variabel Warband', body: '<p>Mengunci token seperti <code>{s0}</code>, <code>{reg1}</code>, <code>{playername}</code>, dan <code>^^</code> agar tidak rusak diterjemahkan.</p>' },
+    en: { title: 'Warband Variable Guard', body: '<p>Locks placeholders like <code>{s0}</code>, <code>{reg1}</code>, <code>{playername}</code>, and <code>^^</code> safely.</p>' },
+    tr: { title: 'Warband Değişken Koruması', body: '<p><code>{s0}</code>, <code>{reg1}</code> ve <code>^^</code> gibi oyun değişkenlerini korur.</p>' }
+  },
+  secGloss: {
+    id: { title: 'Glosarium Istilah Kustom', body: '<p>Tulis 1 istilah per baris: tanpa <code>=</code> agar tidak diterjemahkan, atau <code>Kata=Terjemahan</code> untuk terjemahan wajib.</p>' },
+    en: { title: 'Custom Glossary', body: '<p>One per line: term only to keep untranslated, or <code>Source=Target</code> for custom replacement.</p>' },
+    tr: { title: 'Özel Sözlük', body: '<p>Her satıra 1 terim: tek başına çevrilmez, <code>Kaynak=Hedef</code> özel çeviri sağlar.</p>' }
+  },
+  secQueue: {
+    id: { title: 'Antrean Batch & Auto-Resume', body: '<p>Unggah banyak file sekaligus, atur urutan naik/turun, dan lihat persentase Auto-Resume per file sebelum mulai.</p>' },
+    en: { title: 'Batch Queue & Auto-Resume', body: '<p>Select multiple files, reorder queue items, and inspect per-file Auto-Resume progress.</p>' },
+    tr: { title: 'Toplu Kuyruk ve Oto-Devam', body: '<p>Birden fazla dosya ekleyin, sırayı değiştirin ve otomatik devam oranını görün.</p>' }
+  },
+  secCsvStruct: {
+    id: { title: 'Pratinjau Struktur CSV (10 Baris)', body: '<p>Menampilkan 10 baris pertama file yang dipilih agar Anda dapat memastikan pemisah kolom dan token variabel sudah benar sebelum diterjemahkan.</p>' },
+    en: { title: 'CSV Structure Preview (10 Rows)', body: '<p>Displays the first 10 rows parsed into ID and text columns to verify your separator before starting.</p>' },
+    tr: { title: 'CSV Yapı Önizleyici (10 Satır)', body: '<p>Çeviriye başlamadan önce ilk 10 satırdaki sütun ayrımını doğrulamanızı sağlar.</p>' }
+  },
+  secTelemetry: {
+    id: { title: 'Grafik Kecepatan & Progres', body: '<p>Memantau kecepatan pemrosesan (baris/dtk) dan persentase kemajuan file aktif secara real-time.</p>' },
+    en: { title: 'Real-Time Telemetry Graph', body: '<p>Plots live translation throughput (lines/sec) and completion percentage.</p>' },
+    tr: { title: 'Gerçek Zamanlı Hız Grafiği', body: '<p>Anlık çeviri hızını ve ilerleme yüzdesini canlı olarak çizer.</p>' }
+  },
+  secPreview: {
+    id: { title: 'Pratinjau & Edit Cepat', body: '<p>Menampilkan 5 baris terakhir hasil terjemahan yang dapat diedit manual sebelum diunduh.</p>' },
+    en: { title: 'Live Preview & Quick Edit', body: '<p>Shows the last 5 processed lines for instant manual editing.</p>' },
+    tr: { title: 'Canlı Önizleme ve Düzenleme', body: '<p>Son 5 satırı düzenlemenize olanak tanır.</p>' }
+  },
+  secLog: {
+    id: { title: 'Log Aktivitas Sistem', body: '<p>Mencatat pemuatan file, pergantian mesin fallback, dan baris gagal.</p>' },
+    en: { title: 'System Activity Log', body: '<p>Records file loads, fallbacks, and row errors.</p>' },
+    tr: { title: 'Sistem Günlüğü', body: '<p>Dosya işlemlerini ve motor geçişlerini kaydeder.</p>' }
+  },
+  secGuide: {
+    id: { title: 'Panduan Mod Android', body: '<p>Langkah memasang file CSV terjemahan ke folder <code>languages/id/</code> di Android menggunakan ZArchiver & MnBTool.</p>' },
+    en: { title: 'Android Mod Installation', body: '<p>Guide to installing translated CSV files into <code>languages/</code> using ZArchiver & MnBTool.</p>' },
+    tr: { title: 'Android Mod Kurulumu', body: '<p>Çevrilen CSV dosyalarının Android mod klasörüne kurulumunu anlatır.</p>' }
+  },
+  secHistory: {
+    id: { title: 'Riwayat Sesi Terjemahan', body: '<p>Menyimpan metadata file yang pernah diproses beserta snapshot baris sehingga dapat dibuka ulang ke antrean kapan saja.</p>' },
+    en: { title: 'Session History', body: '<p>Stores processed file metadata and snapshots so you can re-open past sessions into the queue.</p>' },
+    tr: { title: 'Oturum Geçmişi', body: '<p>İşlenen dosyaların meta verilerini saklar ve kuyruğa yeniden açmanıza izin verir.</p>' }
+  },
+  secExportSettings: {
+    id: { title: 'Pengaturan Ekspor & Batch Rename', body: '<p>Atur delimiter CSV keluaran (<code>|</code>, <code>,</code>, <code>Tab</code>, <code>;</code>), encoding (<code>UTF-8</code> / <code>UTF-16</code>), serta awalan/akhiran nama file otomatis.</p>' },
+    en: { title: 'Export Settings & Batch Rename', body: '<p>Configures CSV delimiter, character encoding (UTF-8/UTF-16), and batch filename prefix/suffix.</p>' },
+    tr: { title: 'Dışa Aktarım ve Toplu Adlandırma', body: '<p>CSV ayracını, karakter kodlamasını ve çıktı dosyası ön ek/son ek kurallarını ayarlar.</p>' }
+  }
+};
+
+function t(key) {
+  return (I18N[currentLang] && I18N[currentLang][key]) || I18N.id[key] || key;
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  ['translator', 'history', 'settings'].forEach(name => {
+    const panel = document.getElementById('tab-' + name);
+    const btn = document.getElementById('nav-tab-' + name);
+    if (name === tab) {
+      panel.classList.remove('hidden');
+      btn.className = 'py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-semibold bg-burgundy/50 text-goldAccent transition';
+    } else {
+      panel.classList.add('hidden');
+      btn.className = 'py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-semibold text-parchmentDim hover:text-parchment transition';
+    }
+  });
+  if (tab === 'history') renderHistoryScreen();
+  if (tab === 'settings') renderSettingsScreen();
+}
+
+function setLanguage(lang) {
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  ['id', 'en', 'tr'].forEach(code => {
+    const btn = document.getElementById('lang-' + code);
+    if (btn) {
+      btn.className = code === lang
+        ? 'px-2.5 py-1 text-xs font-semibold rounded-md transition bg-burgundy text-parchment'
+        : 'px-2.5 py-1 text-xs font-semibold rounded-md transition text-parchmentDim hover:text-parchment';
+    }
+  });
+
+  document.querySelectorAll('.settings-lang-btn').forEach(btn => {
+    const code = btn.textContent.trim().toLowerCase();
+    btn.className = code === lang
+      ? 'settings-lang-btn py-2 rounded-lg border border-goldAccent bg-burgundy/55 text-xs font-bold text-goldAccent transition'
+      : 'settings-lang-btn py-2 rounded-lg border border-[#4A2A24] bg-[#170E0D] text-xs font-bold text-parchmentDim transition';
+  });
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (key === 'varProtDesc' || key === 'glossHint') {
+      el.innerHTML = t(key);
+    } else {
+      el.textContent = t(key);
+    }
+  });
+
+  updateGlossaryBadge();
+  updateCacheBadge();
+  renderQueue();
+  renderCsvPreviewer();
+  updateControlButtons();
+  renderSettingsScreen();
+  if (activeTab === 'history') renderHistoryScreen();
+}
+
+/**
+ * ============================================================================
+ * 2. STATE, STORAGE (CACHE, SETTINGS, HISTORY) & BATCH RENAME
+ * ============================================================================
+ */
+let selectedEngine = 'google';
+let fileQueue = [];
+let activeFileObj = null;
+let selectedPreviewFileId = null;
+let isRunning = false;
+let isPaused = false;
+let shouldStop = false;
+let failedRowsLog = [];
+let activeProxyIndex = 0;
+
+let telemetrySamples = [];
+let peakSpeedLinesPerSec = 0;
+
+const CACHE_STORAGE_KEY = 'warband_csv_translator_cache_v3';
+const SETTINGS_STORAGE_KEY = 'warband_csv_translator_settings_v3';
+const HISTORY_STORAGE_KEY = 'warband_csv_translator_history_v3';
+
+let translationCache = new Map();
+let historyEntries = [];
+let exportSettings = {
+  delimiter: 'pipe', // pipe | comma | tab | semicolon
+  encoding: 'utf8',  // utf8 | utf16
+  prefix: '',
+  suffix: ''
+};
+
+let modalPreviewItems = [];
+let modalActiveIndex = 0;
+
+function sanitizeFilenameAffix(raw) {
+  return String(raw || '').replace(/[/\\:*?"<>|\r\n\t]/g, '').slice(0, 24);
+}
+
+function buildExportFileName(originalName, prefix, suffix) {
+  const cleanPrefix = sanitizeFilenameAffix(prefix).trim();
+  const cleanSuffix = sanitizeFilenameAffix(suffix).trim();
+  const safeOriginal = (originalName || '').trim() || 'output.csv';
+  if (!cleanPrefix && !cleanSuffix) return safeOriginal;
+  const dotIdx = safeOriginal.lastIndexOf('.');
+  if (dotIdx > 0) {
+    return `${cleanPrefix}${safeOriginal.slice(0, dotIdx)}${cleanSuffix}${safeOriginal.slice(dotIdx)}`;
+  }
+  return `${cleanPrefix}${safeOriginal}${cleanSuffix}`;
+}
+
+function getDelimiterMeta(id) {
+  const map = {
+    pipe: { id: 'pipe', symbol: '|', label: 'Warband Default (|)', descKey: 'delPipeDesc' },
+    comma: { id: 'comma', symbol: ',', label: 'Comma (,)', descKey: 'delCommaDesc' },
+    tab: { id: 'tab', symbol: '\t', label: 'Tab (\\t)', descKey: 'delTabDesc' },
+    semicolon: { id: 'semicolon', symbol: ';', label: 'Semicolon (;)', descKey: 'delSemicolonDesc' }
+  };
+  return map[id] || map.pipe;
+}
+
+function escapeCsvFieldIfNeeded(value, delimiter) {
+  if (delimiter === '|') return value;
+  if (value.includes(delimiter) || value.includes('"') || value.includes('\n') || value.includes('\r')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function formatExportContent(lines, sourceSeparator, delimiterId) {
+  const srcSep = sourceSeparator || '|';
+  const meta = getDelimiterMeta(delimiterId);
+  if (delimiterId === 'pipe' && srcSep === '|') {
+    return lines.join('\r\n') + '\r\n';
+  }
+  const outSep = delimiterId === 'pipe' ? srcSep : meta.symbol;
+  return lines.map(line => {
+    const idx = line.indexOf(srcSep);
+    if (idx === -1) return escapeCsvFieldIfNeeded(line, outSep);
+    const code = escapeCsvFieldIfNeeded(line.slice(0, idx), outSep);
+    const text = escapeCsvFieldIfNeeded(line.slice(idx + srcSep.length), outSep);
+    return `${code}${outSep}${text}`;
+  }).join('\r\n') + '\r\n';
+}
+
+function encodeContentToBlob(content, encodingId) {
+  if (encodingId === 'utf16') {
+    // UTF-16BE with BOM (matching JVM Charset UTF-16)
+    const buf = new ArrayBuffer((content.length + 1) * 2);
+    const view = new DataView(buf);
+    view.setUint16(0, 0xFEFF, false);
+    for (let i = 0; i < content.length; i++) {
+      view.setUint16((i + 1) * 2, content.charCodeAt(i), false);
+    }
+    return new Blob([buf], { type: 'text/csv;charset=utf-16' });
+  }
+  return new Blob([content], { type: 'text/csv;charset=utf-8' });
+}
+
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      exportSettings = {
+        delimiter: parsed.delimiter || 'pipe',
+        encoding: parsed.encoding || 'utf8',
+        prefix: sanitizeFilenameAffix(parsed.prefix || ''),
+        suffix: sanitizeFilenameAffix(parsed.suffix || '')
+      };
+    }
+  } catch (_) {}
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(exportSettings));
+  } catch (_) {}
+}
+
+function loadHistory() {
+  try {
+    const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (saved) historyEntries = JSON.parse(saved) || [];
+  } catch (_) {
+    historyEntries = [];
+  }
+}
+
+function saveHistory() {
+  try {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(historyEntries.slice(0, 40)));
+  } catch (_) {}
+}
+
+function recordHistorySession(fileItem, status, processedLines) {
+  const tl = document.getElementById('tgtLang').value;
+  const sl = document.getElementById('srcLang').value;
+  const entry = {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    fileName: fileItem.name,
+    timestamp: Date.now(),
+    status,
+    totalLines: fileItem.lines.length,
+    processedLines,
+    sourceLang: sl,
+    targetLang: tl,
+    engineName: selectedEngine.toUpperCase(),
+    sourceSnapshot: fileItem.lines.slice(0, 4000).join('\n'),
+    translatedSnapshot: status === 'DONE' ? fileItem.results.slice(0, 4000).join('\n') : ''
+  };
+  historyEntries.unshift(entry);
+  saveHistory();
+  if (activeTab === 'history') renderHistoryScreen();
+}
+
+function loadCache() {
+  try {
+    const saved = localStorage.getItem(CACHE_STORAGE_KEY) || localStorage.getItem('warband_csv_translator_cache_v2');
+    if (saved) translationCache = new Map(JSON.parse(saved));
+  } catch (_) {}
+  updateCacheBadge();
+}
+
+function saveCache() {
+  try {
+    const entries = Array.from(translationCache.entries());
+    const trimmed = entries.length > 8000 ? entries.slice(-8000) : entries;
+    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(trimmed));
+  } catch (_) {}
+  updateCacheBadge();
+}
+
+function updateCacheBadge() {
+  const txt = `${translationCache.size.toLocaleString()} ${t('cacheUnit')}`;
+  const el1 = document.getElementById('cacheBadge');
+  const el2 = document.getElementById('settingsCacheBadge');
+  if (el1) el1.textContent = txt;
+  if (el2) el2.textContent = txt;
+}
+
+function clearCacheStorage() {
+  translationCache.clear();
+  try {
+    localStorage.removeItem(CACHE_STORAGE_KEY);
+    localStorage.removeItem('warband_csv_translator_cache_v2');
+  } catch (_) {}
+  updateCacheBadge();
+  refreshAutoResumeCounts();
+  renderQueue();
+  showToast('Cache terjemahan berhasil dibersihkan.');
+  appendLog('Cache memori telah dihapus.', 'warn');
+}
+
+function onSettingsChanged() {
+  refreshAutoResumeCounts();
+  renderQueue();
+  renderCsvPreviewer();
+  renderSettingsScreen();
+}
+
+/**
+ * ============================================================================
+ * 3. ENGINE, VARIABLE GUARD & GLOSSARY
+ * ============================================================================
+ */
+function selectEngine(eng) {
+  selectedEngine = eng;
+  ['google', 'lingva', 'mymemory'].forEach(id => {
+    const card = document.getElementById('eng-' + id);
+    if (!card) return;
+    card.className = id === eng
+      ? 'w-full eng-card p-3 pr-8 rounded-xl border-2 border-goldAccent bg-[#2B1917] text-left transition flex items-center gap-3 shadow-md'
+      : 'w-full eng-card p-3 pr-8 rounded-xl border border-[#4A2A24] bg-[#190F0E] hover:border-burgundy text-left transition flex items-center gap-3';
+  });
+  setStatus(`Mesin aktif: ${eng.toUpperCase()}`, 'neutral');
+}
+
+function setStatus(text, type = 'neutral') {
+  const el = document.getElementById('connStatus');
+  if (!el) return;
+  el.textContent = text;
+  if (type === 'ok') el.className = 'text-xs px-2.5 py-0.5 rounded-full bg-green-950/70 border border-green-700 text-green-300';
+  else if (type === 'warn') el.className = 'text-xs px-2.5 py-0.5 rounded-full bg-amber-950/70 border border-amber-700 text-amber-300';
+  else if (type === 'err') el.className = 'text-xs px-2.5 py-0.5 rounded-full bg-red-950/70 border border-red-700 text-red-300';
+  else el.className = 'text-xs px-2.5 py-0.5 rounded-full bg-[#1F1312] border border-[#4A2A24] text-parchmentDim';
+}
+
+const CORS_PROXIES = [
+  url => url,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+];
+
+async function fetchWithProxyFallback(targetUrl) {
+  let lastError;
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    const idx = (activeProxyIndex + i) % CORS_PROXIES.length;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 9500);
+      const res = await fetch(CORS_PROXIES[idx](targetUrl), { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (idx !== activeProxyIndex) activeProxyIndex = idx;
+      setStatus(idx === 0 ? 'Terhubung Langsung' : `Terhubung (Proxy #${idx})`, idx === 0 ? 'ok' : 'warn');
+      return data;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  setStatus('Koneksi Terputus / Limit', 'err');
+  throw lastError || new Error('Semua proxy gagal merespons');
+}
+
+async function queryGoogleTranslate(text, sl, tl) {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+  const data = await fetchWithProxyFallback(url);
+  if (!Array.isArray(data) || !Array.isArray(data[0])) throw new Error('Respons Google tidak valid');
+  return data[0].map(chunk => chunk[0] || '').join('');
+}
+
+async function queryLingvaTranslate(text, sl, tl) {
+  const url = `https://lingva.ml/api/v1/${sl === 'auto' ? 'auto' : sl}/${tl}/${encodeURIComponent(text)}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 9500);
+  const res = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeoutId);
+  if (!res.ok) throw new Error(`Lingva HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data || typeof data.translation !== 'string') throw new Error('Respons Lingva kosong');
+  setStatus('Terhubung (Lingva)', 'ok');
+  return data.translation;
+}
+
+async function queryMyMemoryTranslate(text, sl, tl) {
+  const pair = sl === 'auto' ? `en|${tl}` : `${sl}|${tl}`;
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(pair)}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 9500);
+  const res = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeoutId);
+  if (!res.ok) throw new Error(`MyMemory HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.responseStatus !== 200) throw new Error(data.responseDetails || `MyMemory Status ${data.responseStatus}`);
+  setStatus('Terhubung (MyMemory)', 'ok');
+  return data.responseData.translatedText;
+}
+
+async function callTranslatorEngine(engineName, text, sl, tl) {
+  if (engineName === 'lingva') return await queryLingvaTranslate(text, sl, tl);
+  if (engineName === 'mymemory') return await queryMyMemoryTranslate(text, sl, tl);
+  return await queryGoogleTranslate(text, sl, tl);
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function parseGlossary() {
+  const raw = (document.getElementById('glossaryText').value || '').trim();
+  const noTranslate = [];
+  const forcedPairs = [];
+  if (!raw) return { noTranslate, forcedPairs };
+  raw.split('\n').forEach(line => {
+    const clean = line.trim();
+    if (!clean || clean.startsWith('#')) return;
+    const eqIdx = clean.indexOf('=');
+    if (eqIdx > 0) {
+      forcedPairs.push({ src: clean.slice(0, eqIdx).trim(), dst: clean.slice(eqIdx + 1).trim() });
+    } else {
+      noTranslate.push(clean);
+    }
+  });
+  noTranslate.sort((a, b) => b.length - a.length);
+  forcedPairs.sort((a, b) => b.src.length - a.src.length);
+  return { noTranslate, forcedPairs };
+}
+
+function updateGlossaryBadge() {
+  const badge = document.getElementById('glossCountBadge');
+  if (!badge) return;
+  const { noTranslate, forcedPairs } = parseGlossary();
+  const totalTerms = noTranslate.length + forcedPairs.length;
+  badge.textContent = `${totalTerms} ${t('glossBadgeUnit')}`;
+  badge.className = totalTerms > 0
+    ? 'ml-1.5 px-2 py-0.5 rounded-full bg-burgundy/50 border border-goldAccent text-[11px] font-mono text-goldAccent font-semibold shrink-0'
+    : 'ml-1.5 px-2 py-0.5 rounded-full bg-[#190F0E] border border-[#4A2A24] text-[11px] font-mono text-parchmentDim shrink-0';
+}
+
+document.getElementById('glossaryText').addEventListener('input', updateGlossaryBadge);
+
+function protectWarbandTokens(text, glossary) {
+  const tokens = [];
+  let protectedText = text;
+  const pushToken = match => {
+    const id = tokens.length;
+    tokens.push(match);
+    return ` ZXQ${id}QXZ `;
+  };
+  protectedText = protectedText.replace(/\{[^}]+\}/g, pushToken);
+  protectedText = protectedText.replace(/\^\^|\^/g, pushToken);
+  protectedText = protectedText.replace(/%[sd]/g, pushToken);
+  glossary.noTranslate.forEach(term => {
+    protectedText = protectedText.replace(new RegExp(`\\b${escapeRegex(term)}\\b`, 'gi'), pushToken);
+  });
+  return { protectedText, tokens };
+}
+
+function restoreWarbandTokens(translatedText, tokens, glossary) {
+  let result = translatedText.replace(/\s*ZXQ\s*(\d+)\s*QXZ\s*/gi, (_, idxStr) => {
+    const idx = parseInt(idxStr, 10);
+    return tokens[idx] !== undefined ? tokens[idx] : '';
+  });
+  glossary.forcedPairs.forEach(pair => {
+    result = result.replace(new RegExp(`\\b${escapeRegex(pair.src)}\\b`, 'gi'), pair.dst);
+  });
+  return result.trim();
+}
+
+async function processSingleLine(rawLine, engineName) {
+  const sep = document.getElementById('sepChar').value || '|';
+  const stripTag = document.getElementById('stripTag').value;
+  const sl = document.getElementById('srcLang').value;
+  const tl = document.getElementById('tgtLang').value;
+
+  let workingLine = rawLine;
+  if (stripTag) workingLine = workingLine.replace(new RegExp(escapeRegex(stripTag), 'g'), '');
+
+  const sepIdx = workingLine.indexOf(sep);
+  const hasCode = sepIdx !== -1;
+  const codePart = hasCode ? workingLine.slice(0, sepIdx) : '';
+  const textPart = hasCode ? workingLine.slice(sepIdx + sep.length).trim() : workingLine.trim();
+
+  if (!textPart) return { output: hasCode ? `${codePart}${sep}` : '', fromCache: true };
+
+  const cacheKey = `${tl}|${textPart}`;
+  if (translationCache.has(cacheKey)) {
+    const cachedVal = translationCache.get(cacheKey);
+    return { output: hasCode ? `${codePart}${sep}${cachedVal}` : cachedVal, fromCache: true };
+  }
+
+  const glossary = parseGlossary();
+  const { protectedText, tokens } = protectWarbandTokens(textPart, glossary);
+  const rawTranslated = await callTranslatorEngine(engineName, protectedText, sl, tl);
+  const finalTranslated = restoreWarbandTokens(rawTranslated, tokens, glossary);
+  translationCache.set(cacheKey, finalTranslated);
+
+  return { output: hasCode ? `${codePart}${sep}${finalTranslated}` : finalTranslated, fromCache: false };
+}
+
+/**
+ * ============================================================================
+ * 4. FILE QUEUE, AUTO-RESUME, CSV 10-ROW PREVIEWER & BATCH REORDER
+ * ============================================================================
+ */
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-goldAccent', 'bg-[#241514]'); });
+dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-goldAccent', 'bg-[#241514]'); });
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('border-goldAccent', 'bg-[#241514]');
+  if (e.dataTransfer.files) enqueueFiles(Array.from(e.dataTransfer.files));
+});
+
+function handleFileSelect(event) {
+  if (event.target.files) {
+    enqueueFiles(Array.from(event.target.files));
+    event.target.value = '';
+  }
+}
+
+function countCachedLinesForFile(item) {
+  const sep = document.getElementById('sepChar').value || '|';
+  const stripTag = document.getElementById('stripTag').value;
+  const tl = document.getElementById('tgtLang').value;
+  let hits = 0;
+  for (const rawLine of item.lines) {
+    if (checkSkipRegex(rawLine)) { hits++; continue; }
+    let working = stripTag ? rawLine.replace(new RegExp(escapeRegex(stripTag), 'g'), '') : rawLine;
+    const sepIdx = working.indexOf(sep);
+    const textPart = sepIdx !== -1 ? working.slice(sepIdx + sep.length).trim() : working.trim();
+    if (!textPart || translationCache.has(`${tl}|${textPart}`)) hits++;
+  }
+  return hits;
+}
+
+function refreshAutoResumeCounts() {
+  fileQueue.forEach(item => {
+    item.cachedLinesCount = countCachedLinesForFile(item);
+  });
+}
+
+function enqueueFiles(files) {
+  const allowed = ['.csv', '.txt', '.tsv'];
+  files.forEach(file => {
+    const dotIdx = file.name.lastIndexOf('.');
+    const ext = dotIdx !== -1 ? file.name.slice(dotIdx).toLowerCase() : '';
+    if (!allowed.includes(ext)) {
+      appendLog(`Format tidak didukung: ${file.name}`, 'err');
+      showErrorPopup('Format File Tidak Didukung', `File "${file.name}" diabaikan. Gunakan format .csv, .txt, atau .tsv.`);
+      return;
+    }
+
+    const item = {
+      id: String(Date.now() + Math.random()),
+      name: file.name,
+      lines: [],
+      results: [],
+      status: 'wait',
+      cachedLinesCount: 0,
+      processedCount: 0
+    };
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      const content = e.target.result.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      item.lines = content.split('\n').filter(l => l.trim().length > 0);
+      item.cachedLinesCount = countCachedLinesForFile(item);
+      fileQueue.push(item);
+      selectedPreviewFileId = item.id;
+      renderQueue();
+      renderCsvPreviewer();
+      updateControlButtons();
+      appendLog(`Dimuat: ${file.name} (${item.lines.length.toLocaleString()} baris)`, 'info');
+    };
+    reader.readAsText(file, 'utf-8');
+  });
+}
+
+function renderQueue() {
+  const container = document.getElementById('queueContainer');
+  const list = document.getElementById('queueList');
+  const summary = document.getElementById('queueSummary');
+
+  if (fileQueue.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  const totalLines = fileQueue.reduce((acc, f) => acc + f.lines.length, 0);
+  const doneCount = fileQueue.filter(f => f.status === 'done').length;
+  summary.textContent = `${fileQueue.length} file (${doneCount}/${fileQueue.length} selesai · ${totalLines.toLocaleString()} baris)`;
+  list.innerHTML = '';
+
+  fileQueue.forEach((item, index) => {
+    const li = document.createElement('li');
+    const isSelected = item.id === selectedPreviewFileId;
+    li.className = `rounded-lg px-3 py-2.5 text-xs sm:text-sm space-y-2 border cursor-pointer transition ${isSelected ? 'bg-[#211311] border-goldAccent' : 'bg-[#170E0D] border-[#3E231F]'}`;
+    li.onclick = () => { selectedPreviewFileId = item.id; renderQueue(); renderCsvPreviewer(); };
+
+    let badgeHtml = '';
+    if (item.status === 'wait') badgeHtml = `<span class="px-2 py-0.5 rounded bg-[#261715] text-parchmentDim text-[11px]">${t('stWait')}</span>`;
+    else if (item.status === 'run') badgeHtml = `<span class="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[11px] animate-pulse-slow">${t('stRun')}</span>`;
+    else if (item.status === 'done') badgeHtml = `<span class="px-2 py-0.5 rounded bg-green-950 border border-green-700 text-green-300 text-[11px]">${t('stDone')}</span>`;
+    else badgeHtml = `<span class="px-2 py-0.5 rounded bg-red-950 border border-red-700 text-red-300 text-[11px]">${t('stErr')}</span>`;
+
+    const pct = item.lines.length > 0 ? Math.min(100, Math.round((Math.max(item.processedCount, item.cachedLinesCount) / item.lines.length) * 100)) : 0;
+    const resumeSub = item.status === 'wait' && item.cachedLinesCount > 0
+      ? ` · ${t('autoResumeReady')}: ${item.cachedLinesCount}/${item.lines.length} (${pct}%)`
+      : item.status === 'run'
+        ? ` · ${item.processedCount}/${item.lines.length} (${pct}%)`
+        : '';
+
+    const renamedOut = buildExportFileName(item.name, exportSettings.prefix, exportSettings.suffix);
+    const renameLine = renamedOut !== item.name
+      ? `<div class="text-[11px] font-mono text-goldAccent truncate">→ ${escapeHtml(renamedOut)}</div>`
+      : '';
+
+    const progressBarHtml = pct > 0 && item.status !== 'done'
+      ? `<div class="w-full h-1 bg-[#110808] rounded-full overflow-hidden"><div class="h-full bg-goldAccent" style="width:${pct}%"></div></div>`
+      : '';
+
+    const moveBtns = !isRunning && fileQueue.length > 1
+      ? `<button type="button" onclick="event.stopPropagation(); moveQueueItem('${item.id}', -1)" ${index === 0 ? 'disabled' : ''} class="px-1.5 py-0.5 text-parchmentDim disabled:opacity-25 hover:text-goldAccent">↑</button>
+         <button type="button" onclick="event.stopPropagation(); moveQueueItem('${item.id}', 1)" ${index === fileQueue.length - 1 ? 'disabled' : ''} class="px-1.5 py-0.5 text-parchmentDim disabled:opacity-25 hover:text-goldAccent">↓</button>`
+      : '';
+
+    const dlBtn = item.status === 'done' && item.results.length > 0
+      ? `<button type="button" onclick="event.stopPropagation(); openExportPreviewForSingle('${item.id}')" class="px-2.5 py-1 rounded bg-forest/50 hover:bg-forest border border-green-600 text-green-200 text-xs font-medium transition">👁️ / ⬇ ${t('btnDlFile')}</button>`
+      : '';
+
+    const rmBtn = !isRunning
+      ? `<button type="button" onclick="event.stopPropagation(); removeQueueItem('${item.id}')" class="text-parchmentDim hover:text-red-400 px-1.5 font-bold" title="Hapus">✕</button>`
+      : '';
+
+    li.innerHTML = `
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="font-medium text-parchment truncate">${index + 1}. ${escapeHtml(item.name)}</div>
+          <div class="text-[11px] ${item.cachedLinesCount > 0 && item.status === 'wait' ? 'text-goldAccent' : 'text-parchmentDim'}">${item.lines.length.toLocaleString()} ${t('cacheUnit')}${resumeSub}</div>
+          ${renameLine}
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">${badgeHtml}</div>
+      </div>
+      ${progressBarHtml}
+      <div class="flex items-center justify-end gap-1.5">${moveBtns}${dlBtn}${rmBtn}</div>
+    `;
+    list.appendChild(li);
+  });
+}
+
+function moveQueueItem(id, dir) {
+  if (isRunning) return;
+  const idx = fileQueue.findIndex(f => f.id === id);
+  const target = idx + dir;
+  if (idx < 0 || target < 0 || target >= fileQueue.length) return;
+  [fileQueue[idx], fileQueue[target]] = [fileQueue[target], fileQueue[idx]];
+  renderQueue();
+}
+
+function removeQueueItem(id) {
+  fileQueue = fileQueue.filter(f => f.id !== id);
+  if (selectedPreviewFileId === id) {
+    selectedPreviewFileId = fileQueue[0] ? fileQueue[0].id : null;
+  }
+  renderQueue();
+  renderCsvPreviewer();
+  updateControlButtons();
+}
+
+function clearQueue() {
+  if (isRunning) return;
+  fileQueue = [];
+  activeFileObj = null;
+  selectedPreviewFileId = null;
+  renderQueue();
+  renderCsvPreviewer();
+  updateControlButtons();
+  document.getElementById('progressCard').classList.add('hidden');
+  document.getElementById('postActionRow').classList.add('hidden');
+  document.getElementById('previewSection').classList.add('hidden');
+}
+
+function renderCsvPreviewer() {
+  const card = document.getElementById('csvPreviewerCard');
+  if (fileQueue.length === 0) {
+    card.classList.add('hidden');
+    return;
+  }
+  const target = fileQueue.find(f => f.id === selectedPreviewFileId) || fileQueue[0];
+  if (!target) {
+    card.classList.add('hidden');
+    return;
+  }
+  selectedPreviewFileId = target.id;
+  card.classList.remove('hidden');
+
+  const tabsEl = document.getElementById('csvPreviewFileTabs');
+  tabsEl.innerHTML = '';
+  if (fileQueue.length > 1) {
+    fileQueue.forEach(item => {
+      const btn = document.createElement('button');
+      const active = item.id === target.id;
+      btn.type = 'button';
+      btn.className = active
+        ? 'px-2.5 py-1 rounded-full text-[11px] font-semibold bg-burgundy/60 border border-goldAccent text-goldAccent'
+        : 'px-2.5 py-1 rounded-full text-[11px] bg-[#170E0D] border border-[#4A2A24] text-parchmentDim';
+      btn.textContent = item.name;
+      btn.onclick = () => { selectedPreviewFileId = item.id; renderQueue(); renderCsvPreviewer(); };
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  const sep = document.getElementById('sepChar').value || '|';
+  const stripTag = document.getElementById('stripTag').value;
+  const sample = target.lines.slice(0, 10);
+  let matched = 0;
+
+  const tbody = document.getElementById('csvPreviewTableBody');
+  tbody.innerHTML = '';
+
+  sample.forEach((rawLine, idx) => {
+    const skipped = checkSkipRegex(rawLine);
+    const working = stripTag ? rawLine.replace(new RegExp(escapeRegex(stripTag), 'g'), '') : rawLine;
+    const sepIdx = working.indexOf(sep);
+    const hasSep = sepIdx !== -1;
+    if (hasSep) matched++;
+    const colKey = hasSep ? working.slice(0, sepIdx) : '—';
+    const colText = hasSep ? working.slice(sepIdx + sep.length).trim() : working.trim();
+
+    const tokens = [];
+    const rxList = [/\{[^}]+\}/g, /\^\^|\^/g, /%[sd]/g];
+    rxList.forEach(rx => {
+      const m = colText.match(rx);
+      if (m) m.forEach(tok => { if (!tokens.includes(tok)) tokens.push(tok); });
+    });
+
+    const tr = document.createElement('tr');
+    const infoBadges = [];
+    if (skipped) infoBadges.push(`<span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700 text-[10px]">${t('csvSkipTag')}</span>`);
+    if (!hasSep) infoBadges.push(`<span class="px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-700 text-[10px]">${t('csvNoSepTag')}</span>`);
+    tokens.slice(0, 3).forEach(tok => {
+      infoBadges.push(`<span class="px-1.5 py-0.5 rounded bg-burgundy/40 text-goldAccent border border-[#5A342D] text-[10px]">${escapeHtml(tok)}</span>`);
+    });
+
+    tr.innerHTML = `
+      <td class="px-2.5 py-2 text-parchmentDim">${idx + 1}</td>
+      <td class="px-2.5 py-2 text-goldAccent break-all">${escapeHtml(colKey)}</td>
+      <td class="px-2.5 py-2 text-parchment break-words">${escapeHtml(colText)}</td>
+      <td class="px-2.5 py-2"><div class="flex flex-wrap gap-1">${infoBadges.join('')}</div></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const banner = document.getElementById('csvMatchBanner');
+  const isHealthy = matched >= Math.ceil(sample.length / 2);
+  banner.className = isHealthy
+    ? 'rounded-lg px-3 py-2 text-xs border bg-green-950/35 border-green-700/60 text-green-300'
+    : 'rounded-lg px-3 py-2 text-xs border bg-amber-950/40 border-amber-700 text-amber-200';
+  banner.textContent = isHealthy
+    ? `✓ ${matched}/${sample.length} ${t('csvSepMatchOk')} ('${sep}') · Total ${target.lines.length.toLocaleString()} ${t('cacheUnit')}`
+    : `⚠ ${t('csvSepMatchWarn')} ('${sep}')`;
+}
+
+/**
+ * ============================================================================
+ * 5. REAL-TIME CANVAS TELEMETRY GRAPH (SPEED & PROGRESS %)
+ * ============================================================================
+ */
+function drawTelemetryChart() {
+  const canvas = document.getElementById('telemetryCanvas');
+  const emptyEl = document.getElementById('telemetryEmptyState');
+  if (!canvas) return;
+
+  const curEl = document.getElementById('kpiCurSpeedVal');
+  const peakEl = document.getElementById('kpiPeakSpeedVal');
+  const latestSpeed = telemetrySamples.length > 0 ? telemetrySamples[telemetrySamples.length - 1].speed : 0;
+  if (curEl) curEl.textContent = latestSpeed.toFixed(1);
+  if (peakEl) peakEl.textContent = peakSpeedLinesPerSec.toFixed(1);
+
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth || 600;
+  const height = 170;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, width, height);
+
+  if (telemetrySamples.length < 2) {
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+  emptyEl.classList.add('hidden');
+
+  const padL = 34, padR = 34, padT = 12, padB = 20;
+  const w = width - padL - padR;
+  const h = height - padT - padB;
+
+  ctx.strokeStyle = 'rgba(74, 42, 36, 0.45)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (h * i) / 4;
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(width - padR, y);
+    ctx.stroke();
+  }
+
+  const maxSpeed = Math.max(5, peakSpeedLinesPerSec * 1.15);
+  const n = telemetrySamples.length;
+
+  // Progress % Area + Line (Green)
+  ctx.beginPath();
+  telemetrySamples.forEach((pt, idx) => {
+    const x = padL + (w * idx) / (n - 1);
+    const y = padT + h - (Math.min(100, Math.max(0, pt.pct)) / 100) * h;
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#4ADE80';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.lineTo(padL + w, padT + h);
+  ctx.lineTo(padL, padT + h);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(74, 222, 128, 0.12)';
+  ctx.fill();
+
+  // Speed Line (Gold)
+  ctx.beginPath();
+  telemetrySamples.forEach((pt, idx) => {
+    const x = padL + (w * idx) / (n - 1);
+    const y = padT + h - (Math.min(maxSpeed, pt.speed) / maxSpeed) * h;
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#D4AF37';
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
+
+  ctx.fillStyle = '#C2B194';
+  ctx.font = '10px monospace';
+  ctx.fillText(maxSpeed.toFixed(0), 4, padT + 8);
+  ctx.fillText('0', 4, padT + h);
+  ctx.fillStyle = '#4ADE80';
+  ctx.fillText('100%', width - padR + 4, padT + 8);
+  ctx.fillText('0%', width - padR + 4, padT + h);
+}
+
+/**
+ * ============================================================================
+ * 6. EXECUTION LOOP, AUTO-FALLBACK & PROGRESS
+ * ============================================================================
+ */
+function updateControlButtons() {
+  const btnStart = document.getElementById('btnStart');
+  const btnPause = document.getElementById('btnPause');
+  const btnStop = document.getElementById('btnStop');
+  const lblPause = document.getElementById('lblPauseBtn');
+  const stickyBar = document.getElementById('stickyProgressBar');
+  const stickyPauseLbl = document.getElementById('stickyPauseLbl');
+
+  const hasWaiting = fileQueue.some(f => f.status === 'wait');
+  btnStart.disabled = isRunning || !hasWaiting;
+  btnPause.disabled = !isRunning;
+  btnStop.disabled = !isRunning;
+
+  const pauseLabelText = isPaused ? t('btnResume') : t('btnPause');
+  lblPause.textContent = pauseLabelText;
+  if (stickyPauseLbl) stickyPauseLbl.textContent = pauseLabelText;
+  if (stickyBar) stickyBar.classList.toggle('hidden', !isRunning);
+
+  const hasDone = fileQueue.some(f => f.status === 'done');
+  document.getElementById('postActionRow').classList.toggle('hidden', !hasDone);
+}
+
+function togglePause() {
+  if (!isRunning) return;
+  isPaused = !isPaused;
+  updateControlButtons();
+  appendLog(isPaused ? 'Proses dijeda oleh pengguna.' : 'Proses dilanjutkan kembali...', 'warn');
+}
+
+function stopTranslation() {
+  if (!isRunning) return;
+  shouldStop = true;
+  isPaused = false;
+  appendLog('Menghentikan proses terjemahan...', 'err');
+}
+
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+function checkSkipRegex(line) {
+  const pattern = (document.getElementById('skipRegex').value || '').trim();
+  if (!pattern) return false;
+  try { return new RegExp(pattern).test(line); } catch (_) { return false; }
+}
+
+async function startTranslation() {
+  const pendingFiles = fileQueue.filter(f => f.status === 'wait');
+  if (pendingFiles.length === 0) return;
+
+  isRunning = true;
+  isPaused = false;
+  shouldStop = false;
+  failedRowsLog = [];
+  updateControlButtons();
+
+  document.getElementById('progressCard').classList.remove('hidden');
+  document.getElementById('btnExportErrors').classList.add('hidden');
+
+  const delayMs = parseInt(document.getElementById('delaySelect').value, 10) || 200;
+  const useFallback = document.getElementById('autoFallbackChk').checked;
+  const fallbackPool = ['google', 'lingva', 'mymemory'].filter(e => e !== selectedEngine);
+
+  appendLog(`Memulai terjemahan ${pendingFiles.length} file menggunakan ${selectedEngine.toUpperCase()}...`, 'ok');
+
+  for (let fIdx = 0; fIdx < pendingFiles.length; fIdx++) {
+    if (shouldStop) break;
+
+    const fileItem = pendingFiles[fIdx];
+    activeFileObj = fileItem;
+    fileItem.status = 'run';
+    fileItem.results = [];
+    fileItem.processedCount = 0;
+    telemetrySamples = [];
+    peakSpeedLinesPerSec = 0;
+    drawTelemetryChart();
+    renderQueue();
+
+    const total = fileItem.lines.length;
+    let cacheHits = 0;
+    const startTime = Date.now();
+    let lastSampleTime = startTime;
+    let lastSampleCount = 0;
+
+    const fileHeaderLabel = `[${fIdx + 1}/${pendingFiles.length}] ${fileItem.name}`;
+    document.getElementById('currentFileLabel').textContent = fileHeaderLabel;
+    document.getElementById('stickyFileName').textContent = fileHeaderLabel;
+
+    for (let i = 0; i < total; i++) {
+      while (isPaused && !shouldStop) await sleep(250);
+      if (shouldStop) break;
+
+      const originalLine = fileItem.lines[i];
+      let translated = null;
+      let usedCache = false;
+
+      if (checkSkipRegex(originalLine)) {
+        translated = originalLine;
+        usedCache = true;
+      } else {
+        let success = false;
+        let lastErrMessage = 'Koneksi gagal';
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const res = await processSingleLine(originalLine, selectedEngine);
+            translated = res.output;
+            usedCache = res.fromCache;
+            success = true;
+            break;
+          } catch (err) {
+            lastErrMessage = err && err.message ? err.message : lastErrMessage;
+            if (attempt < 3) await sleep(800 * attempt);
+          }
+        }
+        if (!success && useFallback) {
+          for (const altEngine of fallbackPool) {
+            try {
+              const res = await processSingleLine(originalLine, altEngine);
+              translated = res.output;
+              usedCache = res.fromCache;
+              success = true;
+              appendLog(`Baris ${i + 1} dialihkan ke ${altEngine.toUpperCase()}`, 'warn');
+              break;
+            } catch (altErr) {
+              lastErrMessage = altErr && altErr.message ? altErr.message : lastErrMessage;
+            }
+          }
+        }
+        if (!success) {
+          translated = originalLine;
+          failedRowsLog.push(`[${fileItem.name} | Baris ${i + 1}] ${originalLine}`);
+          appendLog(`Gagal baris ${i + 1} di ${fileItem.name} (${lastErrMessage})`, 'err');
+          showErrorPopup('Gagal Menerjemahkan Baris', lastErrMessage, `${fileItem.name} · Baris #${i + 1}`);
+        }
+      }
+
+      if (usedCache) cacheHits++;
+      fileItem.results.push(translated);
+      fileItem.processedCount = i + 1;
+
+      const now = Date.now();
+      if (now - lastSampleTime >= 500 || i === total - 1) {
+        const dt = Math.max(0.25, (now - lastSampleTime) / 1000);
+        const speed = (i + 1 - lastSampleCount) / dt;
+        if (speed > peakSpeedLinesPerSec) peakSpeedLinesPerSec = speed;
+        telemetrySamples.push({ speed, pct: (i + 1) / total * 100 });
+        if (telemetrySamples.length > 60) telemetrySamples.shift();
+        lastSampleTime = now;
+        lastSampleCount = i + 1;
+        drawTelemetryChart();
+      }
+
+      updateProgressUI(i + 1, total, cacheHits, startTime);
+      if ((i + 1) % 5 === 0 || i === total - 1) renderLivePreview(fileItem);
+      if (!usedCache && (i + 1) % 25 === 0) saveCache();
+      if (!usedCache) await sleep(delayMs);
+    }
+
+    saveCache();
+    refreshAutoResumeCounts();
+
+    if (!shouldStop) {
+      fileItem.status = 'done';
+      renderLivePreview(fileItem);
+      recordHistorySession(fileItem, 'DONE', total);
+      appendLog(`Selesai: ${fileItem.name} (${total.toLocaleString()} baris)`, 'ok');
+    } else {
+      fileItem.status = 'wait';
+      recordHistorySession(fileItem, 'STOPPED', fileItem.processedCount);
+      appendLog(`Dihentikan pada ${fileItem.name}. Progres tersimpan di cache!`, 'warn');
+    }
+    renderQueue();
+  }
+
+  isRunning = false;
+  isPaused = false;
+  updateControlButtons();
+
+  if (failedRowsLog.length > 0) {
+    const errBtn = document.getElementById('btnExportErrors');
+    errBtn.classList.remove('hidden');
+    document.getElementById('lblErrCount').textContent = `Ekspor Log Baris Gagal (${failedRowsLog.length})`;
+  }
+  if (!shouldStop) showToast('Semua file selesai diterjemahkan!');
+}
+
+function updateProgressUI(done, total, cacheHits, startTime) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const counterStr = `${pct}% (${done.toLocaleString()} / ${total.toLocaleString()})`;
+  document.getElementById('progressBar').style.width = `${pct}%`;
+  document.getElementById('progressCounter').textContent = counterStr;
+  document.getElementById('cacheHitLabel').textContent = `Cache hit: ${cacheHits.toLocaleString()} ${t('cacheUnit')}`;
+  document.getElementById('stickyBarFill').style.width = `${pct}%`;
+  document.getElementById('stickyPctText').textContent = counterStr;
+
+  const elapsedSec = (Date.now() - startTime) / 1000;
+  if (done > 5 && elapsedSec > 1) {
+    const rate = done / elapsedSec;
+    const remSec = Math.max(0, Math.round((total - done) / rate));
+    document.getElementById('etaLabel').textContent = `ETA: ~${Math.floor(remSec / 60)}m ${remSec % 60}d`;
+  }
+}
+
+/**
+ * ============================================================================
+ * 7. SETTINGS SCREEN, HISTORY SCREEN & PREVIEW EXPORT MODAL
+ * ============================================================================
+ */
+function renderSettingsScreen() {
+  const delBox = document.getElementById('exportDelimiterOptions');
+  const encBox = document.getElementById('exportEncodingOptions');
+  if (!delBox || !encBox) return;
+
+  const delimiters = ['comma', 'tab', 'semicolon', 'pipe'];
+  delBox.innerHTML = delimiters.map(id => {
+    const meta = getDelimiterMeta(id);
+    const sel = exportSettings.delimiter === id;
+    return `
+      <button type="button" onclick="selectExportDelimiter('${id}')" class="p-3 rounded-xl text-left border transition flex items-center justify-between gap-2 ${sel ? 'border-2 border-goldAccent bg-[#2B1917]' : 'border-[#4A2A24] bg-[#170E0D]'}">
+        <div>
+          <div class="text-xs font-semibold text-parchment">${meta.label}</div>
+          <div class="text-[11px] text-parchmentDim">${t(meta.descKey)}</div>
+        </div>
+        ${sel ? '<span class="text-goldAccent font-bold">✓</span>' : ''}
+      </button>
+    `;
+  }).join('');
+
+  const encodings = [
+    { id: 'utf8', label: 'UTF-8 (Standard)', badge: 'UTF-8', descKey: 'encUtf8Desc' },
+    { id: 'utf16', label: 'UTF-16 (Unicode)', badge: 'UTF-16', descKey: 'encUtf16Desc' }
+  ];
+  encBox.innerHTML = encodings.map(enc => {
+    const sel = exportSettings.encoding === enc.id;
+    return `
+      <button type="button" onclick="selectExportEncoding('${enc.id}')" class="p-3 rounded-xl text-left border transition flex items-center justify-between gap-2 ${sel ? 'border-2 border-goldAccent bg-[#2B1917]' : 'border-[#4A2A24] bg-[#170E0D]'}">
+        <div>
+          <div class="text-xs font-semibold text-parchment">${enc.label}</div>
+          <div class="text-[11px] text-parchmentDim">${t(enc.descKey)}</div>
+        </div>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${sel ? 'bg-[#0E2914] border-green-600 text-green-300' : 'bg-[#1F1312] border-[#4A2A24] text-parchmentDim'}">${enc.badge}</span>
+      </button>
+    `;
+  }).join('');
+
+  const pInput = document.getElementById('settingsPrefixInput');
+  const sInput = document.getElementById('settingsSuffixInput');
+  if (pInput && pInput.value !== exportSettings.prefix) pInput.value = exportSettings.prefix;
+  if (sInput && sInput.value !== exportSettings.suffix) sInput.value = exportSettings.suffix;
+
+  renderRenamePresets('settingsRenamePresets');
+  document.getElementById('settingsRenamePreviewText').textContent =
+    `dialogs.csv  →  ${buildExportFileName('dialogs.csv', exportSettings.prefix, exportSettings.suffix)}`;
+
+  const sampleOut = formatExportContent(
+    ['str_welcome|Selamat datang di Calradia, petualang!', 'str_swadia_king|Raja Harlaus dari Kerajaan Swadia'],
+    '|',
+    exportSettings.delimiter
+  ).trimEnd().replace(/\t/g, '  [TAB]  ');
+  document.getElementById('settingsExportSampleBox').textContent = sampleOut;
+}
+
+function renderRenamePresets(containerId) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  const tl = document.getElementById('tgtLang').value || 'id';
+  const presets = [
+    { label: t('presetOriginal'), action: () => updateBatchRenameFromInputs('', ''), active: !exportSettings.prefix && !exportSettings.suffix },
+    { label: '_translated', action: () => updateBatchRenameFromInputs(exportSettings.prefix, '_translated'), active: exportSettings.suffix === '_translated' },
+    { label: `_${tl}`, action: () => updateBatchRenameFromInputs(exportSettings.prefix, `_${tl}`), active: exportSettings.suffix === `_${tl}` }
+  ];
+  box.innerHTML = '';
+  presets.forEach(p => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = p.active
+      ? 'px-3 py-1 rounded-full text-[11px] font-bold bg-burgundy/60 border border-goldAccent text-goldAccent'
+      : 'px-3 py-1 rounded-full text-[11px] bg-[#170E0D] border border-[#4A2A24] text-parchmentDim hover:text-parchment';
+    btn.textContent = p.label;
+    btn.onclick = p.action;
+    box.appendChild(btn);
+  });
+}
+
+function selectExportDelimiter(id) {
+  exportSettings.delimiter = id;
+  saveSettings();
+  renderSettingsScreen();
+  renderExportPreviewModal();
+}
+
+function selectExportEncoding(id) {
+  exportSettings.encoding = id;
+  saveSettings();
+  renderSettingsScreen();
+  renderExportPreviewModal();
+}
+
+function updateBatchRenameFromInputs(prefix, suffix) {
+  exportSettings.prefix = sanitizeFilenameAffix(prefix);
+  exportSettings.suffix = sanitizeFilenameAffix(suffix);
+  saveSettings();
+  renderQueue();
+  renderSettingsScreen();
+  renderExportPreviewModal();
+}
+
+function renderHistoryScreen() {
+  const box = document.getElementById('historyListContainer');
+  if (!box) return;
+  if (historyEntries.length === 0) {
+    box.innerHTML = `
+      <div class="text-center py-8 space-y-1.5">
+        <div class="text-3xl">📜</div>
+        <div class="text-sm font-semibold text-goldAccent">${t('historyEmptyTitle')}</div>
+        <div class="text-xs text-parchmentDim">${t('historyEmptySub')}</div>
+      </div>
+    `;
+    return;
+  }
+
+  box.innerHTML = historyEntries.map(entry => {
+    const dateStr = new Date(entry.timestamp).toLocaleString();
+    const stColor = entry.status === 'DONE'
+      ? 'bg-green-950 border-green-700 text-green-300'
+      : entry.status === 'STOPPED'
+        ? 'bg-amber-950 border-amber-700 text-amber-300'
+        : 'bg-red-950 border-red-700 text-red-300';
+    const stLabel = entry.status === 'DONE' ? t('histStatusDone') : entry.status === 'STOPPED' ? t('histStatusStopped') : t('histStatusError');
+    return `
+      <div class="rounded-xl bg-[#170E0D] border border-[#3E231F] p-3.5 space-y-2">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold text-sm text-parchment truncate">${escapeHtml(entry.fileName)}</div>
+            <div class="text-[11px] text-parchmentDim">${dateStr} · ${escapeHtml(entry.sourceLang)} → ${escapeHtml(entry.targetLang)}</div>
+          </div>
+          <span class="px-2 py-0.5 rounded border text-[11px] ${stColor}">${stLabel}</span>
+        </div>
+        <div class="flex items-center justify-between gap-2 text-xs text-parchmentDim">
+          <span class="font-mono">${entry.processedLines}/${entry.totalLines} ${t('cacheUnit')} · ${escapeHtml(entry.engineName)}</span>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="reopenHistoryEntry(${entry.id})" class="px-3 py-1 rounded-lg bg-burgundy/40 hover:bg-burgundy border border-goldMuted text-goldAccent font-semibold text-xs">${t('btnReopenFile')}</button>
+            <button type="button" onclick="deleteHistoryEntry(${entry.id})" class="text-red-300 hover:text-red-200 px-1.5 font-bold">✕</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function reopenHistoryEntry(id) {
+  if (isRunning) { showToast('Tunggu proses aktif selesai terlebih dahulu.'); return; }
+  const entry = historyEntries.find(e => e.id === id);
+  if (!entry || !entry.sourceSnapshot) { showToast('Snapshot file tidak tersedia.'); return; }
+  const srcLines = entry.sourceSnapshot.split('\n').filter(l => l.trim().length > 0);
+  const trLines = entry.status === 'DONE' && entry.translatedSnapshot
+    ? entry.translatedSnapshot.split('\n').filter(l => l.trim().length > 0)
+    : [];
+  const isDone = trLines.length === srcLines.length && trLines.length > 0;
+  const item = {
+    id: String(Date.now() + Math.random()),
+    name: entry.fileName,
+    lines: srcLines,
+    results: trLines,
+    status: isDone ? 'done' : 'wait',
+    cachedLinesCount: isDone ? srcLines.length : entry.processedLines,
+    processedCount: isDone ? srcLines.length : entry.processedLines
+  };
+  fileQueue.push(item);
+  selectedPreviewFileId = item.id;
+  refreshAutoResumeCounts();
+  renderQueue();
+  renderCsvPreviewer();
+  updateControlButtons();
+  switchTab('translator');
+  showToast(`Dimuat ulang: ${entry.fileName}`);
+}
+
+function deleteHistoryEntry(id) {
+  historyEntries = historyEntries.filter(e => e.id !== id);
+  saveHistory();
+  renderHistoryScreen();
+}
+
+function clearHistoryLog() {
+  historyEntries = [];
+  saveHistory();
+  renderHistoryScreen();
+  showToast('Riwayat sesi telah dibersihkan.');
+}
+
+function openExportPreviewForSingle(id) {
+  const item = fileQueue.find(f => f.id === id && f.status === 'done' && f.results.length > 0);
+  if (!item) return;
+  modalPreviewItems = [item];
+  modalActiveIndex = 0;
+  document.getElementById('exportPreviewOverlay').classList.remove('hidden');
+  renderExportPreviewModal();
+}
+
+function openExportPreviewForAllDone() {
+  const doneItems = fileQueue.filter(f => f.status === 'done' && f.results.length > 0);
+  if (doneItems.length === 0) return;
+  modalPreviewItems = doneItems;
+  modalActiveIndex = 0;
+  document.getElementById('exportPreviewOverlay').classList.remove('hidden');
+  renderExportPreviewModal();
+}
+
+function closeExportPreviewModal() {
+  document.getElementById('exportPreviewOverlay').classList.add('hidden');
+}
+
+function renderExportPreviewModal() {
+  const overlay = document.getElementById('exportPreviewOverlay');
+  if (!overlay || overlay.classList.contains('hidden') || modalPreviewItems.length === 0) return;
+  if (modalActiveIndex >= modalPreviewItems.length) modalActiveIndex = 0;
+
+  const mpInput = document.getElementById('modalPrefixInput');
+  const msInput = document.getElementById('modalSuffixInput');
+  if (mpInput && mpInput.value !== exportSettings.prefix) mpInput.value = exportSettings.prefix;
+  if (msInput && msInput.value !== exportSettings.suffix) msInput.value = exportSettings.suffix;
+
+  renderRenamePresets('modalRenamePresets');
+
+  const chipsEl = document.getElementById('exportModalFileChips');
+  chipsEl.innerHTML = '';
+  if (modalPreviewItems.length > 1) {
+    modalPreviewItems.forEach((item, idx) => {
+      const outName = buildExportFileName(item.name, exportSettings.prefix, exportSettings.suffix);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = idx === modalActiveIndex
+        ? 'px-2.5 py-1 rounded-full text-[11px] font-semibold bg-burgundy/60 border border-goldAccent text-goldAccent'
+        : 'px-2.5 py-1 rounded-full text-[11px] bg-[#170E0D] border border-[#4A2A24] text-parchmentDim';
+      btn.textContent = `${idx + 1}. ${outName}`;
+      btn.onclick = () => { modalActiveIndex = idx; renderExportPreviewModal(); };
+      chipsEl.appendChild(btn);
+    });
+  }
+
+  const active = modalPreviewItems[modalActiveIndex];
+  const sep = document.getElementById('sepChar').value || '|';
+  const outName = buildExportFileName(active.name, exportSettings.prefix, exportSettings.suffix);
+  const formatted = formatExportContent(active.results, sep, exportSettings.delimiter);
+  const sampleLines = formatted.replace(/\r\n/g, '\n').split('\n').filter(l => l.length > 0).slice(0, 12);
+
+  document.getElementById('exportModalOutputName').textContent = outName !== active.name ? `${active.name} → ${outName}` : outName;
+  document.getElementById('exportModalMetaBadges').innerHTML = `
+    <span class="px-2 py-0.5 rounded bg-[#211311] border border-[#3A201C] text-[10px] text-parchmentDim">${getDelimiterMeta(exportSettings.delimiter).label}</span>
+    <span class="px-2 py-0.5 rounded bg-[#211311] border border-[#3A201C] text-[10px] text-parchmentDim">${exportSettings.encoding.toUpperCase()}</span>
+    <span class="px-2 py-0.5 rounded bg-[#211311] border border-[#3A201C] text-[10px] text-parchmentDim">${sampleLines.length}/${active.results.length} ${t('cacheUnit')}</span>
+  `;
+  document.getElementById('exportModalSampleBox').textContent = sampleLines.join('\n').replace(/\t/g, '  [TAB]  ');
+}
+
+function downloadActivePreviewFile() {
+  const active = modalPreviewItems[modalActiveIndex];
+  if (!active) return;
+  const sep = document.getElementById('sepChar').value || '|';
+  const outName = buildExportFileName(active.name, exportSettings.prefix, exportSettings.suffix);
+  const formatted = formatExportContent(active.results, sep, exportSettings.delimiter);
+  const blob = encodeContentToBlob(formatted, exportSettings.encoding);
+  triggerDownload(blob, outName);
+  showToast(`Mengunduh ${outName}...`);
+}
+
+async function downloadAllModalFiles() {
+  if (modalPreviewItems.length === 0) return;
+  const sep = document.getElementById('sepChar').value || '|';
+  for (let i = 0; i < modalPreviewItems.length; i++) {
+    const item = modalPreviewItems[i];
+    const outName = buildExportFileName(item.name, exportSettings.prefix, exportSettings.suffix);
+    const formatted = formatExportContent(item.results, sep, exportSettings.delimiter);
+    const blob = encodeContentToBlob(formatted, exportSettings.encoding);
+    triggerDownload(blob, outName);
+    await sleep(350);
+  }
+  closeExportPreviewModal();
+  showToast(`Mengunduh ${modalPreviewItems.length} file (${exportSettings.encoding.toUpperCase()}) selesai!`);
+}
+
+/**
+ * ============================================================================
+ * 8. LIVE PREVIEW, MODALS, LOGS & UTILITIES
+ * ============================================================================
+ */
+function renderLivePreview(fileItem) {
+  if (!fileItem) return;
+  const sec = document.getElementById('previewSection');
+  const box = document.getElementById('previewList');
+  sec.classList.remove('hidden');
+
+  const origLines = fileItem.lines;
+  const transLines = fileItem.results;
+  const count = transLines.length;
+  const start = Math.max(0, count - 5);
+  box.innerHTML = '';
+
+  for (let i = start; i < count; i++) {
+    const div = document.createElement('div');
+    div.className = 'bg-[#140B0B] border border-[#361D1A] rounded-lg p-2.5 text-xs space-y-1.5';
+    div.innerHTML = `
+      <div class="flex items-start justify-between gap-2">
+        <div class="text-parchmentDim/80 font-mono break-all flex-1"><span class="text-goldMuted font-bold">[ASLI #${i + 1}]</span> ${escapeHtml(origLines[i] || '')}</div>
+        <button type="button" onclick="enablePreviewEdit(${i})" class="px-2 py-0.5 rounded bg-[#261614] hover:bg-burgundy/60 border border-[#5A342D] text-[11px] text-goldAccent shrink-0 transition">✏️ Edit</button>
+      </div>
+      <div id="prev-view-${i}" class="text-green-300 font-mono break-all"><span class="text-green-500 font-bold">[HASIL]</span> ${escapeHtml(transLines[i] || '')}</div>
+      <div id="prev-edit-${i}" class="hidden space-y-1.5 pt-1">
+        <input type="text" id="prev-input-${i}" value="${escapeHtmlAttr(transLines[i] || '')}" class="w-full bg-[#221413] border border-goldAccent rounded px-2.5 py-1.5 font-mono text-xs text-parchment focus:outline-none">
+        <div class="flex justify-end gap-1.5">
+          <button type="button" onclick="cancelPreviewEdit(${i})" class="px-2.5 py-1 rounded bg-[#2A1816] border border-[#4A2A24] text-[11px] text-parchmentDim">Batal</button>
+          <button type="button" onclick="savePreviewEdit(${i})" class="px-2.5 py-1 rounded bg-forest/60 hover:bg-forest border border-green-600 text-[11px] text-green-100 font-semibold">Simpan</button>
+        </div>
+      </div>
+    `;
+    box.appendChild(div);
+  }
+}
+
+function enablePreviewEdit(lineIdx) {
+  document.getElementById(`prev-view-${lineIdx}`)?.classList.add('hidden');
+  document.getElementById(`prev-edit-${lineIdx}`)?.classList.remove('hidden');
+  document.getElementById(`prev-input-${lineIdx}`)?.focus();
+}
+
+function cancelPreviewEdit(lineIdx) {
+  document.getElementById(`prev-edit-${lineIdx}`)?.classList.add('hidden');
+  document.getElementById(`prev-view-${lineIdx}`)?.classList.remove('hidden');
+}
+
+function savePreviewEdit(lineIdx) {
+  if (!activeFileObj) return;
+  const inputEl = document.getElementById(`prev-input-${lineIdx}`);
+  if (!inputEl) return;
+  const newVal = inputEl.value;
+  activeFileObj.results[lineIdx] = newVal;
+
+  const sep = document.getElementById('sepChar').value || '|';
+  const tl = document.getElementById('tgtLang').value;
+  const origLine = activeFileObj.lines[lineIdx] || '';
+  const origSepIdx = origLine.indexOf(sep);
+  const newSepIdx = newVal.indexOf(sep);
+  if (origSepIdx !== -1 && newSepIdx !== -1) {
+    const origText = origLine.slice(origSepIdx + sep.length).trim();
+    const newText = newVal.slice(newSepIdx + sep.length).trim();
+    if (origText && newText) {
+      translationCache.set(`${tl}|${origText}`, newText);
+      saveCache();
+    }
+  }
+  renderLivePreview(activeFileObj);
+  showToast(`Baris #${lineIdx + 1} diperbarui.`);
+}
+
+let lastHelpTriggerEl = null;
+function openHelpModal(topicKey, event) {
+  if (event) { event.preventDefault(); event.stopPropagation(); lastHelpTriggerEl = event.currentTarget; }
+  const topic = HELP_TOPICS[topicKey];
+  if (!topic) return;
+  const localized = topic[currentLang] || topic.id;
+  document.getElementById('helpModalTitle').textContent = localized.title;
+  document.getElementById('helpModalBody').innerHTML = localized.body;
+  document.getElementById('helpModalOverlay').classList.remove('hidden');
+}
+
+function closeHelpModal() {
+  document.getElementById('helpModalOverlay').classList.add('hidden');
+  if (lastHelpTriggerEl && typeof lastHelpTriggerEl.focus === 'function') lastHelpTriggerEl.focus();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeHelpModal();
+    closeExportPreviewModal();
+  }
+});
+
+let lastErrorPopupTime = 0;
+function showErrorPopup(title, detail, lineInfo = '') {
+  const now = Date.now();
+  if (now - lastErrorPopupTime < 1800) return;
+  lastErrorPopupTime = now;
+  const container = document.getElementById('errorPopupContainer');
+  if (!container) return;
+  while (container.children.length >= 3) container.removeChild(container.firstChild);
+  const popup = document.createElement('div');
+  popup.className = 'pointer-events-auto animate-slide-in rounded-xl bg-gradient-to-br from-[#2E1115] to-[#1A090B] border-2 border-crimson shadow-2xl p-3.5 text-parchment space-y-1.5';
+  popup.innerHTML = `
+    <div class="flex items-start justify-between gap-2">
+      <div class="flex items-center gap-1.5 text-xs font-bold text-red-300"><span>⚠️</span><span>${escapeHtml(title)}</span></div>
+      <button type="button" onclick="this.closest('.pointer-events-auto').remove()" class="text-red-300/80 hover:text-white text-xs font-bold px-1">✕</button>
+    </div>
+    ${lineInfo ? `<div class="text-[11px] font-mono text-goldAccent/90 truncate">${escapeHtml(lineInfo)}</div>` : ''}
+    <div class="text-[11px] text-parchmentDim leading-snug">${escapeHtml(detail)}</div>
+  `;
+  container.appendChild(popup);
+  setTimeout(() => { popup.remove(); }, 6000);
+}
+
+function appendLog(msg, level = 'info') {
+  const sec = document.getElementById('logSection');
+  const box = document.getElementById('systemLog');
+  sec.classList.remove('hidden');
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const colorClass = level === 'ok' ? 'text-green-400' : level === 'warn' ? 'text-amber-300' : level === 'err' ? 'text-red-400' : 'text-parchmentDim';
+  const row = document.createElement('div');
+  row.className = colorClass;
+  row.textContent = `[${time}] ${msg}`;
+  box.appendChild(row);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearSystemLog() {
+  document.getElementById('systemLog').innerHTML = '';
+  document.getElementById('logSection').classList.add('hidden');
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+function exportErrorLog() {
+  if (failedRowsLog.length === 0) return;
+  triggerDownload(new Blob([failedRowsLog.join('\r\n')], { type: 'text/plain;charset=utf-8' }), 'warband_translation_errors.txt');
+}
+
+function exportGlossary() {
+  triggerDownload(new Blob([document.getElementById('glossaryText').value], { type: 'text/plain;charset=utf-8' }), 'warband_glossary.txt');
+  showToast('Glosarium berhasil diekspor!');
+}
+
+function importGlossary(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('glossaryText').value = e.target.result;
+    updateGlossaryBadge();
+    showToast(`Glosarium "${file.name}" dimuat!`);
+  };
+  reader.readAsText(file, 'utf-8');
+  event.target.value = '';
+}
+
+function clearGlossaryText() {
+  document.getElementById('glossaryText').value = '';
+  updateGlossaryBadge();
+  showToast('Kolom glosarium dikosongkan.');
+}
+
+function toggleAccordion(bodyId, arrowId) {
+  const body = document.getElementById(bodyId);
+  const arrow = document.getElementById(arrowId);
+  const isHidden = body.classList.contains('hidden');
+  body.classList.toggle('hidden', !isHidden);
+  arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+function showToast(msg) {
+  const box = document.getElementById('toastBox');
+  box.textContent = msg;
+  box.classList.remove('hidden');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { box.classList.add('hidden'); }, 3200);
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function escapeHtmlAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
+}
+
+document.getElementById('skipRegex').addEventListener('input', function () {
+  const status = document.getElementById('regexStatus');
+  const val = this.value.trim();
+  if (!val) {
+    status.textContent = t('hintRegex');
+    status.className = 'text-[11px] text-parchmentDim/70 mt-1';
+    return;
+  }
+  try {
+    new RegExp(val);
+    status.textContent = '✓ Pola regex valid';
+    status.className = 'text-[11px] text-green-400 mt-1';
+  } catch (e) {
+    status.textContent = '✕ Pola regex tidak valid';
+    status.className = 'text-[11px] text-red-400 mt-1';
+  }
+  renderCsvPreviewer();
+});
+
+window.addEventListener('resize', drawTelemetryChart);
+window.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  loadCache();
+  loadHistory();
+  updateGlossaryBadge();
+  setLanguage('id');
+  drawTelemetryChart();
+});
+</script>
+</body>
+</html>
