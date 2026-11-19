@@ -1,0 +1,6 @@
+{
+  "name": "Warband CSV",
+  "description": "Penerjemah massal file CSV mod Mount & Blade: Warband tanpa API key dengan cache auto-resume dan dukungan proses latar belakang.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Warband CSV</string>
+    <string name="notif_channel_name">Progres Terjemahan</string>
+    <string name="notif_channel_desc">Menampilkan progres terjemahan CSV Warband di latar belakang</string>
+</resources>
