@@ -374,4 +374,70 @@ class WarbandTextProcessorTest {
     assertEquals(1, todayBucket.filesDone)
     assertEquals(1, todayBucket.filesFailed)
   }
+
+  @Test
+  fun defaultSettings_keepsManualGlossaryEmptyByDefault() {
+    val defaults = TranslatorSettings()
+    assertEquals("", defaults.glossaryText)
+    assertEquals(0, WarbandTextProcessor.parseGlossary(defaults.glossaryText).totalCount)
+  }
+
+  @Test
+  fun protectAndRestoreTokens_preservesEscapedBreaksAndHexColors() {
+    val rules = GlossaryRules(emptyList(), emptyList())
+    val input = "<#FFD700>Hail {playername}!\\nTake @AA11BBthis purse.\\tThank you."
+    val protectedRes = WarbandTextProcessor.protectWarbandTokens(input, rules)
+    assertFalse(protectedRes.protectedText.contains("<#FFD700>"))
+    assertFalse(protectedRes.protectedText.contains("\\n"))
+    assertFalse(protectedRes.protectedText.contains("\\t"))
+
+    val restored = WarbandTextProcessor.restoreWarbandTokens(protectedRes.protectedText, protectedRes.tokens, rules)
+    assertTrue(restored.contains("<#FFD700>"))
+    assertTrue(restored.contains("\\n"))
+    assertTrue(restored.contains("\\t"))
+    assertTrue(restored.contains("@AA11BB"))
+  }
+
+  @Test
+  fun splitLineAndExport_handlesQuotedSemicolonCsvFields() {
+    val line = "\"dlga_1\";\"Hello; \"\"Brave\"\" Knight\""
+    val split = WarbandTextProcessor.splitLine(line, ";", "{***}")
+    assertTrue(split.hasCode)
+    assertEquals("dlga_1", split.codePart)
+    assertEquals("Hello; \"Brave\" Knight", split.textPart)
+
+    val rebuilt = WarbandTextProcessor.buildTranslatedLine(
+        codePart = split.codePart,
+        hasCode = true,
+        textPart = "Halo; Kesatria \"Berani\"",
+        separator = ";"
+    )
+    assertEquals("dlga_1;\"Halo; Kesatria \"\"Berani\"\"\"", rebuilt)
+
+    val preserved = WarbandTextProcessor.formatExportContent(listOf(rebuilt), ";", ExportDelimiter.SOURCE_PIPE)
+    assertEquals("dlga_1;\"Halo; Kesatria \"\"Berani\"\"\"\r\n", preserved)
+
+    val commaConverted = WarbandTextProcessor.formatExportContent(listOf(rebuilt), ";", ExportDelimiter.COMMA)
+    assertEquals("dlga_1,\"Halo; Kesatria \"\"Berani\"\"\"\r\n", commaConverted)
+  }
+
+  @Test
+  fun auditTranslatedFile_detectsColumnMismatchAndUnbalancedQuotes() {
+    val item = QueuedFileItem(
+        id = "q_cols",
+        name = "semi.csv",
+        lines = listOf(
+            "str_a;First column text",
+            "str_b;\"Quoted source\""
+        ),
+        results = listOf(
+            "str_a;Terjemahan;ekstra_kolom",
+            "str_b;\"Kutipan hilang ujung"
+        )
+    )
+    val audit = WarbandTextProcessor.auditTranslatedFile(item, ";", "", "^\\d+$")
+    assertEquals(2, audit.issueCount)
+    assertTrue(QaIssueType.COLUMN_COUNT_MISMATCH in audit.rows[0].issues)
+    assertTrue(QaIssueType.UNBALANCED_QUOTES in audit.rows[1].issues)
+  }
 }

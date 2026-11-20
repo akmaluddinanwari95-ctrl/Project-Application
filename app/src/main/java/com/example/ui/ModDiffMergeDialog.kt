@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.UploadFile
@@ -40,17 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.domain.ModDiffMergeResult
-import com.example.ui.theme.AmberText
-import com.example.ui.theme.Burgundy
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
-import com.example.ui.theme.ObsidianDeep
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
+import com.example.ui.theme.LocalWarbandPalette
 
 @Composable
 fun ModDiffMergeDialog(
@@ -65,6 +58,7 @@ fun ModDiffMergeDialog(
     onDismiss: () -> Unit
 ) {
   if (!visible) return
+  val pal = LocalWarbandPalette.current
 
   Dialog(
       onDismissRequest = onDismiss,
@@ -72,13 +66,14 @@ fun ModDiffMergeDialog(
   ) {
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF1D1110),
-        border = BorderStroke(1.dp, BurgundyBorder),
+        color = pal.cardTop,
+        border = BorderStroke(1.dp, pal.border),
         shadowElevation = 12.dp,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 24.dp)
             .widthIn(max = 520.dp)
+            .heightIn(max = 640.dp)
             .testTag("mod_diff_dialog")
     ) {
       Column(
@@ -94,105 +89,113 @@ fun ModDiffMergeDialog(
           Icon(
               imageVector = Icons.Default.CompareArrows,
               contentDescription = null,
-              tint = GoldAccent,
+              tint = pal.primaryAccent,
               modifier = Modifier.size(20.dp)
           )
           Text(
               text = tr("modDiffTitle"),
               style = MaterialTheme.typography.titleMedium,
-              color = GoldAccent
+              color = pal.primaryAccent
           )
         }
 
-        Text(
-            text = tr("modDiffDesc"),
-            style = MaterialTheme.typography.bodySmall,
-            color = ParchmentDim
-        )
-
-        OutlinedButton(
-            onClick = onPickNewModFile,
-            border = BorderStroke(1.dp, if (newModName.isNotEmpty()) GoldAccent else BurgundyBorder),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color(0xFF160D0C),
-                contentColor = Parchment
-            ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .minimumInteractiveComponentSize()
-                .testTag("diff_pick_new_button")
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-          Icon(Icons.Default.UploadFile, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(18.dp))
-          Spacer(modifier = Modifier.width(8.dp))
-          Column(modifier = Modifier.weight(1f)) {
-            Text(tr("modDiffPickNew"), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            if (newModName.isNotEmpty()) {
-              Text(
-                  text = newModName,
-                  fontSize = 11.sp,
-                  fontFamily = FontFamily.Monospace,
-                  color = ForestText,
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis
-              )
-            }
-          }
-        }
+          Text(
+              text = tr("modDiffDesc"),
+              style = MaterialTheme.typography.bodySmall,
+              color = pal.textSecondary
+          )
 
-        OutlinedButton(
-            onClick = onPickOldTranslatedFile,
-            border = BorderStroke(1.dp, if (oldTransName.isNotEmpty()) GoldAccent else BurgundyBorder),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color(0xFF160D0C),
-                contentColor = Parchment
-            ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .minimumInteractiveComponentSize()
-                .testTag("diff_pick_old_button")
-        ) {
-          Icon(Icons.Default.UploadFile, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(18.dp))
-          Spacer(modifier = Modifier.width(8.dp))
-          Column(modifier = Modifier.weight(1f)) {
-            Text(tr("modDiffPickOld"), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            if (oldTransName.isNotEmpty()) {
-              Text(
-                  text = oldTransName,
-                  fontSize = 11.sp,
-                  fontFamily = FontFamily.Monospace,
-                  color = ForestText,
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis
-              )
-            }
-          }
-        }
-
-        if (diffPreview != null) {
-          Column(
+          OutlinedButton(
+              onClick = onPickNewModFile,
+              border = BorderStroke(1.dp, if (newModName.isNotEmpty()) pal.primaryAccent else pal.border),
+              colors = ButtonDefaults.outlinedButtonColors(
+                  containerColor = pal.deepSurface,
+                  contentColor = pal.textPrimary
+              ),
+              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
               modifier = Modifier
                   .fillMaxWidth()
-                  .clip(RoundedCornerShape(10.dp))
-                  .background(ObsidianDeep)
-                  .border(1.dp, BurgundyBorder, RoundedCornerShape(10.dp))
-                  .padding(12.dp)
-                  .testTag("mod_diff_summary_box"),
-              verticalArrangement = Arrangement.spacedBy(6.dp)
+                  .minimumInteractiveComponentSize()
+                  .testTag("diff_pick_new_button")
           ) {
-            Text(
-                text = tr("modDiffSummary"),
-                style = MaterialTheme.typography.labelMedium,
-                color = GoldAccent
-            )
-            DiffStatRow(label = tr("modDiffReused"), count = diffPreview.carriedOverCount, valueColor = ForestText)
-            DiffStatRow(label = tr("modDiffNew"), count = diffPreview.newOrChangedCount, valueColor = AmberText)
-            DiffStatRow(label = tr("modDiffSkipped"), count = diffPreview.skippedCount, valueColor = ParchmentDim)
+            Icon(Icons.Default.UploadFile, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+              Text(tr("modDiffPickNew"), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+              if (newModName.isNotEmpty()) {
+                Text(
+                    text = newModName,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = pal.successText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+              }
+            }
+          }
+
+          OutlinedButton(
+              onClick = onPickOldTranslatedFile,
+              border = BorderStroke(1.dp, if (oldTransName.isNotEmpty()) pal.primaryAccent else pal.border),
+              colors = ButtonDefaults.outlinedButtonColors(
+                  containerColor = pal.deepSurface,
+                  contentColor = pal.textPrimary
+              ),
+              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+              modifier = Modifier
+                  .fillMaxWidth()
+                  .minimumInteractiveComponentSize()
+                  .testTag("diff_pick_old_button")
+          ) {
+            Icon(Icons.Default.UploadFile, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+              Text(tr("modDiffPickOld"), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+              if (oldTransName.isNotEmpty()) {
+                Text(
+                    text = oldTransName,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = pal.successText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+              }
+            }
+          }
+
+          if (diffPreview != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(pal.deepSurface)
+                    .border(1.dp, pal.border, RoundedCornerShape(10.dp))
+                    .padding(12.dp)
+                    .testTag("mod_diff_summary_box"),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              Text(
+                  text = tr("modDiffSummary"),
+                  style = MaterialTheme.typography.labelMedium,
+                  color = pal.primaryAccent
+              )
+              DiffStatRow(label = tr("modDiffReused"), count = diffPreview.carriedOverCount, valueColor = pal.successText)
+              DiffStatRow(label = tr("modDiffNew"), count = diffPreview.newOrChangedCount, valueColor = pal.warningText)
+              DiffStatRow(label = tr("modDiffSkipped"), count = diffPreview.skippedCount, valueColor = pal.textSecondary)
+            }
           }
         }
 
-        HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp)
+        HorizontalDivider(color = pal.borderSoft, thickness = 1.dp)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -201,8 +204,8 @@ fun ModDiffMergeDialog(
         ) {
           OutlinedButton(
               onClick = onDismiss,
-              border = BorderStroke(1.dp, BurgundyBorder),
-              colors = ButtonDefaults.outlinedButtonColors(contentColor = ParchmentDim),
+              border = BorderStroke(1.dp, pal.border),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.textSecondary),
               modifier = Modifier
                   .minimumInteractiveComponentSize()
                   .testTag("diff_cancel_button")
@@ -214,10 +217,10 @@ fun ModDiffMergeDialog(
               onClick = onApplyDiff,
               enabled = diffPreview != null,
               colors = ButtonDefaults.buttonColors(
-                  containerColor = Burgundy,
-                  contentColor = Parchment
+                  containerColor = pal.actionBg,
+                  contentColor = pal.textPrimary
               ),
-              border = BorderStroke(1.dp, if (diffPreview != null) GoldMuted else BurgundyBorder),
+              border = BorderStroke(1.dp, if (diffPreview != null) pal.primaryMuted else pal.border),
               modifier = Modifier
                   .minimumInteractiveComponentSize()
                   .testTag("diff_apply_button")
@@ -232,12 +235,13 @@ fun ModDiffMergeDialog(
 
 @Composable
 private fun DiffStatRow(label: String, count: Int, valueColor: Color) {
+  val pal = LocalWarbandPalette.current
   Row(
       modifier = Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
   ) {
-    Text(text = label, style = MaterialTheme.typography.bodySmall, color = ParchmentDim)
+    Text(text = label, style = MaterialTheme.typography.bodySmall, color = pal.textSecondary)
     Text(
         text = count.toString(),
         style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),

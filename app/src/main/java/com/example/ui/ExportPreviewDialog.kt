@@ -47,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -59,17 +58,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.domain.ExportDelimiter
 import com.example.domain.ExportEncoding
 import com.example.domain.PendingExportPreviewItem
-import com.example.ui.theme.Burgundy
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
-import com.example.ui.theme.MahoganyInput
-import com.example.ui.theme.ObsidianDeep
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
+import com.example.ui.theme.LocalWarbandPalette
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -89,6 +78,7 @@ fun ExportPreviewAndSaveDialog(
     onDismiss: () -> Unit
 ) {
   if (!visible || previewItems.isEmpty()) return
+  val pal = LocalWarbandPalette.current
 
   var selectedIndex by remember(previewItems.size) { mutableIntStateOf(0) }
   LaunchedEffect(previewItems.size) {
@@ -115,13 +105,14 @@ fun ExportPreviewAndSaveDialog(
   ) {
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF1D1110),
-        border = BorderStroke(1.dp, BurgundyBorder),
+        color = pal.cardTop,
+        border = BorderStroke(1.dp, pal.border),
         shadowElevation = 12.dp,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 24.dp)
             .widthIn(max = 560.dp)
+            .heightIn(max = 680.dp)
     ) {
       Column(
           modifier = Modifier
@@ -137,13 +128,13 @@ fun ExportPreviewAndSaveDialog(
           Icon(
               imageVector = Icons.Default.Visibility,
               contentDescription = null,
-              tint = GoldAccent,
+              tint = pal.primaryAccent,
               modifier = Modifier.size(20.dp)
           )
           Text(
               text = "${tr("previewExportTitle")} (${previewItems.size})",
               style = MaterialTheme.typography.titleMedium,
-              color = GoldAccent
+              color = pal.primaryAccent
           )
         }
 
@@ -151,14 +142,14 @@ fun ExportPreviewAndSaveDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 520.dp)
+                .weight(1f, fill = false)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
           Text(
               text = tr("previewExportDesc"),
               style = MaterialTheme.typography.bodySmall,
-              color = ParchmentDim
+              color = pal.textSecondary
           )
 
           // File selector chips for multi-file batch export
@@ -172,8 +163,8 @@ fun ExportPreviewAndSaveDialog(
                 val isSelected = idx == selectedIndex
                 Surface(
                     shape = CircleShape,
-                    color = if (isSelected) Burgundy.copy(alpha = 0.65f) else Color(0xFF170E0D),
-                    border = BorderStroke(1.dp, if (isSelected) GoldAccent else BurgundyBorder),
+                    color = if (isSelected) pal.actionBg.copy(alpha = 0.65f) else pal.deepSurface,
+                    border = BorderStroke(1.dp, if (isSelected) pal.primaryAccent else pal.border),
                     modifier = Modifier
                         .minimumInteractiveComponentSize()
                         .clickable { selectedIndex = idx }
@@ -182,7 +173,7 @@ fun ExportPreviewAndSaveDialog(
                   Text(
                       text = "${idx + 1}. ${item.outputFileName}",
                       style = MaterialTheme.typography.labelSmall,
-                      color = if (isSelected) GoldAccent else ParchmentDim,
+                      color = if (isSelected) pal.primaryAccent else pal.textSecondary,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis,
                       modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -197,15 +188,15 @@ fun ExportPreviewAndSaveDialog(
               modifier = Modifier
                   .fillMaxWidth()
                   .clip(RoundedCornerShape(10.dp))
-                  .background(Color(0xFF150C0B))
-                  .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+                  .background(pal.deepSurface)
+                  .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
                   .padding(10.dp),
               verticalArrangement = Arrangement.spacedBy(6.dp)
           ) {
             Text(
                 text = tr("lblOutputFile"),
                 style = MaterialTheme.typography.labelSmall,
-                color = ParchmentDim
+                color = pal.textSecondary
             )
             Text(
                 text = if (activeItem.outputFileName != activeItem.originalFileName) {
@@ -214,7 +205,7 @@ fun ExportPreviewAndSaveDialog(
                   activeItem.outputFileName
                 },
                 style = MaterialTheme.typography.titleSmall.copy(fontFamily = FontFamily.Monospace),
-                color = GoldAccent,
+                color = pal.primaryAccent,
                 modifier = Modifier.testTag("export_preview_output_filename")
             )
             FlowRow(
@@ -233,8 +224,8 @@ fun ExportPreviewAndSaveDialog(
               modifier = Modifier
                   .fillMaxWidth()
                   .clip(RoundedCornerShape(10.dp))
-                  .background(Color(0xFF150C0B))
-                  .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+                  .background(pal.deepSurface)
+                  .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
                   .padding(10.dp),
               verticalArrangement = Arrangement.spacedBy(8.dp)
           ) {
@@ -242,14 +233,14 @@ fun ExportPreviewAndSaveDialog(
               Icon(
                   imageVector = Icons.Default.DriveFileRenameOutline,
                   contentDescription = null,
-                  tint = GoldAccent,
+                  tint = pal.primaryAccent,
                   modifier = Modifier.size(15.dp)
               )
               Spacer(modifier = Modifier.width(6.dp))
               Text(
                   text = tr("lblQuickRename"),
                   style = MaterialTheme.typography.labelMedium,
-                  color = GoldAccent
+                  color = pal.primaryAccent
               )
             }
 
@@ -262,18 +253,18 @@ fun ExportPreviewAndSaveDialog(
                   onValueChange = onPrefixChange,
                   singleLine = true,
                   label = { Text(tr("lblFilePrefix"), fontSize = 11.sp) },
-                  placeholder = { Text("id_", fontSize = 11.sp, color = ParchmentDim.copy(alpha = 0.4f)) },
+                  placeholder = { Text("id_", fontSize = 11.sp, color = pal.textSecondary.copy(alpha = 0.5f)) },
                   textStyle = MaterialTheme.typography.bodySmall.copy(
                       fontFamily = FontFamily.Monospace,
-                      color = Parchment
+                      color = pal.textPrimary
                   ),
                   colors = OutlinedTextFieldDefaults.colors(
-                      focusedBorderColor = GoldAccent,
-                      unfocusedBorderColor = BurgundyBorder,
-                      focusedContainerColor = MahoganyInput,
-                      unfocusedContainerColor = MahoganyInput,
-                      focusedLabelColor = GoldAccent,
-                      unfocusedLabelColor = ParchmentDim
+                      focusedBorderColor = pal.primaryAccent,
+                      unfocusedBorderColor = pal.border,
+                      focusedContainerColor = pal.inputBg,
+                      unfocusedContainerColor = pal.inputBg,
+                      focusedLabelColor = pal.primaryAccent,
+                      unfocusedLabelColor = pal.textSecondary
                   ),
                   modifier = Modifier
                       .weight(1f)
@@ -284,18 +275,18 @@ fun ExportPreviewAndSaveDialog(
                   onValueChange = onSuffixChange,
                   singleLine = true,
                   label = { Text(tr("lblFileSuffix"), fontSize = 11.sp) },
-                  placeholder = { Text("_translated", fontSize = 11.sp, color = ParchmentDim.copy(alpha = 0.4f)) },
+                  placeholder = { Text("_translated", fontSize = 11.sp, color = pal.textSecondary.copy(alpha = 0.5f)) },
                   textStyle = MaterialTheme.typography.bodySmall.copy(
                       fontFamily = FontFamily.Monospace,
-                      color = Parchment
+                      color = pal.textPrimary
                   ),
                   colors = OutlinedTextFieldDefaults.colors(
-                      focusedBorderColor = GoldAccent,
-                      unfocusedBorderColor = BurgundyBorder,
-                      focusedContainerColor = MahoganyInput,
-                      unfocusedContainerColor = MahoganyInput,
-                      focusedLabelColor = GoldAccent,
-                      unfocusedLabelColor = ParchmentDim
+                      focusedBorderColor = pal.primaryAccent,
+                      unfocusedBorderColor = pal.border,
+                      focusedContainerColor = pal.inputBg,
+                      unfocusedContainerColor = pal.inputBg,
+                      focusedLabelColor = pal.primaryAccent,
+                      unfocusedLabelColor = pal.textSecondary
                   ),
                   modifier = Modifier
                       .weight(1f)
@@ -337,15 +328,15 @@ fun ExportPreviewAndSaveDialog(
           Text(
               text = tr("lblSampleHeader"),
               style = MaterialTheme.typography.labelSmall,
-              color = GoldAccent
+              color = pal.primaryAccent
           )
           Box(
               modifier = Modifier
                   .fillMaxWidth()
                   .height(140.dp)
                   .clip(RoundedCornerShape(10.dp))
-                  .background(ObsidianDeep)
-                  .border(1.dp, BurgundyBorder, RoundedCornerShape(10.dp))
+                  .background(pal.deepSurface)
+                  .border(1.dp, pal.border, RoundedCornerShape(10.dp))
                   .verticalScroll(rememberScrollState())
                   .horizontalScroll(rememberScrollState())
                   .padding(10.dp)
@@ -358,23 +349,23 @@ fun ExportPreviewAndSaveDialog(
                     fontSize = 11.sp,
                     lineHeight = 16.sp
                 ),
-                color = ForestText
+                color = pal.successText
             )
           }
 
-          HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp)
+          HorizontalDivider(color = pal.borderSoft, thickness = 1.dp)
 
           Text(
               text = tr("lblSaveDestination"),
               style = MaterialTheme.typography.labelSmall,
-              color = ParchmentDim
+              color = pal.textSecondary
           )
 
           Surface(
               onClick = onSaveToDownloads,
               shape = RoundedCornerShape(12.dp),
-              color = Forest.copy(alpha = 0.25f),
-              border = BorderStroke(1.dp, Forest),
+              color = pal.successBg,
+              border = BorderStroke(1.dp, pal.successBorder),
               modifier = Modifier
                   .fillMaxWidth()
                   .testTag("save_to_downloads_option")
@@ -387,18 +378,18 @@ fun ExportPreviewAndSaveDialog(
               Icon(
                   imageVector = Icons.Default.Download,
                   contentDescription = tr("saveToDownloads"),
-                  tint = ForestText
+                  tint = pal.successText
               )
               Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = tr("saveToDownloads"),
                     style = MaterialTheme.typography.titleSmall,
-                    color = ForestText
+                    color = pal.successText
                 )
                 Text(
                     text = tr("saveToDownloadsSub"),
                     style = MaterialTheme.typography.labelSmall,
-                    color = ParchmentDim
+                    color = pal.textSecondary
                 )
               }
             }
@@ -407,8 +398,8 @@ fun ExportPreviewAndSaveDialog(
           Surface(
               onClick = onPickFolder,
               shape = RoundedCornerShape(12.dp),
-              color = Burgundy.copy(alpha = 0.35f),
-              border = BorderStroke(1.dp, GoldMuted),
+              color = pal.actionBg.copy(alpha = 0.35f),
+              border = BorderStroke(1.dp, pal.primaryMuted),
               modifier = Modifier
                   .fillMaxWidth()
                   .testTag("save_to_folder_option")
@@ -421,18 +412,18 @@ fun ExportPreviewAndSaveDialog(
               Icon(
                   imageVector = Icons.Default.FolderOpen,
                   contentDescription = tr("saveToFolder"),
-                  tint = GoldAccent
+                  tint = pal.primaryAccent
               )
               Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = tr("saveToFolder"),
                     style = MaterialTheme.typography.titleSmall,
-                    color = Parchment
+                    color = pal.textPrimary
                 )
                 Text(
                     text = tr("saveToFolderSub"),
                     style = MaterialTheme.typography.labelSmall,
-                    color = ParchmentDim
+                    color = pal.textSecondary
                 )
               }
             }
@@ -446,8 +437,8 @@ fun ExportPreviewAndSaveDialog(
         ) {
           OutlinedButton(
               onClick = onDismiss,
-              border = BorderStroke(1.dp, BurgundyBorder),
-              colors = ButtonDefaults.outlinedButtonColors(contentColor = ParchmentDim),
+              border = BorderStroke(1.dp, pal.border),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.textSecondary),
               modifier = Modifier
                   .minimumInteractiveComponentSize()
                   .testTag("export_preview_cancel_button")
@@ -462,15 +453,16 @@ fun ExportPreviewAndSaveDialog(
 
 @Composable
 private fun MetaBadgeChip(text: String) {
+  val pal = LocalWarbandPalette.current
   Surface(
       shape = RoundedCornerShape(6.dp),
-      color = Color(0xFF211311),
-      border = BorderStroke(1.dp, BurgundyBorderSoft)
+      color = pal.cardElevated,
+      border = BorderStroke(1.dp, pal.borderSoft)
   ) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-        color = ParchmentDim,
+        color = pal.textSecondary,
         maxLines = 1,
         modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
     )
@@ -484,10 +476,11 @@ private fun QuickRenameChip(
     testTag: String,
     onClick: () -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   Surface(
       shape = CircleShape,
-      color = if (selected) Burgundy.copy(alpha = 0.55f) else Color(0xFF1B100E),
-      border = BorderStroke(1.dp, if (selected) GoldAccent else BurgundyBorder),
+      color = if (selected) pal.actionBg.copy(alpha = 0.55f) else pal.deepSurface,
+      border = BorderStroke(1.dp, if (selected) pal.primaryAccent else pal.border),
       modifier = Modifier
           .minimumInteractiveComponentSize()
           .clickable { onClick() }
@@ -498,7 +491,7 @@ private fun QuickRenameChip(
         style = MaterialTheme.typography.labelSmall.copy(
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
         ),
-        color = if (selected) GoldAccent else ParchmentDim,
+        color = if (selected) pal.primaryAccent else pal.textSecondary,
         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
     )
   }

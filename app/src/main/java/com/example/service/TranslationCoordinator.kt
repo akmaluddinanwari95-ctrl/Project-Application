@@ -6,6 +6,7 @@ import com.example.data.local.TranslationCacheEntity
 import com.example.data.local.TranslationHistoryEntity
 import com.example.data.local.TranslationHistoryRepository
 import com.example.data.remote.TranslationApiClient
+import com.example.data.remote.TranslationApiException
 import com.example.domain.ConnectionBadgeType
 import com.example.domain.ConnectionStatus
 import com.example.domain.ErrorAlert
@@ -190,10 +191,21 @@ object TranslationCoordinator {
     val next = !isPausedFlag.get()
     isPausedFlag.set(next)
     _progressState.update { it.copy(isPaused = next) }
+    if (!next && _errorAlert.value?.isRateLimit == true) {
+      _errorAlert.value = null
+    }
     appendLog(
         if (next) "Proses dijeda oleh pengguna." else "Proses dilanjutkan kembali...",
         LogLevel.WARN
     )
+  }
+
+  fun resumeFromPause() {
+    if (!_progressState.value.isRunning) return
+    isPausedFlag.set(false)
+    _progressState.update { it.copy(isPaused = false) }
+    _errorAlert.value = null
+    appendLog("Melanjutkan proses terjemahan dari checkpoint...", LogLevel.OK)
   }
 
   fun requestStop() {
@@ -201,6 +213,9 @@ object TranslationCoordinator {
     shouldStopFlag.set(true)
     isPausedFlag.set(false)
     _progressState.update { it.copy(isPaused = false) }
+    if (_errorAlert.value?.isRateLimit == true) {
+      _errorAlert.value = null
+    }
     appendLog("Menghentikan proses terjemahan...", LogLevel.ERROR)
   }
 
@@ -304,11 +319,11 @@ object TranslationCoordinator {
 
     val origLine = updatedFile.lines.getOrNull(lineIndex) ?: ""
     val sep = separator.ifEmpty { "|" }
-    val origSepIdx = origLine.indexOf(sep)
-    val newSepIdx = newTranslatedLine.indexOf(sep)
-    if (origSepIdx != -1 && newSepIdx != -1) {
-      val origText = origLine.substring(origSepIdx + sep.length).trim()
-      val newText = newTranslatedLine.substring(newSepIdx + sep.length).trim()
+    val origSplit = WarbandTextProcessor.splitLine(origLine, sep, "")
+    val newSplit = WarbandTextProcessor.splitLine(newTranslatedLine, sep, "")
+    if (origSplit.hasCode && newSplit.hasCode) {
+      val origText = origSplit.textPart
+      val newText = newSplit.textPart
       if (origText.isNotEmpty() && newText.isNotEmpty()) {
         val dao = AppDatabase.getInstance(context).translationCacheDao()
         dao.upsert(TranslationCacheEntity(targetLang = targetLang, sourceText = origText, translatedText = newText))
@@ -339,11 +354,11 @@ object TranslationCoordinator {
 
     val origLine = updatedFile.lines.getOrNull(lineIndex) ?: ""
     val sep = separator.ifEmpty { "|" }
-    val origSepIdx = origLine.indexOf(sep)
-    val newSepIdx = newTranslatedLine.indexOf(sep)
-    if (origSepIdx != -1 && newSepIdx != -1) {
-      val origText = origLine.substring(origSepIdx + sep.length).trim()
-      val newText = newTranslatedLine.substring(newSepIdx + sep.length).trim()
+    val origSplit = WarbandTextProcessor.splitLine(origLine, sep, "")
+    val newSplit = WarbandTextProcessor.splitLine(newTranslatedLine, sep, "")
+    if (origSplit.hasCode && newSplit.hasCode) {
+      val origText = origSplit.textPart
+      val newText = newSplit.textPart
       if (origText.isNotEmpty() && newText.isNotEmpty()) {
         AppDatabase.getInstance(context)
             .translationCacheDao()
@@ -488,6 +503,21 @@ object TranslationCoordinator {
     )
 
     val pendingBuffer = mutableListOf<TranslationCacheEntity>()
+    val existingCacheEntries = withContext(Dispatchers.IO) {
+      dao.getAllEntriesForLang(settings.targetLang)
+    }
+    val memoryCache = HashMap<String, String>((existingCacheEntries.size + 1024).coerceAtLeast(1024))
+    existingCacheEntries.forEach { entity ->
+      memoryCache[entity.sourceText] = entity.translatedText
+    }
+
+    data class SingleTranslateOutcome(
+        val translated: String?,
+        val errorMessage: String,
+        val httpCode: Int?,
+        val isRateLimit: Boolean,
+        val retryAfterSec: Int?
+    )
 
     for ((fIdx, pendingItem) in pendingFiles.withIndex()) {
       if (shouldStopFlag.get()) break
@@ -508,6 +538,7 @@ object TranslationCoordinator {
       var activeElapsedMs = 0L
       var lastTickMs = System.currentTimeMillis()
       var lastSampleMs = 0L
+      var lastQueueSnapshotMs = System.currentTimeMillis()
       var peakSpeed = 0f
       val samples = mutableListOf(
           TelemetrySample(
@@ -591,6 +622,34 @@ object TranslationCoordinator {
         )
       }
 
+      suspend fun flushCheckpoint(forceSnapshot: Boolean) {
+        if (pendingBuffer.isNotEmpty()) {
+          dao.upsertAll(pendingBuffer.toList())
+          pendingBuffer.clear()
+        }
+        val doneNow = results.size
+        val now = System.currentTimeMillis()
+        if (forceSnapshot || doneNow == total || (now - lastQueueSnapshotMs) >= 1200L) {
+          lastQueueSnapshotMs = now
+          val snapshot = results.toList()
+          updateQueueItem(pendingItem.id) {
+            it.copy(
+                results = snapshot,
+                processedCount = doneNow,
+                cachedLinesCount = maxOf(it.cachedLinesCount, doneNow)
+            )
+          }
+          refreshPreviewFromLists(lines, snapshot)
+        } else {
+          updateQueueItem(pendingItem.id) {
+            it.copy(
+                processedCount = doneNow,
+                cachedLinesCount = maxOf(it.cachedLinesCount, cacheHits)
+            )
+          }
+        }
+      }
+
       val initialProgress = TranslationProgressState(
           isRunning = true,
           isPaused = false,
@@ -615,9 +674,12 @@ object TranslationCoordinator {
           protectedText: String,
           tokens: List<String>,
           lineNumber1Based: Int
-      ): Pair<String?, String> {
+      ): SingleTranslateOutcome {
         var translated: String? = null
         var lastError = "Koneksi ke server penerjemah gagal"
+        var lastCode: Int? = null
+        var lastRetryAfter: Int? = null
+        var sawRateLimit = false
 
         for (attempt in 1..3) {
           if (shouldStopFlag.get()) break
@@ -640,8 +702,28 @@ object TranslationCoordinator {
             )
             break
           } catch (e: Exception) {
+            val apiErr = e as? TranslationApiException
             lastError = e.message ?: lastError
-            if (attempt < 3) delay(800L * attempt)
+            lastCode = apiErr?.httpCode ?: lastCode
+            lastRetryAfter = apiErr?.retryAfterSec ?: lastRetryAfter
+            val is429 = apiErr?.httpCode == 429 || lastError.contains("429")
+            if (is429) {
+              sawRateLimit = true
+              lastCode = 429
+            }
+            if (attempt < 3 && !shouldStopFlag.get()) {
+              val waitMs = if (is429) {
+                val sec = (apiErr?.retryAfterSec ?: (2 * attempt)).coerceIn(2, 10)
+                _connectionStatus.value = ConnectionStatus(
+                    "HTTP 429 · Jeda ${sec}d...",
+                    ConnectionBadgeType.WARN
+                )
+                sec * 1000L
+              } else {
+                800L * attempt
+              }
+              delay(waitMs)
+            }
           }
         }
 
@@ -669,19 +751,35 @@ object TranslationCoordinator {
                   "Baris $lineNumber1Based dialihkan ke ${altEngine.displayName}",
                   LogLevel.WARN
               )
+              sawRateLimit = false
               break
             } catch (altErr: Exception) {
+              val apiErr = altErr as? TranslationApiException
               lastError = altErr.message ?: lastError
+              if (apiErr?.httpCode == 429 || lastError.contains("429")) {
+                sawRateLimit = true
+                lastCode = 429
+                lastRetryAfter = apiErr?.retryAfterSec ?: lastRetryAfter
+              } else if (apiErr?.httpCode != null) {
+                lastCode = apiErr.httpCode
+              }
             }
           }
         }
 
-        return translated to lastError
+        return SingleTranslateOutcome(
+            translated = translated,
+            errorMessage = lastError,
+            httpCode = lastCode,
+            isRateLimit = translated == null && sawRateLimit,
+            retryAfterSec = lastRetryAfter
+        )
       }
 
       var i = 0
       while (i < lines.size) {
         if (isPausedFlag.get() && !shouldStopFlag.get()) {
+          flushCheckpoint(forceSnapshot = true)
           while (isPausedFlag.get() && !shouldStopFlag.get()) {
             delay(250L)
           }
@@ -695,10 +793,10 @@ object TranslationCoordinator {
           results.add(originalLine)
           fileSkippedLines++
           val doneNow = results.size
-          val force = (doneNow == total) || (doneNow % 25 == 0)
+          val force = (doneNow == total) || (doneNow % 50 == 0)
           val p = sampleTelemetry(doneNow, forceSample = force)
           _progressState.value = p
-          if (doneNow % 10 == 0 || doneNow == total) {
+          if (doneNow % 25 == 0 || doneNow == total) {
             updateQueueItem(pendingItem.id) { it.copy(processedCount = doneNow) }
             onProgressUpdate(p)
           }
@@ -708,41 +806,46 @@ object TranslationCoordinator {
 
         val split = WarbandTextProcessor.splitLine(originalLine, sep, settings.stripTag)
         if (split.textPart.isEmpty()) {
-          val emptyOut = if (split.hasCode) "${split.codePart}$sep" else ""
+          val emptyOut = WarbandTextProcessor.buildTranslatedLine(split.codePart, split.hasCode, "", sep)
           results.add(emptyOut)
           cacheHits++
           fileSkippedLines++
           val doneNow = results.size
-          val force = (doneNow == total) || (doneNow % 25 == 0)
+          val force = (doneNow == total) || (doneNow % 50 == 0)
           val p = sampleTelemetry(doneNow, forceSample = force)
           _progressState.value = p
-          if (doneNow % 10 == 0 || doneNow == total) {
-            updateQueueItem(pendingItem.id) { it.copy(processedCount = doneNow, cachedLinesCount = maxOf(it.cachedLinesCount, cacheHits)) }
+          if (doneNow % 25 == 0 || doneNow == total) {
+            updateQueueItem(pendingItem.id) {
+              it.copy(processedCount = doneNow, cachedLinesCount = maxOf(it.cachedLinesCount, cacheHits))
+            }
             onProgressUpdate(p)
           }
           i++
           continue
         }
 
-        val cached = dao.getTranslation(settings.targetLang, split.textPart)
+        val cached = memoryCache[split.textPart]
         if (cached != null) {
-          val out = if (split.hasCode) "${split.codePart}$sep$cached" else cached
+          val out = WarbandTextProcessor.buildTranslatedLine(split.codePart, split.hasCode, cached, sep)
           results.add(out)
           cacheHits++
           fileTranslatedLines++
           val doneNow = results.size
-          val force = (doneNow == total) || (doneNow % 25 == 0)
-          val p = sampleTelemetry(doneNow, forceSample = force)
+          val now = System.currentTimeMillis()
+          val shouldSnap = (doneNow == total) || (doneNow % 50 == 0) || (now - lastQueueSnapshotMs >= 1200L)
+          val p = sampleTelemetry(doneNow, forceSample = shouldSnap)
           _progressState.value = p
-          if (doneNow % 5 == 0 || doneNow == total) {
+          if (shouldSnap) {
+            lastQueueSnapshotMs = now
+            val snap = results.toList()
             updateQueueItem(pendingItem.id) {
               it.copy(
-                  results = results.toList(),
+                  results = snap,
                   processedCount = doneNow,
                   cachedLinesCount = maxOf(it.cachedLinesCount, cacheHits)
               )
             }
-            refreshPreviewFromLists(lines, results)
+            refreshPreviewFromLists(lines, snap)
             onProgressUpdate(p)
           }
           i++
@@ -766,7 +869,7 @@ object TranslationCoordinator {
             if (WarbandTextProcessor.matchesSkipRegex(scanRaw, settings.skipRegex)) break
             val scanSplit = WarbandTextProcessor.splitLine(scanRaw, sep, settings.stripTag)
             if (scanSplit.textPart.isEmpty()) break
-            if (dao.getTranslation(settings.targetLang, scanSplit.textPart) != null) break
+            if (memoryCache.containsKey(scanSplit.textPart)) break
             val scanProt = WarbandTextProcessor.protectWarbandTokens(scanSplit.textPart, glossary)
             if (batchItems.isNotEmpty() && charBudget + scanProt.protectedText.length > 1050) break
             charBudget += scanProt.protectedText.length + 14
@@ -793,7 +896,13 @@ object TranslationCoordinator {
                   ConnectionBadgeType.OK
               )
             }
-          } catch (_: Exception) {
+          } catch (batchErr: Exception) {
+            val apiErr = batchErr as? TranslationApiException
+            if (apiErr?.httpCode == 429 || (batchErr.message?.contains("429") == true)) {
+              val cooldownMs = ((apiErr?.retryAfterSec ?: 2).coerceIn(2, 6)) * 1000L
+              _connectionStatus.value = ConnectionStatus("HTTP 429 Batch · Jeda...", ConnectionBadgeType.WARN)
+              delay(cooldownMs)
+            }
             batchSegments = null
           }
 
@@ -809,9 +918,15 @@ object TranslationCoordinator {
                   settings.targetLang,
                   settings.medievalToneEnabled
               )
-              val finalOut = if (bItem.split.hasCode) "${bItem.split.codePart}$sep$polished" else polished
+              val finalOut = WarbandTextProcessor.buildTranslatedLine(
+                  bItem.split.codePart,
+                  bItem.split.hasCode,
+                  polished,
+                  sep
+              )
               results.add(finalOut)
               fileTranslatedLines++
+              memoryCache[bItem.split.textPart] = polished
               pendingBuffer.add(
                   TranslationCacheEntity(
                       targetLang = settings.targetLang,
@@ -821,7 +936,7 @@ object TranslationCoordinator {
               )
             }
 
-            if (pendingBuffer.size >= 15) {
+            if (pendingBuffer.size >= 25) {
               dao.upsertAll(pendingBuffer.toList())
               pendingBuffer.clear()
             }
@@ -830,14 +945,7 @@ object TranslationCoordinator {
             val force = (doneNow == total)
             val p = sampleTelemetry(doneNow, forceSample = force)
             _progressState.value = p
-            updateQueueItem(pendingItem.id) {
-              it.copy(
-                  results = results.toList(),
-                  processedCount = doneNow,
-                  cachedLinesCount = maxOf(it.cachedLinesCount, results.size)
-              )
-            }
-            refreshPreviewFromLists(lines, results)
+            flushCheckpoint(forceSnapshot = (doneNow == total) || (doneNow % 25 == 0))
             onProgressUpdate(p)
 
             i += batchItems.size
@@ -848,7 +956,7 @@ object TranslationCoordinator {
 
         // Single-line path (default or fallback when batch split mismatches)
         val protected = WarbandTextProcessor.protectWarbandTokens(split.textPart, glossary)
-        val (translatedText, lastErrorMsg) = translateSingleWithRetry(
+        val outcome = translateSingleWithRetry(
             protectedText = protected.protectedText,
             tokens = protected.tokens,
             lineNumber1Based = i + 1
@@ -856,10 +964,57 @@ object TranslationCoordinator {
 
         if (shouldStopFlag.get()) break
 
+        val translatedText = outcome.translated
+        if (translatedText == null && outcome.isRateLimit) {
+          // Checkpoint progress, keep loop index at `i`, and auto-pause so user can resume/retry safely
+          flushCheckpoint(forceSnapshot = true)
+          fileErrorsCount++
+          _connectionStatus.value = ConnectionStatus("Limit HTTP 429 (Dijeda)", ConnectionBadgeType.ERROR)
+          _errorLogEntries.update { current ->
+            val exists = current.any { it.fileId == pendingItem.id && it.lineIndex == i }
+            if (exists) current else current + TranslationErrorItem(
+                id = UUID.randomUUID().toString(),
+                fileId = pendingItem.id,
+                fileName = pendingItem.name,
+                lineIndex = i,
+                originalLine = originalLine,
+                errorMessage = "HTTP 429: ${outcome.errorMessage}",
+                isFormatError = false
+            )
+          }
+          syncFailedRowsStrings()
+          appendLog(
+              "HTTP 429 pada ${pendingItem.name} baris #${i + 1}. Checkpoint disimpan (${results.size}/$total) & proses dijeda.",
+              LogLevel.ERROR
+          )
+          isPausedFlag.set(true)
+          val pausedState = sampleTelemetry(results.size, forceSample = true).copy(isPaused = true)
+          _progressState.value = pausedState
+          onProgressUpdate(pausedState)
+          _errorAlert.value = ErrorAlert(
+              id = System.currentTimeMillis(),
+              title = "Limit Permintaan Server (HTTP 429)",
+              detail = "Progres (${results.size}/$total baris) tersimpan aman di checkpoint. Tunggu beberapa detik lalu ketuk Lanjutkan atau Coba Lagi.",
+              lineInfo = "${pendingItem.name} · Baris #${i + 1}",
+              codeLabel = "HTTP 429",
+              isRateLimit = true,
+              fileId = pendingItem.id,
+              canResume = true,
+              canRetry = true
+          )
+          continue
+        }
+
         val finalOut: String
         if (translatedText != null) {
-          finalOut = if (split.hasCode) "${split.codePart}$sep$translatedText" else translatedText
+          finalOut = WarbandTextProcessor.buildTranslatedLine(
+              split.codePart,
+              split.hasCode,
+              translatedText,
+              sep
+          )
           fileTranslatedLines++
+          memoryCache[split.textPart] = translatedText
           pendingBuffer.add(
               TranslationCacheEntity(
                   targetLang = settings.targetLang,
@@ -878,40 +1033,37 @@ object TranslationCoordinator {
                 fileName = pendingItem.name,
                 lineIndex = i,
                 originalLine = originalLine,
-                errorMessage = lastErrorMsg,
+                errorMessage = outcome.errorMessage,
                 isFormatError = false
             )
           }
           syncFailedRowsStrings()
-          appendLog("Gagal baris ${i + 1} di ${pendingItem.name} ($lastErrorMsg)", LogLevel.ERROR)
+          appendLog("Gagal baris ${i + 1} di ${pendingItem.name} (${outcome.errorMessage})", LogLevel.ERROR)
           emitThrottledErrorAlert(
               title = "Gagal Menerjemahkan Baris",
-              detail = "Teks asli dipertahankan sementara. Penyebab: $lastErrorMsg",
-              lineInfo = "${pendingItem.name} · Baris #${i + 1}"
+              detail = "Teks asli dipertahankan sementara. Penyebab: ${outcome.errorMessage}",
+              lineInfo = "${pendingItem.name} · Baris #${i + 1}",
+              codeLabel = outcome.httpCode?.let { "HTTP $it" } ?: "ERROR",
+              fileId = pendingItem.id,
+              canRetry = true
           )
         }
 
         results.add(finalOut)
 
-        if (pendingBuffer.size >= 15) {
+        if (pendingBuffer.size >= 25) {
           dao.upsertAll(pendingBuffer.toList())
           pendingBuffer.clear()
         }
 
         val doneNow = results.size
+        val now = System.currentTimeMillis()
         val force = (doneNow == total)
         val p = sampleTelemetry(doneNow, forceSample = force)
         _progressState.value = p
 
-        if (doneNow % 3 == 0 || doneNow == total) {
-          updateQueueItem(pendingItem.id) {
-            it.copy(
-                results = results.toList(),
-                processedCount = doneNow,
-                cachedLinesCount = maxOf(it.cachedLinesCount, results.size)
-            )
-          }
-          refreshPreviewFromLists(lines, results)
+        if (doneNow % 10 == 0 || (now - lastQueueSnapshotMs) >= 1200L || doneNow == total) {
+          flushCheckpoint(forceSnapshot = (now - lastQueueSnapshotMs) >= 1200L || doneNow == total)
           onProgressUpdate(p)
         }
 
@@ -923,7 +1075,7 @@ object TranslationCoordinator {
         dao.upsertAll(pendingBuffer.toList())
         pendingBuffer.clear()
       }
-      dao.trimOldEntries(15000)
+      dao.trimOldEntries(25000)
 
       val fileDurationMs = (System.currentTimeMillis() - fileStartMs).coerceAtLeast(1L)
       val fileWordsCount = WarbandTextProcessor.countWordsInLines(
@@ -973,13 +1125,17 @@ object TranslationCoordinator {
         )
       } else {
         sessionFilesFailed++
+        val partialSnapshot = results.toList()
         updateQueueItem(pendingItem.id) {
           it.copy(
               status = FileQueueStatus.WAIT,
-              results = emptyList(),
+              results = partialSnapshot,
               processedCount = results.size,
               cachedLinesCount = maxOf(it.cachedLinesCount, results.size)
           )
+        }
+        if (partialSnapshot.isNotEmpty()) {
+          refreshPreviewFromLists(lines, partialSnapshot)
         }
         appendLog(
             "Dijeda/Dihentikan pada ${pendingItem.name} (${results.size}/$total baris). Auto-Resume siap!",
@@ -1074,7 +1230,12 @@ object TranslationCoordinator {
     }
 
     return if (translated != null) {
-      val finalLine = if (split.hasCode) "${split.codePart}$sep$translated" else translated
+      val finalLine = WarbandTextProcessor.buildTranslatedLine(
+          codePart = split.codePart,
+          hasCode = split.hasCode,
+          textPart = translated,
+          separator = sep
+      )
       updateLineInQueueFile(
           context = context,
           fileId = entry.fileId,
@@ -1140,7 +1301,15 @@ object TranslationCoordinator {
     _previewRows.value = preview
   }
 
-  private fun emitThrottledErrorAlert(title: String, detail: String, lineInfo: String) {
+  private fun emitThrottledErrorAlert(
+      title: String,
+      detail: String,
+      lineInfo: String,
+      codeLabel: String = "",
+      fileId: String? = null,
+      canResume: Boolean = false,
+      canRetry: Boolean = false
+  ) {
     val now = System.currentTimeMillis()
     if (now - lastErrorAlertTime < 2200L) return
     lastErrorAlertTime = now
@@ -1148,7 +1317,12 @@ object TranslationCoordinator {
         id = now,
         title = title,
         detail = detail,
-        lineInfo = lineInfo
+        lineInfo = lineInfo,
+        codeLabel = codeLabel,
+        isRateLimit = false,
+        fileId = fileId,
+        canResume = canResume,
+        canRetry = canRetry
     )
   }
 }

@@ -148,4 +148,41 @@ class QaEditorAndDiffMergeRobolectricTest {
     assertEquals("Kesatria Swadia", parsed[0].translatedText)
     assertEquals("id", parsed[1].targetLang)
   }
+
+  @Test
+  fun fullEditorAndQaDialog_displaysColumnMismatchAndQuotesBadges() {
+    val summary = QaAuditSummary(
+        fileId = "file-2",
+        fileName = "semi.csv",
+        totalRows = 1,
+        issueCount = 1,
+        rows = listOf(
+            QaAuditRow(
+                lineIndex = 0,
+                codePart = "str_semi",
+                originalLine = "str_semi;Hello",
+                translatedLine = "str_semi;\"Halo;dunia",
+                missingTokens = emptyList(),
+                extraTokens = emptyList(),
+                issues = listOf(QaIssueType.COLUMN_COUNT_MISMATCH, QaIssueType.UNBALANCED_QUOTES)
+            )
+        )
+    )
+
+    composeTestRule.setContent {
+      WarbandTranslatorTheme {
+        FullEditorAndQaDialog(
+            summary = summary,
+            tr = { I18nStrings.get(UiLanguage.EN, it) },
+            onSaveLine = { _, _, _ -> },
+            onFindAndReplace = { _, _, _, _ -> },
+            onAutoFixMissingTokens = {},
+            onDismiss = {}
+        )
+      }
+    }
+
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag("qa_row_0").assertIsDisplayed()
+  }
 }

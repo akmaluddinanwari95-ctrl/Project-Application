@@ -109,19 +109,21 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    min-width: 22px;
+    min-height: 22px;
+    width: 22px;
+    height: 22px;
     border-radius: 9999px;
     background-color: #2B1816;
     border: 1px solid #9A7D4A;
     color: #D4AF37;
     font-family: 'Inter', sans-serif;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
     vertical-align: middle;
-    margin-left: 5px;
+    margin-left: 6px;
     transition: all 0.15s ease;
     flex-shrink: 0;
   }
@@ -340,6 +342,10 @@
               <button type="button" onclick="openHelpModal('lblSep', event)" class="help-btn" aria-label="Info Pemisah Kode">?</button>
             </label>
             <input type="text" id="sepChar" value="|" maxlength="3" oninput="onSettingsChanged()" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-sm font-mono text-center text-goldAccent focus:outline-none focus:border-goldAccent">
+            <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <button type="button" id="sepPresetPipe" onclick="applySeparatorPreset('|')" class="px-2 py-0.5 rounded-md bg-[#241514] hover:bg-burgundy/60 border border-[#5A342D] text-[11px] font-mono text-goldAccent transition">| Warband</button>
+              <button type="button" id="sepPresetSemicolon" onclick="applySeparatorPreset(';')" class="px-2 py-0.5 rounded-md bg-[#241514] hover:bg-burgundy/60 border border-[#5A342D] text-[11px] font-mono text-parchmentDim hover:text-goldAccent transition">; CSV</button>
+            </div>
             <p class="text-[11px] text-parchmentDim/70 mt-1" data-i18n="hintSep">Kode di kiri (str_...) tidak diterjemahkan.</p>
           </div>
 
@@ -971,39 +977,41 @@
 
   <!-- Modal: Mod Update Diff Merge -->
   <div id="modDiffOverlay" onclick="closeModDiffModal()" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div onclick="event.stopPropagation()" class="w-full max-w-lg rounded-2xl bg-[#1D1110] border-2 border-[#4A2A24] shadow-2xl p-4 sm:p-5 space-y-3 text-parchment">
-      <div class="flex items-center justify-between border-b border-[#3A201C] pb-2.5">
+    <div onclick="event.stopPropagation()" class="w-full max-w-lg rounded-2xl bg-[#1D1110] border-2 border-[#4A2A24] shadow-2xl p-4 sm:p-5 space-y-3 text-parchment max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-[#3A201C] pb-2.5 shrink-0">
         <h3 class="font-medieval text-sm sm:text-base font-bold text-goldAccent flex items-center gap-2">
           <span>🔄</span>
           <span data-i18n="modDiffTitle">Gabung Update Mod (Diff Merge)</span>
         </h3>
-        <button type="button" onclick="closeModDiffModal()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold">✕</button>
+        <button type="button" onclick="closeModDiffModal()" class="w-8 h-8 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold" aria-label="Tutup">✕</button>
       </div>
 
-      <p class="text-xs text-parchmentDim" data-i18n="modDiffDesc">Bawa terjemahan lama Anda ke versi mod terbaru: ID yang sama disalin otomatis ke cache sehingga hanya baris baru yang diterjemahkan.</p>
+      <div class="flex-1 overflow-y-auto pr-1 space-y-3">
+        <p class="text-xs text-parchmentDim" data-i18n="modDiffDesc">Bawa terjemahan lama Anda ke versi mod terbaru: ID yang sama disalin otomatis ke cache sehingga hanya baris baru yang diterjemahkan.</p>
 
-      <div class="space-y-2">
-        <button type="button" onclick="document.getElementById('diffNewModInput').click()" class="w-full p-3 rounded-xl bg-[#160D0C] hover:bg-[#221413] border border-[#4A2A24] text-left transition">
-          <div class="text-xs font-semibold text-parchment" data-i18n="modDiffPickNew">1. Pilih CSV Mod Versi Baru</div>
-          <div id="diffNewModLabel" class="text-[11px] font-mono text-green-300 truncate mt-0.5">—</div>
-        </button>
-        <input type="file" id="diffNewModInput" accept=".csv,.txt,.tsv" class="hidden" onchange="handleDiffNewModFile(event)">
+        <div class="space-y-2">
+          <button type="button" onclick="document.getElementById('diffNewModInput').click()" class="w-full p-3 rounded-xl bg-[#160D0C] hover:bg-[#221413] border border-[#4A2A24] text-left transition">
+            <div class="text-xs font-semibold text-parchment" data-i18n="modDiffPickNew">1. Pilih CSV Mod Versi Baru</div>
+            <div id="diffNewModLabel" class="text-[11px] font-mono text-green-300 truncate mt-0.5">—</div>
+          </button>
+          <input type="file" id="diffNewModInput" accept=".csv,.txt,.tsv" class="hidden" onchange="handleDiffNewModFile(event)">
 
-        <button type="button" onclick="document.getElementById('diffOldTransInput').click()" class="w-full p-3 rounded-xl bg-[#160D0C] hover:bg-[#221413] border border-[#4A2A24] text-left transition">
-          <div class="text-xs font-semibold text-parchment" data-i18n="modDiffPickOld">2. Pilih CSV Terjemahan Lama Anda</div>
-          <div id="diffOldTransLabel" class="text-[11px] font-mono text-green-300 truncate mt-0.5">—</div>
-        </button>
-        <input type="file" id="diffOldTransInput" accept=".csv,.txt,.tsv" class="hidden" onchange="handleDiffOldTransFile(event)">
+          <button type="button" onclick="document.getElementById('diffOldTransInput').click()" class="w-full p-3 rounded-xl bg-[#160D0C] hover:bg-[#221413] border border-[#4A2A24] text-left transition">
+            <div class="text-xs font-semibold text-parchment" data-i18n="modDiffPickOld">2. Pilih CSV Terjemahan Lama Anda</div>
+            <div id="diffOldTransLabel" class="text-[11px] font-mono text-green-300 truncate mt-0.5">—</div>
+          </button>
+          <input type="file" id="diffOldTransInput" accept=".csv,.txt,.tsv" class="hidden" onchange="handleDiffOldTransFile(event)">
+        </div>
+
+        <div id="modDiffSummaryBox" class="hidden rounded-xl bg-[#0D0707] border border-[#4A2A24] p-3 space-y-1.5 text-xs">
+          <div class="font-semibold text-goldAccent" data-i18n="modDiffSummary">Hasil Analisis Diff</div>
+          <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffReused">Dipertahankan (Auto-Cache)</span><span id="diffReusedVal" class="font-mono font-bold text-green-300">0</span></div>
+          <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffNew">Baru / Perlu Diterjemahkan</span><span id="diffNewVal" class="font-mono font-bold text-amber-300">0</span></div>
+          <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffSkipped">Dilewati</span><span id="diffSkippedVal" class="font-mono font-bold text-parchmentDim">0</span></div>
+        </div>
       </div>
 
-      <div id="modDiffSummaryBox" class="hidden rounded-xl bg-[#0D0707] border border-[#4A2A24] p-3 space-y-1.5 text-xs">
-        <div class="font-semibold text-goldAccent" data-i18n="modDiffSummary">Hasil Analisis Diff</div>
-        <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffReused">Dipertahankan (Auto-Cache)</span><span id="diffReusedVal" class="font-mono font-bold text-green-300">0</span></div>
-        <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffNew">Baru / Perlu Diterjemahkan</span><span id="diffNewVal" class="font-mono font-bold text-amber-300">0</span></div>
-        <div class="flex justify-between"><span class="text-parchmentDim" data-i18n="modDiffSkipped">Dilewati</span><span id="diffSkippedVal" class="font-mono font-bold text-parchmentDim">0</span></div>
-      </div>
-
-      <div class="flex justify-end gap-2 border-t border-[#3A201C] pt-3">
+      <div class="flex justify-end gap-2 border-t border-[#3A201C] pt-3 shrink-0">
         <button type="button" onclick="closeModDiffModal()" class="px-3.5 py-2 rounded-xl border border-[#4A2A24] text-xs font-semibold text-parchmentDim" data-i18n="btnCancel">Batal</button>
         <button type="button" id="diffApplyBtn" onclick="applyModDiffToQueue()" disabled class="px-4 py-2 rounded-xl bg-burgundy hover:bg-burgundyHover disabled:opacity-40 border border-goldMuted text-xs font-bold text-parchment" data-i18n="modDiffApply">Masukkan ke Antrean</button>
       </div>
@@ -1013,16 +1021,16 @@
   <!-- Modal: Peringatan Validasi Struktur CSV -->
   <div id="csvValOverlay" onclick="closeCsvValModal()" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
     <div onclick="event.stopPropagation()" class="w-full max-w-lg rounded-2xl bg-[#1D1110] border-2 border-amber-600 shadow-2xl p-4 sm:p-5 space-y-3 text-parchment max-h-[88vh] flex flex-col">
-      <div class="flex items-center justify-between border-b border-[#3A201C] pb-2">
+      <div class="flex items-center justify-between border-b border-[#3A201C] pb-2 shrink-0">
         <h3 class="font-medieval text-sm sm:text-base font-bold text-amber-300 flex items-center gap-2">
           <span>⚠️</span>
           <span data-i18n="csvValTitle">Peringatan Validasi Struktur CSV</span>
         </h3>
-        <button type="button" onclick="closeCsvValModal()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold">✕</button>
+        <button type="button" onclick="closeCsvValModal()" class="w-8 h-8 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold" aria-label="Tutup">✕</button>
       </div>
-      <p class="text-xs text-parchmentDim" data-i18n="csvValDesc">Beberapa file antrean memiliki struktur kolom atau pemisah yang mencurigakan:</p>
+      <p class="text-xs text-parchmentDim shrink-0" data-i18n="csvValDesc">Beberapa file antrean memiliki struktur kolom atau pemisah yang mencurigakan:</p>
       <div id="csvValReportList" class="space-y-2 overflow-y-auto flex-1 pr-1"></div>
-      <div class="flex justify-end gap-2 border-t border-[#3A201C] pt-3">
+      <div class="flex justify-end gap-2 border-t border-[#3A201C] pt-3 shrink-0">
         <button type="button" onclick="closeCsvValModal()" class="px-3.5 py-2 rounded-xl border border-[#4A2A24] text-xs font-semibold text-parchmentDim" data-i18n="btnFixSeparator">Periksa Pemisah</button>
         <button type="button" onclick="proceedTranslationBypassValidation()" class="px-4 py-2 rounded-xl bg-burgundy hover:bg-burgundyHover border border-goldMuted text-xs font-bold text-parchment" data-i18n="btnProceedAnyway">Tetap Lanjutkan</button>
       </div>
@@ -1031,9 +1039,12 @@
 
   <!-- Modal: Tambah Bahasa Tujuan Kustom -->
   <div id="addLangOverlay" onclick="closeAddLangModal()" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div onclick="event.stopPropagation()" class="w-full max-w-sm rounded-2xl bg-[#1D1110] border-2 border-[#4A2A24] shadow-2xl p-4 sm:p-5 space-y-3 text-parchment">
-      <h3 class="font-medieval text-sm sm:text-base font-bold text-goldAccent" data-i18n="addLangTitle">Tambah Bahasa Tujuan</h3>
-      <div class="space-y-2.5">
+    <div onclick="event.stopPropagation()" class="w-full max-w-sm rounded-2xl bg-[#1D1110] border-2 border-[#4A2A24] shadow-2xl p-4 sm:p-5 space-y-3 text-parchment max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between gap-2 border-b border-[#3A201C] pb-2 shrink-0">
+        <h3 class="font-medieval text-sm sm:text-base font-bold text-goldAccent" data-i18n="addLangTitle">Tambah Bahasa Tujuan</h3>
+        <button type="button" onclick="closeAddLangModal()" class="w-8 h-8 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold" aria-label="Tutup">✕</button>
+      </div>
+      <div class="flex-1 overflow-y-auto pr-1 space-y-2.5">
         <div>
           <label class="text-[11px] text-parchmentDim block mb-1" data-i18n="addLangCode">Kode Bahasa ISO (cth: uk, pl, vi, ko)</label>
           <input type="text" id="customLangCodeInput" maxlength="10" placeholder="pl" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs font-mono text-parchment focus:outline-none focus:border-goldAccent">
@@ -1043,7 +1054,7 @@
           <input type="text" id="customLangLabelInput" maxlength="40" placeholder="Polski (pl)" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs text-parchment focus:outline-none focus:border-goldAccent">
         </div>
       </div>
-      <div class="flex justify-end gap-2 pt-2">
+      <div class="flex justify-end gap-2 pt-2 border-t border-[#3A201C] shrink-0">
         <button type="button" onclick="closeAddLangModal()" class="px-3 py-1.5 rounded-lg border border-[#4A2A24] text-xs text-parchmentDim" data-i18n="btnCancel">Batal</button>
         <button type="button" onclick="saveCustomTargetLanguage()" class="px-3.5 py-1.5 rounded-lg bg-burgundy hover:bg-burgundyHover border border-goldMuted text-xs font-semibold text-parchment" data-i18n="btnSave">Simpan</button>
       </div>
@@ -1051,18 +1062,18 @@
   </div>
 
   <!-- Pop-up Bantuan Ikon (?) Modal -->
-  <div id="helpModalOverlay" onclick="closeHelpModal()" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div id="helpModalCard" onclick="event.stopPropagation()" class="w-full max-w-md rounded-2xl bg-gradient-to-b from-[#231413] to-[#160D0C] border-2 border-goldAccent shadow-2xl p-5 space-y-3 text-parchment relative">
-      <div class="flex items-start justify-between gap-3 border-b border-[#4A2A24] pb-2.5">
-        <div class="flex items-center gap-2">
+  <div id="helpModalOverlay" onclick="closeHelpModal()" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div id="helpModalCard" onclick="event.stopPropagation()" class="w-full max-w-md rounded-2xl bg-gradient-to-b from-[#231413] to-[#160D0C] border-2 border-goldAccent shadow-2xl p-4 sm:p-5 space-y-3 text-parchment relative max-h-[88vh] flex flex-col">
+      <div class="flex items-start justify-between gap-3 border-b border-[#4A2A24] pb-2.5 shrink-0">
+        <div class="flex items-center gap-2 min-w-0">
           <span class="w-6 h-6 rounded-full bg-burgundy/60 border border-goldAccent text-goldAccent flex items-center justify-center text-xs font-bold shrink-0">?</span>
-          <h3 id="helpModalTitle" class="font-medieval text-sm sm:text-base font-bold text-goldAccent leading-snug">Informasi Bantuan</h3>
+          <h3 id="helpModalTitle" class="font-medieval text-sm sm:text-base font-bold text-goldAccent leading-snug break-words">Informasi Bantuan</h3>
         </div>
-        <button type="button" id="helpModalCloseX" onclick="closeHelpModal()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white flex items-center justify-center text-sm font-bold transition shrink-0" aria-label="Tutup Pop-up">✕</button>
+        <button type="button" id="helpModalCloseX" onclick="closeHelpModal()" class="w-8 h-8 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white flex items-center justify-center text-sm font-bold transition shrink-0" aria-label="Tutup Pop-up">✕</button>
       </div>
-      <div id="helpModalBody" class="text-xs sm:text-sm text-parchmentDim leading-relaxed space-y-2"></div>
-      <div class="pt-1 flex justify-end">
-        <button type="button" onclick="closeHelpModal()" class="px-3.5 py-1.5 rounded-lg bg-burgundy/60 hover:bg-burgundy border border-goldMuted text-xs font-semibold text-parchment transition" data-i18n="btnCloseHelp">Mengerti</button>
+      <div id="helpModalBody" class="flex-1 overflow-y-auto pr-1 text-xs sm:text-sm text-parchmentDim leading-relaxed space-y-2"></div>
+      <div class="pt-2 border-t border-[#4A2A24]/60 flex justify-end shrink-0">
+        <button type="button" onclick="closeHelpModal()" class="px-4 py-2 rounded-lg bg-burgundy/60 hover:bg-burgundy border border-goldMuted text-xs font-semibold text-parchment transition" data-i18n="btnCloseHelp">Mengerti</button>
       </div>
     </div>
   </div>
@@ -1282,7 +1293,13 @@ const I18N = {
     btnProceedAnyway: 'Tetap Lanjutkan',
     btnFixSeparator: 'Periksa Pemisah',
     historySearchPlaceholder: 'Cari nama file, bahasa, atau mesin...',
-    filterAll: 'Semua'
+    filterAll: 'Semua',
+    qaIssueColMismatch: 'Jumlah Kolom Beda',
+    qaIssueQuotes: 'Tanda Kutip',
+    btnResumeProcess: 'Lanjutkan',
+    btnRetryNow: 'Coba Lagi',
+    rateLimitPausedTitle: 'Batas Kecepatan API (HTTP 429)',
+    rateLimitPausedDetail: 'Progres tersimpan aman ke checkpoint. Tunggu beberapa detik lalu tekan Lanjutkan atau Coba Lagi.'
   },
   en: {
     navTitle: 'M&B Warband Translator',
@@ -1672,7 +1689,13 @@ const I18N = {
     btnProceedAnyway: 'Yine de Çevir',
     btnFixSeparator: 'Ayırıcıyı İncele',
     historySearchPlaceholder: 'Dosya adı, dil veya motor ara...',
-    filterAll: 'Tümü'
+    filterAll: 'Tümü',
+    qaIssueColMismatch: 'Sütun Uyumsuzluğu',
+    qaIssueQuotes: 'Dengesiz Tırnak',
+    btnResumeProcess: 'Devam Et',
+    btnRetryNow: 'Yeniden Dene',
+    rateLimitPausedTitle: 'API Hız Sınırı (HTTP 429)',
+    rateLimitPausedDetail: 'İlerleme güvenle kaydedildi. Kısa süre bekleyip Devam Et veya Yeniden Dene seçeneğine tıklayın.'
   }
 };
 
@@ -1683,9 +1706,9 @@ const HELP_TOPICS = {
     tr: { title: 'Arayüz Dili (UI)', body: '<p>Menülerin dilini <strong>ID</strong>, <strong>EN</strong> ve <strong>TR</strong> arasında değiştirir.</p>' }
   },
   secEngine: {
-    id: { title: 'Mesin Terjemahan Gratis & Kecepatan', body: '<p>Memilih layanan penerjemah daring gratis tanpa API Key. Gunakan Google Translate untuk kecepatan tertinggi, atau Lingva/MyMemory saat butuh cadangan.</p>' },
-    en: { title: 'Free Translation Engine & Speed', body: '<p>Selects which free online translation service is used without a paid API key.</p>' },
-    tr: { title: 'Ücretsiz Çeviri Motoru ve Hız', body: '<p>Ücretli API anahtarı gerektirmeyen çeviri servisini seçer.</p>' }
+    id: { title: 'Mesin Terjemahan Gratis & Kecepatan', body: '<p>Memilih layanan penerjemah daring gratis tanpa API Key. <strong>Google Translate</strong> paling cepat untuk ribuan baris; aktifkan <em>Auto-Fallback</em> agar mesin otomatis beralih ke <strong>Lingva</strong> atau <strong>MyMemory</strong> bila terkena batas sementara.</p>' },
+    en: { title: 'Free Translation Engine & Speed', body: '<p>Selects which free online translation service runs without a paid API key. Google Translate offers the fastest throughput; enable Auto-Fallback to switch automatically to Lingva or MyMemory on errors.</p>' },
+    tr: { title: 'Ücretsiz Çeviri Motoru ve Hız', body: '<p>Ücretli API anahtarı gerektirmeyen çeviri servisini seçer. Binlerce satır için Google Translate en hızlısıdır; Otomatik Yedek Motor ile hata anında geçiş yapılır.</p>' }
   },
   engGoogle: {
     id: { title: 'Google Translate (Auto-Proxy)', body: '<p>Menggunakan endpoint Google Translate dengan rotasi proxy CORS otomatis bila browser membatasi akses langsung.</p>' },
@@ -1703,18 +1726,18 @@ const HELP_TOPICS = {
     tr: { title: 'MyMemory API', body: '<p>Günlük yaklaşık 1.000 satır sunan ücretsiz yedek çeviri servisidir.</p>' }
   },
   lblSpeed: {
-    id: { title: 'Jeda Permintaan (Anti-HTTP 429)', body: '<p>Menentukan waktu jeda antarterjemahan agar tidak terkena limit sementara (HTTP 429). Gunakan 200–500 ms untuk file besar.</p>' },
-    en: { title: 'Request Delay', body: '<p>Sets pause interval between requests to avoid HTTP 429 rate limits.</p>' },
-    tr: { title: 'İstek Gecikmesi', body: '<p>HTTP 429 engelini önlemek için istekler arası bekleme süresidir.</p>' }
+    id: { title: 'Jeda Permintaan (Anti-Blokir HTTP 429)', body: '<p>Menentukan waktu tunggu antar-permintaan jaringan. Untuk file <strong>7.000–8.000 baris</strong>, gunakan jeda <strong>200–500 ms</strong> agar server tidak membalas <code>HTTP 429 Too Many Requests</code>. Jika tetap terkena limit, sistem menjeda otomatis dan menyimpan checkpoint.</p>' },
+    en: { title: 'Request Delay (Anti-HTTP 429)', body: '<p>Sets pause interval between requests. For 7,000–8,000 row mods, choose 200–500 ms to avoid HTTP 429 rate limits; if triggered, progress pauses with checkpoint saved.</p>' },
+    tr: { title: 'İstek Gecikmesi (HTTP 429 Koruması)', body: '<p>Büyük dosyalarda (7.000–8.000 satır) HTTP 429 sınırına takılmamak için istekler arası 200–500 ms bekleme süresi ayarlar.</p>' }
   },
   lblCache: {
-    id: { title: 'Memori Cache (Auto-Resume)', body: '<p>Setiap baris tersimpan di browser agar pemrosesan yang terhenti dapat dilanjutkan instan tanpa mengulang permintaan jaringan.</p>' },
+    id: { title: 'Memori Cache (Auto-Resume)', body: '<p>Setiap baris tersimpan berkala di browser agar pemrosesan yang terhenti dapat dilanjutkan instan tanpa mengulang permintaan jaringan.</p>' },
     en: { title: 'Cache Memory (Auto-Resume)', body: '<p>Saves every translated row locally so stopped sessions resume instantly.</p>' },
     tr: { title: 'Önbellek (Otomatik Devam)', body: '<p>Çevrilen satırları saklayarak yarıda kalan dosyaları anında devam ettirir.</p>' }
   },
   chkFallback: {
-    id: { title: 'Auto-Fallback ke Mesin Lain', body: '<p>Otomatis berpindah ke mesin cadangan jika mesin utama gagal setelah 3 percobaan.</p>' },
-    en: { title: 'Auto-Fallback', body: '<p>Automatically switches to backup engines if the primary fails after 3 retries.</p>' },
+    id: { title: 'Auto-Fallback ke Mesin Lain', body: '<p>Otomatis berpindah ke mesin cadangan jika mesin utama gagal setelah percobaan ulang.</p>' },
+    en: { title: 'Auto-Fallback', body: '<p>Automatically switches to backup engines if the primary fails after retries.</p>' },
     tr: { title: 'Otomatik Yedek Motor', body: '<p>Ana motor hata verirse otomatik olarak yedek motorları dener.</p>' }
   },
   secFormat: {
@@ -1723,9 +1746,9 @@ const HELP_TOPICS = {
     tr: { title: 'Dil ve Metin Biçimi', body: '<p>Kaynak/hedef dil ve Warband kod ayrıştırma ayarlarını belirler.</p>' }
   },
   lblSrcLang: {
-    id: { title: 'Bahasa Sumber', body: '<p>Pilih bahasa asli teks mod yang diunggah.</p>' },
-    en: { title: 'Source Language', body: '<p>Select the original language of the uploaded mod files.</p>' },
-    tr: { title: 'Kaynak Dil', body: '<p>Yüklenen mod dosyasının orijinal dilini seçin.</p>' }
+    id: { title: 'Bahasa Sumber (Mod Asli)', body: '<p>Pilih bahasa asli teks di dalam file CSV mod (umumnya <strong>English</strong>). Gunakan <em>Deteksi Otomatis</em> hanya jika file sumber memiliki bahasa campuran atau bukan Inggris.</p>' },
+    en: { title: 'Source Language (Original Mod)', body: '<p>Choose the original language written in the mod CSV files (usually English). Use Auto-Detect only for mixed or unknown mod languages.</p>' },
+    tr: { title: 'Kaynak Dil (Orijinal Mod)', body: '<p>Mod CSV dosyalarının orijinal dilini seçin (genellikle İngilizce).</p>' }
   },
   lblTgtLang: {
     id: { title: 'Bahasa Tujuan', body: '<p>Pilih bahasa terjemahan hasil keluaran.</p>' },
@@ -1968,6 +1991,59 @@ function escapeCsvFieldIfNeeded(value, delimiter) {
   return value;
 }
 
+function unquoteCsvCellIfWrapped(field) {
+  const s = String(field || '');
+  if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
+    return s.slice(1, -1).replace(/""/g, '"');
+  }
+  return s;
+}
+
+function findFirstDelimiterIndex(rawLine, delimiter) {
+  const sep = delimiter || '|';
+  if (sep.length > 1) return rawLine.indexOf(sep);
+  const sepCh = sep[0];
+  let inQuotes = false;
+  for (let i = 0; i < rawLine.length; i++) {
+    const ch = rawLine[i];
+    if (ch === '"') {
+      if (inQuotes && rawLine[i + 1] === '"') i++;
+      else inQuotes = !inQuotes;
+    } else if (ch === sepCh && !inQuotes) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function countUnquotedDelimiter(rawLine, delimiter) {
+  const sep = delimiter || '|';
+  if (!sep) return 0;
+  if (sep.length > 1) return rawLine.split(sep).length - 1;
+  const sepCh = sep[0];
+  let inQuotes = false;
+  let count = 0;
+  for (let i = 0; i < rawLine.length; i++) {
+    const ch = rawLine[i];
+    if (ch === '"') {
+      if (inQuotes && rawLine[i + 1] === '"') i++;
+      else inQuotes = !inQuotes;
+    } else if (ch === sepCh && !inQuotes) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function buildTranslatedLine(hasCode, codePart, translatedText, sep) {
+  const cleanSep = sep || '|';
+  if (!hasCode) return translatedText;
+  if (cleanSep === '|') return `${codePart}${cleanSep}${translatedText}`;
+  const qCode = escapeCsvFieldIfNeeded(codePart, cleanSep);
+  const qText = escapeCsvFieldIfNeeded(translatedText, cleanSep);
+  return `${qCode}${cleanSep}${qText}`;
+}
+
 function formatExportContent(lines, sourceSeparator, delimiterId) {
   const srcSep = sourceSeparator || '|';
   const meta = getDelimiterMeta(delimiterId);
@@ -1976,10 +2052,12 @@ function formatExportContent(lines, sourceSeparator, delimiterId) {
   }
   const outSep = delimiterId === 'pipe' ? srcSep : meta.symbol;
   return lines.map(line => {
-    const idx = line.indexOf(srcSep);
-    if (idx === -1) return escapeCsvFieldIfNeeded(line, outSep);
-    const code = escapeCsvFieldIfNeeded(line.slice(0, idx), outSep);
-    const text = escapeCsvFieldIfNeeded(line.slice(idx + srcSep.length), outSep);
+    const idx = findFirstDelimiterIndex(line, srcSep);
+    if (idx === -1) return escapeCsvFieldIfNeeded(unquoteCsvCellIfWrapped(line.trim()), outSep);
+    const rawCode = line.slice(0, idx);
+    const rawText = line.slice(idx + srcSep.length).trim();
+    const code = escapeCsvFieldIfNeeded(srcSep === '|' ? rawCode : unquoteCsvCellIfWrapped(rawCode), outSep);
+    const text = escapeCsvFieldIfNeeded(srcSep === '|' ? rawText : unquoteCsvCellIfWrapped(rawText), outSep);
     return `${code}${outSep}${text}`;
   }).join('\r\n') + '\r\n';
 }
@@ -2153,6 +2231,9 @@ function recordHistorySession(fileItem, status, processedLines, wordsProcessed =
   if (activeTab === 'history') renderHistoryScreen();
 }
 
+let lastCacheSaveAt = 0;
+let unsavedCacheWrites = 0;
+
 function loadCache() {
   try {
     const saved = localStorage.getItem(CACHE_STORAGE_KEY) || localStorage.getItem('warband_csv_translator_cache_v2');
@@ -2161,11 +2242,27 @@ function loadCache() {
   updateCacheBadge();
 }
 
-function saveCache() {
+function saveCache(force = false) {
+  unsavedCacheWrites++;
+  const now = Date.now();
+  if (!force && unsavedCacheWrites < 100 && (now - lastCacheSaveAt < 1200 || unsavedCacheWrites < 25)) {
+    updateCacheBadge();
+    return;
+  }
+  lastCacheSaveAt = now;
+  unsavedCacheWrites = 0;
   try {
     const entries = Array.from(translationCache.entries());
-    const trimmed = entries.length > 8000 ? entries.slice(-8000) : entries;
-    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(trimmed));
+    const caps = [25000, 12000, 6000];
+    for (const cap of caps) {
+      const trimmed = entries.length > cap ? entries.slice(-cap) : entries;
+      try {
+        localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(trimmed));
+        break;
+      } catch (quotaErr) {
+        if (cap === caps[caps.length - 1]) throw quotaErr;
+      }
+    }
   } catch (_) {}
   updateCacheBadge();
 }
@@ -2229,20 +2326,27 @@ function importCacheBackupJson(event) {
           imported++;
         }
       });
-      saveCache();
+      saveCache(true);
       refreshAutoResumeCounts();
       renderQueue();
       showToast(`Berhasil mengimpor ${imported.toLocaleString()} entri cache!`);
       appendLog(`Impor cache JSON: ${imported} entri digabung.`, 'ok');
     } catch (err) {
-      showErrorPopup('Gagal Impor Cache JSON', err && err.message ? err.message : 'Format JSON tidak valid');
+      showErrorPopup('Gagal Impor Cache JSON', err && err.message ? err.message : 'Format JSON tidak valid', '', 'IMPORT');
     }
   };
   reader.readAsText(file, 'utf-8');
   event.target.value = '';
 }
 
+function applySeparatorPreset(sepValue) {
+  const input = document.getElementById('sepChar');
+  if (input) input.value = sepValue;
+  onSettingsChanged();
+}
+
 function onSettingsChanged() {
+  revalidateQueue();
   refreshAutoResumeCounts();
   renderQueue();
   renderCsvPreviewer();
@@ -2276,13 +2380,32 @@ function setStatus(text, type = 'neutral') {
   else el.className = 'text-xs px-2.5 py-0.5 rounded-full bg-[#1F1312] border border-[#4A2A24] text-parchmentDim';
 }
 
+function createApiError(message, httpCode = 0, retryAfterSec = null, engineName = '') {
+  const err = new Error(message);
+  err.httpCode = httpCode;
+  err.retryAfterSec = retryAfterSec;
+  err.engineName = engineName;
+  return err;
+}
+
+function parseRetryAfterHeader(res) {
+  try {
+    const raw = res.headers && res.headers.get ? res.headers.get('Retry-After') : null;
+    if (!raw) return null;
+    const sec = parseInt(String(raw).trim(), 10);
+    return Number.isFinite(sec) ? Math.min(120, Math.max(1, sec)) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 const CORS_PROXIES = [
   url => url,
   url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
 ];
 
-async function fetchWithProxyFallback(targetUrl) {
+async function fetchWithProxyFallback(targetUrl, engineName = 'Google Translate') {
   let lastError;
   for (let i = 0; i < CORS_PROXIES.length; i++) {
     const idx = (activeProxyIndex + i) % CORS_PROXIES.length;
@@ -2291,23 +2414,34 @@ async function fetchWithProxyFallback(targetUrl) {
       const timeoutId = setTimeout(() => controller.abort(), 9500);
       const res = await fetch(CORS_PROXIES[idx](targetUrl), { signal: controller.signal });
       clearTimeout(timeoutId);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const retrySec = parseRetryAfterHeader(res);
+        const apiErr = createApiError(`HTTP ${res.status}`, res.status, retrySec, engineName);
+        if (res.status === 429) {
+          setStatus('HTTP 429 · Limit Rate', 'err');
+          throw apiErr;
+        }
+        throw apiErr;
+      }
       const data = await res.json();
       if (idx !== activeProxyIndex) activeProxyIndex = idx;
       setStatus(idx === 0 ? 'Terhubung Langsung' : `Terhubung (Proxy #${idx})`, idx === 0 ? 'ok' : 'warn');
       return data;
     } catch (err) {
       lastError = err;
+      if (err && err.httpCode === 429) break;
     }
   }
-  setStatus('Koneksi Terputus / Limit', 'err');
-  throw lastError || new Error('Semua proxy gagal merespons');
+  setStatus(lastError && lastError.httpCode === 429 ? 'HTTP 429 · Limit Rate' : 'Koneksi Terputus / Limit', 'err');
+  throw lastError || createApiError('Semua proxy gagal merespons', 0, null, engineName);
 }
 
 async function queryGoogleTranslate(text, sl, tl) {
   const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
-  const data = await fetchWithProxyFallback(url);
-  if (!Array.isArray(data) || !Array.isArray(data[0])) throw new Error('Respons Google tidak valid');
+  const data = await fetchWithProxyFallback(url, 'Google Translate');
+  if (!Array.isArray(data) || !Array.isArray(data[0])) {
+    throw createApiError('Respons Google tidak valid', 0, null, 'Google Translate');
+  }
   return data[0].map(chunk => chunk[0] || '').join('');
 }
 
@@ -2317,9 +2451,13 @@ async function queryLingvaTranslate(text, sl, tl) {
   const timeoutId = setTimeout(() => controller.abort(), 9500);
   const res = await fetch(url, { signal: controller.signal });
   clearTimeout(timeoutId);
-  if (!res.ok) throw new Error(`Lingva HTTP ${res.status}`);
+  if (!res.ok) {
+    throw createApiError(`Lingva HTTP ${res.status}`, res.status, parseRetryAfterHeader(res), 'Lingva Mirror');
+  }
   const data = await res.json();
-  if (!data || typeof data.translation !== 'string') throw new Error('Respons Lingva kosong');
+  if (!data || typeof data.translation !== 'string') {
+    throw createApiError('Respons Lingva kosong', 0, null, 'Lingva Mirror');
+  }
   setStatus('Terhubung (Lingva)', 'ok');
   return data.translation;
 }
@@ -2331,9 +2469,20 @@ async function queryMyMemoryTranslate(text, sl, tl) {
   const timeoutId = setTimeout(() => controller.abort(), 9500);
   const res = await fetch(url, { signal: controller.signal });
   clearTimeout(timeoutId);
-  if (!res.ok) throw new Error(`MyMemory HTTP ${res.status}`);
+  if (!res.ok) {
+    throw createApiError(`MyMemory HTTP ${res.status}`, res.status, parseRetryAfterHeader(res), 'MyMemory API');
+  }
   const data = await res.json();
-  if (data.responseStatus !== 200) throw new Error(data.responseDetails || `MyMemory Status ${data.responseStatus}`);
+  if (data.responseStatus !== 200) {
+    const details = String(data.responseDetails || '');
+    const isRateLimited = data.responseStatus === 429 || /limit|429|too many/i.test(details);
+    throw createApiError(
+      details || `MyMemory Status ${data.responseStatus}`,
+      isRateLimited ? 429 : (Number(data.responseStatus) || 0),
+      parseRetryAfterHeader(res),
+      'MyMemory API'
+    );
+  }
   setStatus('Terhubung (MyMemory)', 'ok');
   return data.responseData.translatedText;
 }
@@ -2391,7 +2540,9 @@ function protectWarbandTokens(text, glossary) {
   };
   protectedText = protectedText.replace(/\{[^}]+\}/g, pushToken);
   protectedText = protectedText.replace(/\^\^|\^/g, pushToken);
-  protectedText = protectedText.replace(/%[sd]/g, pushToken);
+  protectedText = protectedText.replace(/\\[nt]/g, pushToken);
+  protectedText = protectedText.replace(/<#[0-9A-Fa-f]{6,8}>|@[0-9A-Fa-f]{6}/g, pushToken);
+  protectedText = protectedText.replace(/%[sdif]/g, pushToken);
   glossary.noTranslate.forEach(term => {
     protectedText = protectedText.replace(new RegExp(`\\b${escapeRegex(term)}\\b`, 'gi'), pushToken);
   });
@@ -2454,11 +2605,15 @@ function applyGlossaryPreset(presetId) {
 function applyMedievalTonePostProcessing(text, targetLang, enabled) {
   if (!enabled || !text || !text.trim()) return text;
   const protectedTokens = [];
-  let working = text.replace(/\{[^}]+\}/g, m => {
+  const maskToken = m => {
     const idx = protectedTokens.length;
     protectedTokens.push(m);
     return `@@TOK${idx}@@`;
-  });
+  };
+  let working = text
+    .replace(/\{[^}]+\}/g, maskToken)
+    .replace(/\\[nt]/g, maskToken)
+    .replace(/<#[0-9A-Fa-f]{6,8}>|@[0-9A-Fa-f]{6}/g, maskToken);
   working = working.replace(/\s+([,.!?;:])/g, '$1').replace(/ {2,}/g, ' ');
   const tl = String(targetLang || '').toLowerCase();
   if (tl === 'id') {
@@ -2492,13 +2647,18 @@ function applyMedievalTonePostProcessing(text, targetLang, enabled) {
 }
 
 function parseSplitLine(rawLine, sep, stripTag) {
+  const cleanSep = sep || '|';
   let working = stripTag ? rawLine.replace(new RegExp(escapeRegex(stripTag), 'g'), '') : rawLine;
-  const sepIdx = working.indexOf(sep);
+  const sepIdx = findFirstDelimiterIndex(working, cleanSep);
   const hasCode = sepIdx !== -1;
+  const rawCode = hasCode ? working.slice(0, sepIdx) : '';
+  const rawText = hasCode ? working.slice(sepIdx + cleanSep.length).trim() : working.trim();
+  const codePart = cleanSep === '|' ? rawCode : unquoteCsvCellIfWrapped(rawCode);
+  const textPart = cleanSep === '|' ? rawText : unquoteCsvCellIfWrapped(rawText);
   return {
     hasCode,
-    codePart: hasCode ? working.slice(0, sepIdx) : '',
-    textPart: hasCode ? working.slice(sepIdx + sep.length).trim() : working.trim()
+    codePart,
+    textPart
   };
 }
 
@@ -2510,12 +2670,12 @@ async function processSingleLine(rawLine, engineName) {
   const medievalEnabled = document.getElementById('medievalToneChk')?.checked ?? true;
 
   const split = parseSplitLine(rawLine, sep, stripTag);
-  if (!split.textPart) return { output: split.hasCode ? `${split.codePart}${sep}` : '', fromCache: true };
+  if (!split.textPart) return { output: buildTranslatedLine(split.hasCode, split.codePart, '', sep), fromCache: true };
 
   const cacheKey = `${tl}|${split.textPart}`;
   if (translationCache.has(cacheKey)) {
     const cachedVal = translationCache.get(cacheKey);
-    return { output: split.hasCode ? `${split.codePart}${sep}${cachedVal}` : cachedVal, fromCache: true };
+    return { output: buildTranslatedLine(split.hasCode, split.codePart, cachedVal, sep), fromCache: true };
   }
 
   const glossary = parseGlossary();
@@ -2525,7 +2685,7 @@ async function processSingleLine(rawLine, engineName) {
   finalTranslated = applyMedievalTonePostProcessing(finalTranslated, tl, medievalEnabled);
   translationCache.set(cacheKey, finalTranslated);
 
-  return { output: split.hasCode ? `${split.codePart}${sep}${finalTranslated}` : finalTranslated, fromCache: false };
+  return { output: buildTranslatedLine(split.hasCode, split.codePart, finalTranslated, sep), fromCache: false };
 }
 
 async function processBatchChunk(descriptors, engineName) {
@@ -2541,13 +2701,13 @@ async function processBatchChunk(descriptors, engineName) {
   const rawBatch = await callTranslatorEngine(engineName, combined, sl, tl);
   const parts = rawBatch.split(/\s*ZXQBRQXZ\s*/i).map(s => s.trim());
   if (parts.length !== descriptors.length) {
-    throw new Error(`Batch split mismatch: ${parts.length}/${descriptors.length}`);
+    throw createApiError(`Batch split mismatch: ${parts.length}/${descriptors.length}`, 0, null, engineName);
   }
   return descriptors.map((desc, idx) => {
     let translated = restoreWarbandTokens(parts[idx], protectedItems[idx].tokens, glossary);
     translated = applyMedievalTonePostProcessing(translated, tl, medievalEnabled);
     translationCache.set(`${tl}|${desc.split.textPart}`, translated);
-    return desc.split.hasCode ? `${desc.split.codePart}${sep}${translated}` : translated;
+    return buildTranslatedLine(desc.split.hasCode, desc.split.codePart, translated, sep);
   });
 }
 
@@ -2579,10 +2739,8 @@ function countCachedLinesForFile(item) {
   let hits = 0;
   for (const rawLine of item.lines) {
     if (checkSkipRegex(rawLine)) { hits++; continue; }
-    let working = stripTag ? rawLine.replace(new RegExp(escapeRegex(stripTag), 'g'), '') : rawLine;
-    const sepIdx = working.indexOf(sep);
-    const textPart = sepIdx !== -1 ? working.slice(sepIdx + sep.length).trim() : working.trim();
-    if (!textPart || translationCache.has(`${tl}|${textPart}`)) hits++;
+    const s = parseSplitLine(rawLine, sep, stripTag);
+    if (!s.textPart || translationCache.has(`${tl}|${s.textPart}`)) hits++;
   }
   return hits;
 }
@@ -2614,7 +2772,7 @@ function validateCsvStructure(item) {
     if (checkSkipRegex(raw)) { skipped++; return; }
     const s = parseSplitLine(raw, sep, stripTag);
     const quoteCount = (raw.match(/"/g) || []).length;
-    const sepOcc = raw.split(sep).length - 1;
+    const sepOcc = countUnquotedDelimiter(raw, sep);
     if (quoteCount % 2 !== 0) {
       malformed++;
       if (issues.length < 10) issues.push({ line: lineNo, reason: 'Tanda kutip tidak berpasangan' });
@@ -2667,7 +2825,11 @@ function enqueueFiles(files) {
         errorMessage: `Ekstensi tidak didukung (${ext || 'unknown'}). Gunakan .csv, .txt, atau .tsv.`,
         isFormatError: true
       });
-      showErrorPopup('Format File Tidak Didukung', `File "${file.name}" diabaikan. Gunakan format .csv, .txt, atau .tsv.`);
+      showErrorPopup({
+        title: 'Format File Tidak Didukung',
+        detail: `File "${file.name}" diabaikan. Gunakan format .csv, .txt, atau .tsv.`,
+        codeLabel: 'FORMAT'
+      });
       return;
     }
 
@@ -2867,19 +3029,13 @@ function renderCsvPreviewer() {
 
   sample.forEach((rawLine, idx) => {
     const skipped = checkSkipRegex(rawLine);
-    const working = stripTag ? rawLine.replace(new RegExp(escapeRegex(stripTag), 'g'), '') : rawLine;
-    const sepIdx = working.indexOf(sep);
-    const hasSep = sepIdx !== -1;
+    const s = parseSplitLine(rawLine, sep, stripTag);
+    const hasSep = s.hasCode;
     if (hasSep) matched++;
-    const colKey = hasSep ? working.slice(0, sepIdx) : '—';
-    const colText = hasSep ? working.slice(sepIdx + sep.length).trim() : working.trim();
+    const colKey = hasSep ? s.codePart : '—';
+    const colText = s.textPart;
 
-    const tokens = [];
-    const rxList = [/\{[^}]+\}/g, /\^\^|\^/g, /%[sd]/g];
-    rxList.forEach(rx => {
-      const m = colText.match(rx);
-      if (m) m.forEach(tok => { if (!tokens.includes(tok)) tokens.push(tok); });
-    });
+    const tokens = extractProtectedTokensList(colText);
 
     const tr = document.createElement('tr');
     const infoBadges = [];
@@ -3026,6 +3182,7 @@ function updateControlButtons() {
 function togglePause() {
   if (!isRunning) return;
   isPaused = !isPaused;
+  if (isPaused) saveCache(true);
   updateControlButtons();
   appendLog(isPaused ? 'Proses dijeda oleh pengguna.' : 'Proses dilanjutkan kembali...', 'warn');
 }
@@ -3034,6 +3191,7 @@ function stopTranslation() {
   if (!isRunning) return;
   shouldStop = true;
   isPaused = false;
+  saveCache(true);
   appendLog('Menghentikan proses terjemahan...', 'err');
 }
 
@@ -3147,63 +3305,91 @@ async function startTranslation(bypassValidation = false) {
       } else {
         const split0 = parseSplitLine(originalLine, sep, stripTag);
         if (!split0.textPart) {
-          fileItem.results.push(split0.hasCode ? `${split0.codePart}${sep}` : '');
+          fileItem.results.push(buildTranslatedLine(split0.hasCode, split0.codePart, '', sep));
           cacheHits++;
           i++;
           fileItem.processedCount = i;
         } else if (translationCache.has(`${tl}|${split0.textPart}`)) {
           const cachedVal = translationCache.get(`${tl}|${split0.textPart}`);
-          fileItem.results.push(split0.hasCode ? `${split0.codePart}${sep}${cachedVal}` : cachedVal);
+          fileItem.results.push(buildTranslatedLine(split0.hasCode, split0.codePart, cachedVal, sep));
           cacheHits++;
           i++;
           fileItem.processedCount = i;
-        } else if (batchLimit > 1) {
-          const chunk = [];
-          let charBudget = 0;
-          let probe = i;
-          while (probe < total && chunk.length < batchLimit) {
-            const candidateRaw = fileItem.lines[probe];
-            if (checkSkipRegex(candidateRaw)) break;
-            const cSplit = parseSplitLine(candidateRaw, sep, stripTag);
-            if (!cSplit.textPart || translationCache.has(`${tl}|${cSplit.textPart}`)) break;
-            const nextLen = cSplit.textPart.length + 14;
-            if (chunk.length > 0 && charBudget + nextLen > 1050) break;
-            chunk.push({ lineIndex: probe, rawLine: candidateRaw, split: cSplit });
-            charBudget += nextLen;
-            probe++;
-          }
-
-          let batchSucceeded = false;
-          if (chunk.length > 1) {
-            try {
-              const outputs = await processBatchChunk(chunk, selectedEngine);
-              outputs.forEach(out => fileItem.results.push(out));
-              batchSucceeded = true;
-            } catch (_) {
-              batchSucceeded = false;
-            }
-          }
-
-          if (batchSucceeded) {
-            i += chunk.length;
-            fileItem.processedCount = i;
-            await sleep(delayMs);
-          } else {
-            // Single-line fallback for reliability
-            const res = await translateSingleWithRetry(originalLine, i, fileItem.name, selectedEngine, useFallback, fallbackPool);
-            fileItem.results.push(res.output);
-            if (res.fromCache) cacheHits++;
-            else await sleep(delayMs);
-            i++;
-            fileItem.processedCount = i;
-          }
         } else {
-          const res = await translateSingleWithRetry(originalLine, i, fileItem.name, selectedEngine, useFallback, fallbackPool);
-          fileItem.results.push(res.output);
-          if (res.fromCache) cacheHits++;
-          else await sleep(delayMs);
-          i++;
-          fileItem.processedCount = i;
+          try {
+            if (batchLimit > 1) {
+              const chunk = [];
+              let charBudget = 0;
+              let probe = i;
+              while (probe < total && chunk.length < batchLimit) {
+                const candidateRaw = fileItem.lines[probe];
+                if (checkSkipRegex(candidateRaw)) break;
+                const cSplit = parseSplitLine(candidateRaw, sep, stripTag);
+                if (!cSplit.textPart || translationCache.has(`${tl}|${cSplit.textPart}`)) break;
+                const nextLen = cSplit.textPart.length + 14;
+                if (chunk.length > 0 && charBudget + nextLen > 1050) break;
+                chunk.push({ lineIndex: probe, rawLine: candidateRaw, split: cSplit });
+                charBudget += nextLen;
+                probe++;
+              }
+
+              let batchSucceeded = false;
+              if (chunk.length > 1) {
+                try {
+                  const outputs = await processBatchChunk(chunk, selectedEngine);
+                  outputs.forEach(out => fileItem.results.push(out));
+                  batchSucceeded = true;
+                } catch (batchErr) {
+                  if (batchErr && batchErr.httpCode === 429) {
+                    const cooldownMs = Math.min(10000, Math.max((batchErr.retryAfterSec || 0) * 1000, 1800));
+                    await sleep(cooldownMs);
+                  }
+                  batchSucceeded = false;
+                }
+              }
+
+              if (batchSucceeded) {
+                i += chunk.length;
+                fileItem.processedCount = i;
+                await sleep(delayMs);
+              } else {
+                const res = await translateSingleWithRetry(originalLine, i, fileItem.name, selectedEngine, useFallback, fallbackPool);
+                fileItem.results.push(res.output);
+                if (res.fromCache) cacheHits++;
+                else await sleep(delayMs);
+                i++;
+                fileItem.processedCount = i;
+              }
+            } else {
+              const res = await translateSingleWithRetry(originalLine, i, fileItem.name, selectedEngine, useFallback, fallbackPool);
+              fileItem.results.push(res.output);
+              if (res.fromCache) cacheHits++;
+              else await sleep(delayMs);
+              i++;
+              fileItem.processedCount = i;
+            }
+          } catch (ratePauseErr) {
+            if (ratePauseErr && ratePauseErr.isRateLimitPause) {
+              saveCache(true);
+              refreshAutoResumeCounts();
+              renderQueue();
+              isPaused = true;
+              updateControlButtons();
+              setStatus('HTTP 429 · Dijeda (Checkpoint Aman)', 'err');
+              appendLog(`HTTP 429 pada ${fileItem.name} baris #${i + 1}. Progres checkpoint disimpan (${i}/${total}). Tekan Lanjutkan untuk meneruskan.`, 'err');
+              showErrorPopup({
+                title: t('rateLimitPausedTitle'),
+                detail: `${t('rateLimitPausedDetail')} (${ratePauseErr.detail || ''})`,
+                lineInfo: `${fileItem.name} · Baris #${i + 1}`,
+                codeLabel: 'HTTP 429',
+                isRateLimit: true,
+                canResume: true,
+                canRetry: true
+              });
+              continue;
+            }
+            throw ratePauseErr;
+          }
         }
       }
 
@@ -3220,11 +3406,11 @@ async function startTranslation(bypassValidation = false) {
       }
 
       updateProgressUI(i, total, cacheHits, startTime);
-      if (i % 5 === 0 || i >= total) renderLivePreview(fileItem);
-      if (i % 25 === 0) saveCache();
+      if (i % 20 === 0 || i >= total) renderLivePreview(fileItem);
+      saveCache(false);
     }
 
-    saveCache();
+    saveCache(true);
     refreshAutoResumeCounts();
 
     const fileDurationMs = Date.now() - startTime;
@@ -3759,19 +3945,7 @@ function savePreviewEdit(lineIdx) {
   const newVal = inputEl.value;
   activeFileObj.results[lineIdx] = newVal;
 
-  const sep = document.getElementById('sepChar').value || '|';
-  const tl = document.getElementById('tgtLang').value;
-  const origLine = activeFileObj.lines[lineIdx] || '';
-  const origSepIdx = origLine.indexOf(sep);
-  const newSepIdx = newVal.indexOf(sep);
-  if (origSepIdx !== -1 && newSepIdx !== -1) {
-    const origText = origLine.slice(origSepIdx + sep.length).trim();
-    const newText = newVal.slice(newSepIdx + sep.length).trim();
-    if (origText && newText) {
-      translationCache.set(`${tl}|${origText}`, newText);
-      saveCache();
-    }
-  }
+  syncLineEditToCache(activeFileObj.lines[lineIdx] || '', newVal);
   renderLivePreview(activeFileObj);
   showToast(`Baris #${lineIdx + 1} diperbarui.`);
 }
@@ -3896,6 +4070,7 @@ async function retryErrorEntry(id) {
   const engines = [selectedEngine, ...['google', 'lingva', 'mymemory'].filter(e => e !== selectedEngine)];
   let successOut = null;
   let lastErr = '';
+  let lastCode = '';
   for (const eng of engines) {
     try {
       const res = await processSingleLine(entry.originalLine, eng);
@@ -3903,6 +4078,7 @@ async function retryErrorEntry(id) {
       break;
     } catch (err) {
       lastErr = err && err.message ? err.message : 'Retry failed';
+      if (err && err.httpCode) lastCode = `HTTP ${err.httpCode}`;
     }
   }
 
@@ -3911,7 +4087,7 @@ async function retryErrorEntry(id) {
       fileItem.results.push(fileItem.lines[fileItem.results.length] || '');
     }
     fileItem.results[entry.lineIndex] = successOut;
-    saveCache();
+    saveCache(true);
     errorLogEntries = errorLogEntries.filter(e => e.id !== id);
     renderQueue();
     if (activeFileObj && activeFileObj.id === fileItem.id) renderLivePreview(fileItem);
@@ -3919,7 +4095,14 @@ async function retryErrorEntry(id) {
   } else {
     entry.isRetrying = false;
     entry.errorMessage = lastErr || entry.errorMessage;
-    showErrorPopup('Gagal Coba Ulang Baris', entry.errorMessage, `${entry.fileName} · #${entry.lineIndex + 1}`);
+    showErrorPopup({
+      title: 'Gagal Coba Ulang Baris',
+      detail: entry.errorMessage,
+      lineInfo: `${entry.fileName} · #${entry.lineIndex + 1}`,
+      codeLabel: lastCode || 'RETRY',
+      isRateLimit: lastCode === 'HTTP 429',
+      canRetry: true
+    });
   }
   renderErrorLogSection();
 }
@@ -3934,12 +4117,24 @@ async function retryAllRowErrors() {
 
 async function translateSingleWithRetry(originalLine, lineIndex, fileName, primaryEngine, useFallback, fallbackPool) {
   let lastErrMessage = 'Koneksi gagal';
+  let sawRateLimit = false;
+  let lastHttpCode = 0;
+
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       return await processSingleLine(originalLine, primaryEngine);
     } catch (err) {
       lastErrMessage = err && err.message ? err.message : lastErrMessage;
-      if (attempt < 3) await sleep(800 * attempt);
+      if (err && err.httpCode) lastHttpCode = err.httpCode;
+      if (err && err.httpCode === 429) {
+        sawRateLimit = true;
+        if (attempt < 3) {
+          const waitMs = Math.min(12000, Math.max((err.retryAfterSec || 0) * 1000, 1500 * attempt));
+          await sleep(waitMs);
+        }
+      } else if (attempt < 3) {
+        await sleep(800 * attempt);
+      }
     }
   }
   if (useFallback) {
@@ -3950,9 +4145,27 @@ async function translateSingleWithRetry(originalLine, lineIndex, fileName, prima
         return res;
       } catch (altErr) {
         lastErrMessage = altErr && altErr.message ? altErr.message : lastErrMessage;
+        if (altErr && altErr.httpCode === 429) sawRateLimit = true;
+        if (altErr && altErr.httpCode) lastHttpCode = altErr.httpCode;
       }
     }
   }
+
+  if (sawRateLimit) {
+    recordStructuredError({
+      fileId: activeFileObj ? activeFileObj.id : null,
+      fileName,
+      lineIndex,
+      originalLine,
+      errorMessage: `HTTP 429 Rate Limit (${lastErrMessage})`,
+      isFormatError: false
+    });
+    const pauseErr = new Error(lastErrMessage);
+    pauseErr.isRateLimitPause = true;
+    pauseErr.detail = lastErrMessage;
+    throw pauseErr;
+  }
+
   failedRowsLog.push(`[${fileName} | Baris ${lineIndex + 1}] ${originalLine}`);
   recordStructuredError({
     fileId: activeFileObj ? activeFileObj.id : null,
@@ -3963,7 +4176,13 @@ async function translateSingleWithRetry(originalLine, lineIndex, fileName, prima
     isFormatError: false
   });
   appendLog(`Gagal baris ${lineIndex + 1} di ${fileName} (${lastErrMessage})`, 'err');
-  showErrorPopup('Gagal Menerjemahkan Baris', lastErrMessage, `${fileName} · Baris #${lineIndex + 1}`);
+  showErrorPopup({
+    title: 'Gagal Menerjemahkan Baris',
+    detail: lastErrMessage,
+    lineInfo: `${fileName} · Baris #${lineIndex + 1}`,
+    codeLabel: lastHttpCode > 0 ? `HTTP ${lastHttpCode}` : 'NET ERROR',
+    canRetry: true
+  });
   return { output: originalLine, fromCache: true };
 }
 
@@ -3976,7 +4195,7 @@ let qaAuditRows = [];
 
 function extractProtectedTokensList(text) {
   const tokens = [];
-  [/\{[^}]+\}/g, /\^\^|\^/g, /%[sd]/g].forEach(rx => {
+  [/\{[^}]+\}/g, /\^\^|\^/g, /\\[nt]/g, /<#[0-9A-Fa-f]{6,8}>|@[0-9A-Fa-f]{6}/g, /%[sdif]/g].forEach(rx => {
     const m = String(text || '').match(rx);
     if (m) m.forEach(tok => { if (!tokens.includes(tok)) tokens.push(tok); });
   });
@@ -3999,6 +4218,17 @@ function buildQaAuditForFile(item) {
     if (origSplit.hasCode && (!transSplit.hasCode || origSplit.codePart !== transSplit.codePart)) {
       issues.push('BROKEN_SEP');
     }
+    const origCols = countUnquotedDelimiter(origLine, sep);
+    const transCols = countUnquotedDelimiter(transLine, sep);
+    if (origSplit.hasCode && transSplit.hasCode && origCols !== transCols) {
+      issues.push('COLUMN_COUNT_MISMATCH');
+    }
+    const origQuotes = (origLine.match(/"/g) || []).length;
+    const transQuotes = (transLine.match(/"/g) || []).length;
+    if (transQuotes % 2 !== 0 || (origQuotes % 2 === 0 && transQuotes < origQuotes && sep !== '|')) {
+      issues.push('UNBALANCED_QUOTES');
+    }
+
     const origToks = extractProtectedTokensList(origSplit.textPart);
     const transToks = extractProtectedTokensList(transSplit.textPart);
     const missingTokens = origToks.filter(tok => !transToks.includes(tok));
@@ -4086,6 +4316,8 @@ function renderQaEditorRows() {
       else if (iss === 'BROKEN_SEP') lbl = 'Separator!';
       else if (iss === 'LEFT_MARKER') lbl = 'ZXQ Marker!';
       else if (iss === 'UNTRANSLATED') lbl = 'Untranslated';
+      else if (iss === 'COLUMN_COUNT_MISMATCH') lbl = t('qaIssueColMismatch');
+      else if (iss === 'UNBALANCED_QUOTES') lbl = t('qaIssueQuotes');
       return `<span class="px-1.5 py-0.5 rounded bg-red-950/70 border border-crimson text-red-200 text-[10px]">${escapeHtml(lbl)}</span>`;
     }).join(' ');
 
@@ -4157,14 +4389,14 @@ function applyQaFindAndReplace() {
   let changed = 0;
 
   item.results = item.results.map((line, idx) => {
-    const sepIdx = line.indexOf(sep);
+    const sepIdx = findFirstDelimiterIndex(line, sep);
     let nextLine = line;
     if (sepIdx === -1) {
       nextLine = line.replace(rx, () => replaceVal);
     } else {
-      const codePart = line.slice(0, sepIdx);
-      const textPart = line.slice(sepIdx + sep.length);
-      nextLine = `${codePart}${sep}${textPart.replace(rx, () => replaceVal)}`;
+      const s = parseSplitLine(line, sep, '');
+      const replacedText = s.textPart.replace(rx, () => replaceVal);
+      nextLine = buildTranslatedLine(true, s.codePart, replacedText, sep);
     }
     if (nextLine !== line) {
       changed++;
@@ -4199,7 +4431,7 @@ function autoFixQaMissingTokens() {
     const fixedText = transSplit.textPart.trim()
       ? `${transSplit.textPart.trim()} ${missing.join(' ')}`
       : missing.join(' ');
-    const fixedLine = origSplit.hasCode ? `${origSplit.codePart}${sep}${fixedText}` : fixedText;
+    const fixedLine = buildTranslatedLine(origSplit.hasCode, origSplit.codePart, fixedText, sep);
     syncLineEditToCache(origLine, fixedLine);
     return fixedLine;
   });
@@ -4328,25 +4560,79 @@ function applyModDiffToQueue() {
 }
 
 let lastErrorPopupTime = 0;
-function showErrorPopup(title, detail, lineInfo = '') {
+function showErrorPopup(titleOrOpts, detailArg = '', lineInfoArg = '', codeLabelArg = '') {
+  const opts = (titleOrOpts && typeof titleOrOpts === 'object')
+    ? titleOrOpts
+    : {
+        title: titleOrOpts,
+        detail: detailArg,
+        lineInfo: lineInfoArg,
+        codeLabel: codeLabelArg,
+        isRateLimit: false,
+        canResume: false,
+        canRetry: false
+      };
   const now = Date.now();
-  if (now - lastErrorPopupTime < 1800) return;
+  if (!opts.isRateLimit && now - lastErrorPopupTime < 1500) return;
   lastErrorPopupTime = now;
   const container = document.getElementById('errorPopupContainer');
   if (!container) return;
   while (container.children.length >= 3) container.removeChild(container.firstChild);
+
   const popup = document.createElement('div');
-  popup.className = 'pointer-events-auto animate-slide-in rounded-xl bg-gradient-to-br from-[#2E1115] to-[#1A090B] border-2 border-crimson shadow-2xl p-3.5 text-parchment space-y-1.5';
+  popup.className = 'pointer-events-auto animate-slide-in rounded-xl bg-gradient-to-br from-[#2E1115] to-[#1A090B] border-2 border-crimson shadow-2xl p-3.5 text-parchment space-y-2';
+
+  const badgeHtml = opts.codeLabel
+    ? `<span class="px-1.5 py-0.5 rounded bg-crimson/70 border border-red-400/50 text-[10px] font-mono font-bold text-white shrink-0">${escapeHtml(opts.codeLabel)}</span>`
+    : '';
+  const actionsHtml = (opts.canResume || opts.canRetry)
+    ? `<div class="flex flex-wrap justify-end gap-1.5 pt-1 border-t border-crimson/40">
+        ${opts.canResume ? `<button type="button" onclick="resumeFromErrorPopup(this)" class="px-2.5 py-1 rounded-lg bg-forest/70 hover:bg-forest border border-green-500 text-[11px] font-semibold text-green-100 transition">▶ ${escapeHtml(t('btnResumeProcess'))}</button>` : ''}
+        ${opts.canRetry ? `<button type="button" onclick="retryFromErrorPopup(this)" class="px-2.5 py-1 rounded-lg bg-burgundy/80 hover:bg-burgundy border border-goldAccent text-[11px] font-semibold text-goldAccent transition">↻ ${escapeHtml(t('btnRetryNow'))}</button>` : ''}
+      </div>`
+    : '';
+
   popup.innerHTML = `
     <div class="flex items-start justify-between gap-2">
-      <div class="flex items-center gap-1.5 text-xs font-bold text-red-300"><span>⚠️</span><span>${escapeHtml(title)}</span></div>
-      <button type="button" onclick="this.closest('.pointer-events-auto').remove()" class="text-red-300/80 hover:text-white text-xs font-bold px-1">✕</button>
+      <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold text-red-300">
+        <span>⚠️</span>
+        ${badgeHtml}
+        <span>${escapeHtml(opts.title || 'Error')}</span>
+      </div>
+      <button type="button" onclick="this.closest('.pointer-events-auto').remove()" class="text-red-300/80 hover:text-white text-xs font-bold px-1.5 py-0.5 shrink-0" aria-label="Tutup">✕</button>
     </div>
-    ${lineInfo ? `<div class="text-[11px] font-mono text-goldAccent/90 truncate">${escapeHtml(lineInfo)}</div>` : ''}
-    <div class="text-[11px] text-parchmentDim leading-snug">${escapeHtml(detail)}</div>
+    ${opts.lineInfo ? `<div class="text-[11px] font-mono text-goldAccent/90 truncate">${escapeHtml(opts.lineInfo)}</div>` : ''}
+    <div class="text-[11px] text-parchmentDim leading-snug break-words">${escapeHtml(opts.detail || '')}</div>
+    ${actionsHtml}
   `;
   container.appendChild(popup);
-  setTimeout(() => { popup.remove(); }, 6000);
+  if (!opts.isRateLimit) {
+    setTimeout(() => { if (popup.parentNode) popup.remove(); }, 7000);
+  }
+}
+
+function resumeFromErrorPopup(btnEl) {
+  const popup = btnEl && btnEl.closest ? btnEl.closest('.pointer-events-auto') : null;
+  if (popup) popup.remove();
+  if (isRunning && isPaused) {
+    togglePause();
+  } else if (!isRunning) {
+    startTranslation(true);
+  }
+}
+
+function retryFromErrorPopup(btnEl) {
+  const popup = btnEl && btnEl.closest ? btnEl.closest('.pointer-events-auto') : null;
+  if (popup) popup.remove();
+  if (isRunning && isPaused) {
+    togglePause();
+  } else if (!isRunning) {
+    if (errorLogEntries.some(e => !e.isFormatError && e.fileId && e.lineIndex !== null)) {
+      retryAllRowErrors();
+    } else {
+      startTranslation(true);
+    }
+  }
 }
 
 function appendLog(msg, level = 'info') {
@@ -4552,6 +4838,7 @@ document.getElementById('skipRegex').addEventListener('input', function () {
   renderCsvPreviewer();
 });
 
+window.addEventListener('beforeunload', () => saveCache(true));
 window.addEventListener('resize', drawTelemetryChart);
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();

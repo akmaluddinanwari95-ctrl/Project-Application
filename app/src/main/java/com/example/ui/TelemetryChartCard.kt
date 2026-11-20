@@ -44,15 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.TelemetrySample
 import com.example.domain.TranslationProgressState
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
-import com.example.ui.theme.ObsidianDeep
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
+import com.example.ui.theme.LocalWarbandPalette
 import java.util.Locale
 import kotlin.math.max
 
@@ -66,9 +58,10 @@ fun TelemetryChartCard(
     return
   }
 
+  val pal = LocalWarbandPalette.current
   val samples = progress.telemetrySamples
   val speedColor = Color(0xFF4ADE80)
-  val progressColor = GoldAccent
+  val progressColor = pal.primaryAccent
   val curSpeedStr = String.format(Locale.US, "%.1f", progress.currentSpeedLinesPerSec)
   val peakSpeedStr = String.format(Locale.US, "%.1f", progress.peakSpeedLinesPerSec)
 
@@ -82,14 +75,14 @@ fun TelemetryChartCard(
         Icon(
             imageVector = Icons.Default.ShowChart,
             contentDescription = tr("secTelemetry"),
-            tint = GoldAccent,
+            tint = pal.primaryAccent,
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = tr("secTelemetry").uppercase(),
             style = MaterialTheme.typography.titleMedium,
-            color = GoldAccent,
+            color = pal.primaryAccent,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false)
@@ -103,12 +96,12 @@ fun TelemetryChartCard(
 
       Surface(
           shape = CircleShape,
-          color = Color(0xFF0E2914),
-          border = BorderStroke(1.dp, Forest)
+          color = pal.successBg,
+          border = BorderStroke(1.dp, pal.successBorder)
       ) {
         Text(
             text = "$curSpeedStr ${tr("kpiUnitRate")}",
-            color = ForestText,
+            color = pal.successText,
             style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold
@@ -121,11 +114,11 @@ fun TelemetryChartCard(
     Text(
         text = tr("telemetryHint"),
         style = MaterialTheme.typography.labelSmall,
-        color = ParchmentDim
+        color = pal.textSecondary
     )
 
     HorizontalDivider(
-        color = BurgundyBorderSoft,
+        color = pal.borderSoft,
         thickness = 1.dp,
         modifier = Modifier.padding(vertical = 10.dp)
     )
@@ -153,8 +146,8 @@ fun TelemetryChartCard(
             .fillMaxWidth()
             .height(172.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(ObsidianDeep)
-            .border(1.dp, BurgundyBorder, RoundedCornerShape(12.dp))
+            .background(pal.deepSurface)
+            .border(1.dp, pal.border, RoundedCornerShape(12.dp))
             .padding(horizontal = 10.dp, vertical = 12.dp)
     ) {
       if (samples.size < 2) {
@@ -162,7 +155,7 @@ fun TelemetryChartCard(
           Text(
               text = tr("telemetryEmpty"),
               style = MaterialTheme.typography.bodySmall,
-              color = ParchmentDim.copy(alpha = 0.7f)
+              color = pal.textSecondary.copy(alpha = 0.7f)
           )
         }
       } else {
@@ -171,6 +164,7 @@ fun TelemetryChartCard(
             maxSpeed = maxSpeed,
             speedColor = speedColor,
             progressColor = progressColor,
+            gridColor = pal.primaryMuted.copy(alpha = 0.22f),
             modifier = Modifier.fillMaxSize()
         )
       }
@@ -191,7 +185,7 @@ fun TelemetryChartCard(
       Text(
           text = "0",
           style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 9.sp),
-          color = ParchmentDim.copy(alpha = 0.55f),
+          color = pal.textSecondary.copy(alpha = 0.55f),
           modifier = Modifier.align(Alignment.BottomStart)
       )
     }
@@ -212,13 +206,13 @@ fun TelemetryChartCard(
       TelemetryKpiChip(
           label = tr("kpiPeakSpeed"),
           value = "$peakSpeedStr ${tr("kpiUnitRate")}",
-          valueColor = Parchment,
+          valueColor = pal.textPrimary,
           modifier = Modifier.weight(1f)
       )
       TelemetryKpiChip(
           label = tr("legendProgress"),
           value = "${progress.percentage}%",
-          valueColor = GoldAccent,
+          valueColor = pal.primaryAccent,
           modifier = Modifier.weight(1f)
       )
     }
@@ -227,6 +221,7 @@ fun TelemetryChartCard(
 
 @Composable
 private fun LegendDot(color: Color, label: String) {
+  val pal = LocalWarbandPalette.current
   Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
     Box(
         modifier = Modifier
@@ -237,7 +232,7 @@ private fun LegendDot(color: Color, label: String) {
     Text(
         text = label,
         style = MaterialTheme.typography.labelSmall,
-        color = ParchmentDim
+        color = pal.textSecondary
     )
   }
 }
@@ -249,17 +244,18 @@ private fun TelemetryKpiChip(
     valueColor: Color,
     modifier: Modifier = Modifier
 ) {
+  val pal = LocalWarbandPalette.current
   Column(
       modifier = modifier
           .clip(RoundedCornerShape(8.dp))
-          .background(Color(0xFF170E0D))
-          .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(8.dp))
+          .background(pal.deepSurface)
+          .border(1.dp, pal.borderSoft, RoundedCornerShape(8.dp))
           .padding(horizontal = 8.dp, vertical = 6.dp)
   ) {
     Text(
         text = label,
         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-        color = ParchmentDim,
+        color = pal.textSecondary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
@@ -282,6 +278,7 @@ private fun TelemetryCanvasGraph(
     maxSpeed: Float,
     speedColor: Color,
     progressColor: Color,
+    gridColor: Color,
     modifier: Modifier = Modifier
 ) {
   Canvas(modifier = modifier) {
@@ -299,7 +296,7 @@ private fun TelemetryCanvasGraph(
     listOf(0.25f, 0.50f, 0.75f).forEach { ratio ->
       val y = padTop + usableH * (1f - ratio)
       drawLine(
-          color = GoldMuted.copy(alpha = 0.22f),
+          color = gridColor,
           start = Offset(0f, y),
           end = Offset(w, y),
           strokeWidth = 1.dp.toPx(),

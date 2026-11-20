@@ -160,7 +160,9 @@ enum class QaIssueType {
   EXTRA_TOKEN,
   BROKEN_SEPARATOR,
   LEFT_MARKER,
-  UNTRANSLATED
+  UNTRANSLATED,
+  COLUMN_COUNT_MISMATCH,
+  UNBALANCED_QUOTES
 }
 
 data class QaAuditRow(
@@ -342,7 +344,12 @@ data class ErrorAlert(
     val id: Long,
     val title: String,
     val detail: String,
-    val lineInfo: String = ""
+    val lineInfo: String = "",
+    val codeLabel: String = "",
+    val isRateLimit: Boolean = false,
+    val fileId: String? = null,
+    val canResume: Boolean = false,
+    val canRetry: Boolean = false
 )
 
 data class TranslationProgressState(

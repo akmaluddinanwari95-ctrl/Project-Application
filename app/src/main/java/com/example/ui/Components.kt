@@ -16,11 +16,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
@@ -332,7 +335,12 @@ fun HelpModalDialog(
         }
       },
       text = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            modifier = Modifier
+                .heightIn(max = 360.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
           topic.paragraphs.forEach { para ->
             Text(
                 text = para,
@@ -350,7 +358,9 @@ fun HelpModalDialog(
                 contentColor = pal.textPrimary
             ),
             border = BorderStroke(1.dp, pal.primaryMuted),
-            modifier = Modifier.testTag("help_modal_close_button")
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .testTag("help_modal_close_button")
         ) {
           Text(text = closeButtonLabel)
         }
@@ -481,7 +491,11 @@ fun SaveDestinationDialog(
 fun ErrorAlertBanner(
     alert: ErrorAlert?,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    resumeLabel: String = "Lanjutkan",
+    retryLabel: String = "Coba Lagi",
+    onResume: (() -> Unit)? = null,
+    onRetry: (() -> Unit)? = null
 ) {
   val pal = LocalWarbandPalette.current
   AnimatedVisibility(visible = alert != null, modifier = modifier) {
@@ -491,48 +505,123 @@ fun ErrorAlertBanner(
           color = pal.errorBg,
           border = BorderStroke(1.5.dp, pal.errorBorder),
           shadowElevation = 8.dp,
-          modifier = Modifier.fillMaxWidth()
+          modifier = Modifier
+              .fillMaxWidth()
+              .testTag("error_alert_banner")
       ) {
-        Row(
+        Column(
             modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          Icon(
-              imageVector = Icons.Default.Warning,
-              contentDescription = null,
-              tint = pal.errorText,
-              modifier = Modifier.size(20.dp)
-          )
-          Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = alert.title,
-                style = MaterialTheme.typography.labelMedium,
-                color = pal.errorText
-            )
-            if (alert.lineInfo.isNotEmpty()) {
-              Text(
-                  text = alert.lineInfo,
-                  style = MaterialTheme.typography.labelSmall,
-                  color = pal.primaryAccent
-              )
-            }
-            Text(
-                text = alert.detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = pal.textSecondary
-            )
-          }
-          IconButton(
-              onClick = onDismiss,
-              modifier = Modifier.size(32.dp)
+          Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.Top,
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
           ) {
             Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Close",
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
                 tint = pal.errorText,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(20.dp)
             )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+              Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(6.dp)
+              ) {
+                if (alert.codeLabel.isNotBlank()) {
+                  Surface(
+                      shape = RoundedCornerShape(5.dp),
+                      color = pal.warningBg,
+                      border = BorderStroke(1.dp, pal.errorBorder)
+                  ) {
+                    Text(
+                        text = alert.codeLabel,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp
+                        ),
+                        color = pal.warningText,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                  }
+                }
+                Text(
+                    text = alert.title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = pal.errorText,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+              }
+              if (alert.lineInfo.isNotEmpty()) {
+                Text(
+                    text = alert.lineInfo,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = pal.primaryAccent
+                )
+              }
+              Text(
+                  text = alert.detail,
+                  style = MaterialTheme.typography.bodySmall,
+                  color = pal.textSecondary
+              )
+            }
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .testTag("error_alert_dismiss_button")
+            ) {
+              Icon(
+                  imageVector = Icons.Default.Close,
+                  contentDescription = "Close",
+                  tint = pal.errorText,
+                  modifier = Modifier.size(18.dp)
+              )
+            }
+          }
+
+          if ((alert.canResume && onResume != null) || (alert.canRetry && onRetry != null)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              if (alert.canResume && onResume != null) {
+                Button(
+                    onClick = onResume,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = pal.actionBg,
+                        contentColor = pal.textPrimary
+                    ),
+                    border = BorderStroke(1.dp, pal.primaryMuted),
+                    modifier = Modifier
+                        .weight(1f)
+                        .minimumInteractiveComponentSize()
+                        .testTag("error_alert_resume_button")
+                ) {
+                  Text(text = resumeLabel, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+              }
+              if (alert.canRetry && onRetry != null) {
+                OutlinedButton(
+                    onClick = onRetry,
+                    border = BorderStroke(1.dp, pal.primaryAccent),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = pal.warningBg,
+                        contentColor = pal.primaryAccent
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .minimumInteractiveComponentSize()
+                        .testTag("error_alert_retry_button")
+                ) {
+                  Text(text = retryLabel, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+              }
+            }
           }
         }
       }

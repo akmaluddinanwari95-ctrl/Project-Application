@@ -112,24 +112,7 @@ import com.example.domain.TranslationProgressState
 import com.example.domain.TranslatorSettings
 import com.example.domain.UiLanguage
 import com.example.domain.WarbandTextProcessor
-import com.example.ui.theme.AmberBg
-import com.example.ui.theme.AmberText
-import com.example.ui.theme.Burgundy
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Crimson
-import com.example.ui.theme.CrimsonText
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
 import com.example.ui.theme.LocalWarbandPalette
-import com.example.ui.theme.MahoganyHeader
-import com.example.ui.theme.MahoganyInput
-import com.example.ui.theme.Obsidian
-import com.example.ui.theme.ObsidianDeep
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
 
 private enum class AppTab {
   TRANSLATOR,
@@ -353,7 +336,11 @@ fun TranslatorScreen(
             ) {
           ErrorAlertBanner(
               alert = errorAlert,
-              onDismiss = { viewModel.dismissErrorAlert() }
+              onDismiss = { viewModel.dismissErrorAlert() },
+              resumeLabel = tr("btnResumeProcess"),
+              retryLabel = tr("btnRetryNow"),
+              onResume = { viewModel.resumeFromErrorAlert() },
+              onRetry = { viewModel.retryFromErrorAlert() }
           )
 
           // Hero Banner
@@ -406,12 +393,12 @@ fun TranslatorScreen(
                 val count = glossaryRules.totalCount
                 Surface(
                     shape = CircleShape,
-                    color = if (count > 0) Burgundy.copy(alpha = 0.5f) else Color(0xFF190F0E),
-                    border = BorderStroke(1.dp, if (count > 0) GoldAccent else BurgundyBorder)
+                    color = if (count > 0) pal.actionBg.copy(alpha = 0.5f) else pal.deepSurface,
+                    border = BorderStroke(1.dp, if (count > 0) pal.primaryAccent else pal.border)
                 ) {
                   Text(
                       text = "$count ${tr("glossBadgeUnit")}",
-                      color = if (count > 0) GoldAccent else ParchmentDim,
+                      color = if (count > 0) pal.primaryAccent else pal.textSecondary,
                       style = MaterialTheme.typography.labelSmall,
                       modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                   )
@@ -421,7 +408,7 @@ fun TranslatorScreen(
             Text(
                 text = tr("glossHint"),
                 style = MaterialTheme.typography.bodySmall,
-                color = ParchmentDim
+                color = pal.textSecondary
             )
             Spacer(modifier = Modifier.height(10.dp))
             OutlinedTextField(
@@ -431,21 +418,21 @@ fun TranslatorScreen(
                   Text(
                       text = tr("glossPlaceholder"),
                       style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                      color = ParchmentDim.copy(alpha = 0.45f)
+                      color = pal.textSecondary.copy(alpha = 0.5f)
                   )
                 },
                 minLines = 4,
                 maxLines = 8,
                 textStyle = MaterialTheme.typography.bodySmall.copy(
                     fontFamily = FontFamily.Monospace,
-                    color = Parchment
+                    color = pal.textPrimary
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GoldAccent,
-                    unfocusedBorderColor = BurgundyBorder,
-                    focusedContainerColor = ObsidianDeep,
-                    unfocusedContainerColor = ObsidianDeep,
-                    cursorColor = GoldAccent
+                    focusedBorderColor = pal.primaryAccent,
+                    unfocusedBorderColor = pal.border,
+                    focusedContainerColor = pal.deepSurface,
+                    unfocusedContainerColor = pal.deepSurface,
+                    cursorColor = pal.primaryAccent
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -454,7 +441,7 @@ fun TranslatorScreen(
             Text(
                 text = tr("lblGlossPresets"),
                 style = MaterialTheme.typography.labelSmall,
-                color = GoldAccent
+                color = pal.primaryAccent
             )
             Spacer(modifier = Modifier.height(6.dp))
             FlowRow(
@@ -465,10 +452,10 @@ fun TranslatorScreen(
               WarbandTextProcessor.builtInGlossaryPresets.forEach { preset ->
                 OutlinedButton(
                     onClick = { viewModel.applyGlossaryPreset(preset) },
-                    border = BorderStroke(1.dp, GoldMuted),
+                    border = BorderStroke(1.dp, pal.primaryMuted),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color(0xFF1F1211),
-                        contentColor = GoldAccent
+                        containerColor = pal.cardElevated,
+                        contentColor = pal.primaryAccent
                     ),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     modifier = Modifier
@@ -486,8 +473,8 @@ fun TranslatorScreen(
             ) {
               OutlinedButton(
                   onClick = onExportGlossary,
-                  border = BorderStroke(1.dp, Burgundy),
-                  colors = ButtonDefaults.outlinedButtonColors(contentColor = Parchment),
+                  border = BorderStroke(1.dp, pal.actionBg),
+                  colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.textPrimary),
                   contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
                   modifier = Modifier
                       .weight(1f)
@@ -498,8 +485,8 @@ fun TranslatorScreen(
               }
               OutlinedButton(
                   onClick = onImportGlossary,
-                  border = BorderStroke(1.dp, Burgundy),
-                  colors = ButtonDefaults.outlinedButtonColors(contentColor = Parchment),
+                  border = BorderStroke(1.dp, pal.actionBg),
+                  colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.textPrimary),
                   contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
                   modifier = Modifier
                       .weight(1f)
@@ -510,8 +497,8 @@ fun TranslatorScreen(
               }
               OutlinedButton(
                   onClick = { viewModel.clearGlossary() },
-                  border = BorderStroke(1.dp, Crimson),
-                  colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonText),
+                  border = BorderStroke(1.dp, pal.errorBorder),
+                  colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.errorText),
                   contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
                   modifier = Modifier
                       .minimumInteractiveComponentSize()
@@ -643,13 +630,13 @@ fun TranslatorScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                   Text(
                       text = "${idx + 1}.",
-                      color = GoldAccent,
+                      color = pal.primaryAccent,
                       fontWeight = FontWeight.Bold,
                       style = MaterialTheme.typography.bodySmall
                   )
                   Text(
                       text = stepText,
-                      color = ParchmentDim,
+                      color = pal.textSecondary,
                       style = MaterialTheme.typography.bodySmall
                   )
                 }
@@ -668,13 +655,13 @@ fun TranslatorScreen(
             Text(
                 text = tr("footerCredit"),
                 style = MaterialTheme.typography.labelSmall,
-                color = ParchmentDim.copy(alpha = 0.6f),
+                color = pal.textSecondary.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
             )
             Text(
                 text = "100% Native Android Processing · Zero API Key Required",
                 style = MaterialTheme.typography.labelSmall,
-                color = ParchmentDim.copy(alpha = 0.45f),
+                color = pal.textSecondary.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
             )
           }
@@ -777,24 +764,24 @@ private fun TopMedievalHeader(
               modifier = Modifier
                   .size(34.dp)
                   .clip(RoundedCornerShape(8.dp))
-                  .background(Burgundy.copy(alpha = 0.4f))
-                  .border(1.dp, GoldMuted, RoundedCornerShape(8.dp)),
+                  .background(pal.actionBg.copy(alpha = 0.4f))
+                  .border(1.dp, pal.primaryMuted, RoundedCornerShape(8.dp)),
               contentAlignment = Alignment.Center
           ) {
-            Text(text = "⚔", color = GoldAccent, fontSize = 18.sp)
+            Text(text = "⚔", color = pal.primaryAccent, fontSize = 18.sp)
           }
           Column {
             Text(
                 text = navTitle,
                 style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
-                color = Parchment,
+                color = pal.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = navSub,
                 style = MaterialTheme.typography.labelSmall,
-                color = ParchmentDim.copy(alpha = 0.75f),
+                color = pal.textSecondary.copy(alpha = 0.8f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -805,8 +792,8 @@ private fun TopMedievalHeader(
           Row(
               modifier = Modifier
                   .clip(RoundedCornerShape(8.dp))
-                  .background(Color(0xFF1A0F0E))
-                  .border(1.dp, BurgundyBorder, RoundedCornerShape(8.dp))
+                  .background(pal.deepSurface)
+                  .border(1.dp, pal.border, RoundedCornerShape(8.dp))
                   .padding(2.dp),
               horizontalArrangement = Arrangement.spacedBy(2.dp)
           ) {
@@ -815,7 +802,7 @@ private fun TopMedievalHeader(
               Box(
                   modifier = Modifier
                       .clip(RoundedCornerShape(6.dp))
-                      .background(if (selected) Burgundy else Color.Transparent)
+                      .background(if (selected) pal.actionBg else Color.Transparent)
                       .clickable { onSelectLang(langItem) }
                       .padding(horizontal = 9.dp, vertical = 6.dp)
                       .testTag("lang_btn_${langItem.code}"),
@@ -824,7 +811,7 @@ private fun TopMedievalHeader(
                 Text(
                     text = langItem.label,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (selected) Parchment else ParchmentDim
+                    color = if (selected) pal.textPrimary else pal.textSecondary
                 )
               }
             }
@@ -836,7 +823,7 @@ private fun TopMedievalHeader(
           )
         }
       }
-      HorizontalDivider(color = BurgundyBorder, thickness = 1.dp)
+      HorizontalDivider(color = pal.border, thickness = 1.dp)
     }
   }
 }
@@ -847,6 +834,7 @@ private fun HeroBannerSection(
     title: String,
     description: String
 ) {
+  val pal = LocalWarbandPalette.current
   Column(
       modifier = Modifier
           .fillMaxWidth()
@@ -856,8 +844,8 @@ private fun HeroBannerSection(
   ) {
     Surface(
         shape = CircleShape,
-        color = Burgundy.copy(alpha = 0.25f),
-        border = BorderStroke(1.dp, Color(0xFF5A342D))
+        color = pal.actionBg.copy(alpha = 0.25f),
+        border = BorderStroke(1.dp, pal.border)
     ) {
       Row(
           modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
@@ -868,7 +856,7 @@ private fun HeroBannerSection(
         Text(
             text = badge,
             style = MaterialTheme.typography.labelSmall,
-            color = ParchmentDim,
+            color = pal.textSecondary,
             textAlign = TextAlign.Center
         )
       }
@@ -877,14 +865,14 @@ private fun HeroBannerSection(
     Text(
         text = title,
         style = MaterialTheme.typography.headlineLarge,
-        color = Parchment,
+        color = pal.textPrimary,
         textAlign = TextAlign.Center
     )
 
     Text(
         text = description,
         style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
-        color = ParchmentDim,
+        color = pal.textSecondary,
         textAlign = TextAlign.Center
     )
   }
@@ -903,6 +891,7 @@ private fun EngineSection(
     onClearCache: () -> Unit,
     onOpenHelp: (String) -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   MedievalCard {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -918,7 +907,7 @@ private fun EngineSection(
         Text(
             text = tr("secEngine").uppercase(),
             style = MaterialTheme.typography.titleMedium,
-            color = GoldAccent,
+            color = pal.primaryAccent,
             modifier = Modifier.weight(1f, fill = false)
         )
         HelpIconButton(
@@ -936,7 +925,7 @@ private fun EngineSection(
       )
     }
 
-    HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
+    HorizontalDivider(color = pal.borderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
 
     // Engine cards
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -949,9 +938,9 @@ private fun EngineSection(
       engineSpecs.forEach { (engine, emoji, meta) ->
         val (subtitle, helpKey) = meta
         val selected = settings.engine == engine
-        val borderColor = if (selected) GoldAccent else BurgundyBorder
+        val borderColor = if (selected) pal.primaryAccent else pal.border
         val borderWidth = if (selected) 2.dp else 1.dp
-        val bgColor = if (selected) Color(0xFF2B1917) else Color(0xFF190F0E)
+        val bgColor = if (selected) pal.cardElevated else pal.deepSurface
 
         Row(
             modifier = Modifier
@@ -969,8 +958,8 @@ private fun EngineSection(
               modifier = Modifier
                   .size(40.dp)
                   .clip(RoundedCornerShape(8.dp))
-                  .background(MahoganyHeader)
-                  .border(1.dp, BurgundyBorder, RoundedCornerShape(8.dp)),
+                  .background(pal.cardTop)
+                  .border(1.dp, pal.border, RoundedCornerShape(8.dp)),
               contentAlignment = Alignment.Center
           ) {
             Text(emoji, fontSize = 20.sp)
@@ -980,12 +969,12 @@ private fun EngineSection(
             Text(
                 text = engine.displayName,
                 style = MaterialTheme.typography.titleSmall,
-                color = Parchment
+                color = pal.textPrimary
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (engine == TranslationEngine.GOOGLE) Color(0xFF4ADE80) else ParchmentDim
+                color = if (engine == TranslationEngine.GOOGLE) pal.successText else pal.textSecondary
             )
           }
           HelpIconButton(
@@ -1004,15 +993,15 @@ private fun EngineSection(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF160D0C))
-            .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+            .background(pal.deepSurface)
+            .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
             .padding(12.dp)
     ) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = tr("lblSpeed"),
             style = MaterialTheme.typography.labelMedium,
-            color = ParchmentDim,
+            color = pal.textSecondary,
             modifier = Modifier.weight(1f, fill = false)
         )
         HelpIconButton(
@@ -1031,11 +1020,19 @@ private fun EngineSection(
           testTag = "delay_dropdown"
       )
       Spacer(modifier = Modifier.height(8.dp))
-      Text(
-          text = tr("lblBatchSize"),
-          style = MaterialTheme.typography.labelMedium,
-          color = ParchmentDim
-      )
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = tr("lblBatchSize"),
+            style = MaterialTheme.typography.labelMedium,
+            color = pal.textSecondary,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        HelpIconButton(
+            topicKey = "batchSize",
+            contentDescription = tr("lblBatchSize"),
+            onOpenHelp = onOpenHelp
+        )
+      }
       Spacer(modifier = Modifier.height(4.dp))
       val activeBatch = BatchSizeOptions.all.firstOrNull { it.size == settings.batchSize } ?: BatchSizeOptions.all.first()
       MedievalDropdown(
@@ -1054,8 +1051,8 @@ private fun EngineSection(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF160D0C))
-            .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+            .background(pal.deepSurface)
+            .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -1068,7 +1065,7 @@ private fun EngineSection(
           Text(
               text = tr("lblCache"),
               style = MaterialTheme.typography.labelMedium,
-              color = ParchmentDim,
+              color = pal.textSecondary,
               modifier = Modifier.weight(1f, fill = false)
           )
           HelpIconButton(
@@ -1080,7 +1077,7 @@ private fun EngineSection(
         Text(
             text = "$cacheCount ${tr("cacheUnit")}",
             style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-            color = GoldAccent
+            color = pal.primaryAccent
         )
       }
 
@@ -1099,16 +1096,16 @@ private fun EngineSection(
               checked = settings.autoFallback,
               onCheckedChange = onToggleFallback,
               colors = CheckboxDefaults.colors(
-                  checkedColor = Burgundy,
-                  uncheckedColor = GoldMuted,
-                  checkmarkColor = Parchment
+                  checkedColor = pal.actionBg,
+                  uncheckedColor = pal.primaryMuted,
+                  checkmarkColor = pal.textPrimary
               ),
               modifier = Modifier.testTag("auto_fallback_checkbox")
           )
           Text(
               text = tr("chkFallback"),
               style = MaterialTheme.typography.bodySmall,
-              color = Parchment,
+              color = pal.textPrimary,
               modifier = Modifier.weight(1f, fill = false)
           )
           HelpIconButton(
@@ -1120,10 +1117,10 @@ private fun EngineSection(
 
         OutlinedButton(
             onClick = onClearCache,
-            border = BorderStroke(1.dp, Crimson),
+            border = BorderStroke(1.dp, pal.errorBorder),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Crimson.copy(alpha = 0.25f),
-                contentColor = CrimsonText
+                containerColor = pal.errorBg,
+                contentColor = pal.errorText
             ),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
             modifier = Modifier
@@ -1235,7 +1232,7 @@ private fun FormatSection(
     ) {
       Column(modifier = Modifier.weight(1f)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Text(tr("lblSep"), style = MaterialTheme.typography.labelSmall, color = ParchmentDim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+          Text(tr("lblSep"), style = MaterialTheme.typography.labelSmall, color = pal.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
           HelpIconButton(topicKey = "lblSep", contentDescription = tr("lblSep"), onOpenHelp = onOpenHelp)
         }
         OutlinedTextField(
@@ -1244,52 +1241,80 @@ private fun FormatSection(
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 fontFamily = FontFamily.Monospace,
-                color = GoldAccent,
+                color = pal.primaryAccent,
                 textAlign = TextAlign.Center
             ),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = GoldAccent,
-                unfocusedBorderColor = BurgundyBorder,
-                focusedContainerColor = MahoganyInput,
-                unfocusedContainerColor = MahoganyInput,
-                cursorColor = GoldAccent
+                focusedBorderColor = pal.primaryAccent,
+                unfocusedBorderColor = pal.border,
+                focusedContainerColor = pal.inputBg,
+                unfocusedContainerColor = pal.inputBg,
+                cursorColor = pal.primaryAccent
             ),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("separator_input")
         )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+          listOf("|" to "sep_preset_pipe", ";" to "sep_preset_semicolon").forEach { (sepVal, tag) ->
+            val isSepSelected = settings.separator.trim() == sepVal
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = if (isSepSelected) pal.actionBg.copy(alpha = 0.65f) else pal.deepSurface,
+                border = BorderStroke(1.dp, if (isSepSelected) pal.primaryAccent else pal.border),
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .clickable { onSeparatorChange(sepVal) }
+                    .testTag(tag)
+            ) {
+              Text(
+                  text = sepVal,
+                  style = MaterialTheme.typography.labelMedium.copy(
+                      fontFamily = FontFamily.Monospace,
+                      fontWeight = FontWeight.Bold
+                  ),
+                  color = if (isSepSelected) pal.primaryAccent else pal.textSecondary,
+                  modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+              )
+            }
+          }
+        }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(tr("hintSep"), style = MaterialTheme.typography.labelSmall, color = ParchmentDim.copy(alpha = 0.7f))
+        Text(tr("hintSep"), style = MaterialTheme.typography.labelSmall, color = pal.textSecondary.copy(alpha = 0.75f))
       }
 
       Column(modifier = Modifier.weight(1f)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Text(tr("lblStrip"), style = MaterialTheme.typography.labelSmall, color = ParchmentDim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+          Text(tr("lblStrip"), style = MaterialTheme.typography.labelSmall, color = pal.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
           HelpIconButton(topicKey = "lblStrip", contentDescription = tr("lblStrip"), onOpenHelp = onOpenHelp)
         }
         OutlinedTextField(
             value = settings.stripTag,
             onValueChange = onStripTagChange,
             singleLine = true,
-            placeholder = { Text("{***}", color = ParchmentDim.copy(alpha = 0.4f), fontFamily = FontFamily.Monospace) },
+            placeholder = { Text("{***}", color = pal.textSecondary.copy(alpha = 0.45f), fontFamily = FontFamily.Monospace) },
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 fontFamily = FontFamily.Monospace,
-                color = Parchment,
+                color = pal.textPrimary,
                 textAlign = TextAlign.Center
             ),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = GoldAccent,
-                unfocusedBorderColor = BurgundyBorder,
-                focusedContainerColor = MahoganyInput,
-                unfocusedContainerColor = MahoganyInput,
-                cursorColor = GoldAccent
+                focusedBorderColor = pal.primaryAccent,
+                unfocusedBorderColor = pal.border,
+                focusedContainerColor = pal.inputBg,
+                unfocusedContainerColor = pal.inputBg,
+                cursorColor = pal.primaryAccent
             ),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("strip_tag_input")
         )
         Spacer(modifier = Modifier.height(4.dp))
-        Text(tr("hintStrip"), style = MaterialTheme.typography.labelSmall, color = ParchmentDim.copy(alpha = 0.7f))
+        Text(tr("hintStrip"), style = MaterialTheme.typography.labelSmall, color = pal.textSecondary.copy(alpha = 0.75f))
       }
     }
 
@@ -1298,24 +1323,24 @@ private fun FormatSection(
     // Regex skip
     Column(modifier = Modifier.fillMaxWidth()) {
       Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(tr("lblRegex"), style = MaterialTheme.typography.labelSmall, color = ParchmentDim)
+        Text(tr("lblRegex"), style = MaterialTheme.typography.labelSmall, color = pal.textSecondary)
         HelpIconButton(topicKey = "lblRegex", contentDescription = tr("lblRegex"), onOpenHelp = onOpenHelp)
       }
       OutlinedTextField(
           value = settings.skipRegex,
           onValueChange = onSkipRegexChange,
           singleLine = true,
-          placeholder = { Text("^\\d+$", color = ParchmentDim.copy(alpha = 0.4f), fontFamily = FontFamily.Monospace) },
+          placeholder = { Text("^\\d+$", color = pal.textSecondary.copy(alpha = 0.45f), fontFamily = FontFamily.Monospace) },
           textStyle = MaterialTheme.typography.bodyMedium.copy(
               fontFamily = FontFamily.Monospace,
-              color = Parchment
+              color = pal.textPrimary
           ),
           colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = GoldAccent,
-              unfocusedBorderColor = BurgundyBorder,
-              focusedContainerColor = MahoganyInput,
-              unfocusedContainerColor = MahoganyInput,
-              cursorColor = GoldAccent
+              focusedBorderColor = pal.primaryAccent,
+              unfocusedBorderColor = pal.border,
+              focusedContainerColor = pal.inputBg,
+              unfocusedContainerColor = pal.inputBg,
+              cursorColor = pal.primaryAccent
           ),
           modifier = Modifier
               .fillMaxWidth()
@@ -1328,9 +1353,9 @@ private fun FormatSection(
         else -> tr("regexInvalid")
       }
       val regexColor = when {
-        settings.skipRegex.trim().isEmpty() -> ParchmentDim.copy(alpha = 0.7f)
-        isRegexValid -> Color(0xFF4ADE80)
-        else -> CrimsonText
+        settings.skipRegex.trim().isEmpty() -> pal.textSecondary.copy(alpha = 0.75f)
+        isRegexValid -> pal.successText
+        else -> pal.errorText
       }
       Text(regexMsg, style = MaterialTheme.typography.labelSmall, color = regexColor)
     }
@@ -1343,8 +1368,8 @@ private fun FormatSection(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF160D0C))
-            .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+            .background(pal.deepSurface)
+            .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
             .clickable { onToggleMedievalTone(!settings.medievalToneEnabled) }
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
@@ -1352,16 +1377,22 @@ private fun FormatSection(
           checked = settings.medievalToneEnabled,
           onCheckedChange = onToggleMedievalTone,
           colors = CheckboxDefaults.colors(
-              checkedColor = Burgundy,
-              uncheckedColor = GoldMuted,
-              checkmarkColor = Parchment
+              checkedColor = pal.actionBg,
+              uncheckedColor = pal.primaryMuted,
+              checkmarkColor = pal.textPrimary
           ),
           modifier = Modifier.testTag("medieval_tone_checkbox")
       )
       Text(
           text = tr("chkMedievalTone"),
           style = MaterialTheme.typography.bodySmall,
-          color = Parchment
+          color = pal.textPrimary,
+          modifier = Modifier.weight(1f)
+      )
+      HelpIconButton(
+          topicKey = "medievalTone",
+          contentDescription = tr("chkMedievalTone"),
+          onOpenHelp = onOpenHelp
       )
     }
 
@@ -1372,8 +1403,8 @@ private fun FormatSection(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF160D0C))
-            .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+            .background(pal.deepSurface)
+            .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
             .padding(10.dp),
         verticalAlignment = Alignment.Top
     ) {
@@ -1382,7 +1413,7 @@ private fun FormatSection(
       Text(
           text = tr("varProtDesc"),
           style = MaterialTheme.typography.bodySmall,
-          color = ParchmentDim,
+          color = pal.textSecondary,
           modifier = Modifier.weight(1f)
       )
       HelpIconButton(topicKey = "varProt", contentDescription = "Variable Guard", onOpenHelp = onOpenHelp)
@@ -1412,6 +1443,7 @@ private fun QueueSection(
     onSaveItem: (QueuedFileItem) -> Unit,
     onOpenHelp: (String) -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   MedievalCard {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -1424,7 +1456,7 @@ private fun QueueSection(
         Text(
             text = tr("secQueue").uppercase(),
             style = MaterialTheme.typography.titleMedium,
-            color = GoldAccent,
+            color = pal.primaryAccent,
             modifier = Modifier.weight(1f, fill = false)
         )
         HelpIconButton(topicKey = "secQueue", contentDescription = tr("secQueue"), onOpenHelp = onOpenHelp)
@@ -1432,11 +1464,11 @@ private fun QueueSection(
       Text(
           text = tr("queueHint"),
           style = MaterialTheme.typography.labelSmall,
-          color = ParchmentDim
+          color = pal.textSecondary
       )
     }
 
-    HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
+    HorizontalDivider(color = pal.borderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
 
     // Dashed Dropzone CTA (OpenMultipleDocuments SAF)
     Box(
@@ -1444,10 +1476,10 @@ private fun QueueSection(
             .fillMaxWidth()
             .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color(0xFF160D0C))
+            .background(pal.deepSurface)
             .drawBehind {
               drawRoundRect(
-                  color = Burgundy,
+                  color = pal.actionBg,
                   style = Stroke(
                       width = 2.dp.toPx(),
                       pathEffect = PathEffect.dashPathEffect(floatArrayOf(18f, 12f), 0f)
@@ -1467,19 +1499,19 @@ private fun QueueSection(
         Icon(
             imageVector = Icons.Default.UploadFile,
             contentDescription = tr("dropTitle"),
-            tint = GoldAccent,
+            tint = pal.primaryAccent,
             modifier = Modifier.size(34.dp)
         )
         Text(
             text = tr("dropTitle"),
             style = MaterialTheme.typography.titleSmall,
-            color = Parchment,
+            color = pal.textPrimary,
             textAlign = TextAlign.Center
         )
         Text(
             text = tr("dropSub"),
             style = MaterialTheme.typography.labelSmall,
-            color = ParchmentDim,
+            color = pal.textSecondary,
             textAlign = TextAlign.Center
         )
       }
@@ -1494,10 +1526,10 @@ private fun QueueSection(
       OutlinedButton(
           onClick = onPickSingleFile,
           enabled = !isRunning,
-          border = BorderStroke(1.dp, BurgundyBorder),
+          border = BorderStroke(1.dp, pal.border),
           colors = ButtonDefaults.outlinedButtonColors(
-              containerColor = Color(0xFF170E0D),
-              contentColor = Parchment
+              containerColor = pal.deepSurface,
+              contentColor = pal.textPrimary
           ),
           contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
           modifier = Modifier
@@ -1505,7 +1537,7 @@ private fun QueueSection(
               .minimumInteractiveComponentSize()
               .testTag("pick_single_csv_button")
       ) {
-        Icon(Icons.Default.NoteAdd, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+        Icon(Icons.Default.NoteAdd, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(15.dp))
         Spacer(modifier = Modifier.width(4.dp))
         Text(tr("btnPickSingle"), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
       }
@@ -1513,10 +1545,10 @@ private fun QueueSection(
       OutlinedButton(
           onClick = onOpenModDiff,
           enabled = !isRunning,
-          border = BorderStroke(1.dp, GoldMuted),
+          border = BorderStroke(1.dp, pal.primaryMuted),
           colors = ButtonDefaults.outlinedButtonColors(
-              containerColor = Color(0xFF1F1211),
-              contentColor = GoldAccent
+              containerColor = pal.cardElevated,
+              contentColor = pal.primaryAccent
           ),
           contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
           modifier = Modifier
@@ -1524,7 +1556,7 @@ private fun QueueSection(
               .minimumInteractiveComponentSize()
               .testTag("open_mod_diff_button")
       ) {
-        Icon(Icons.Default.CompareArrows, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+        Icon(Icons.Default.CompareArrows, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(15.dp))
         Spacer(modifier = Modifier.width(4.dp))
         Text(tr("btnModDiff"), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
       }
@@ -1542,27 +1574,27 @@ private fun QueueSection(
         Text(
             text = "${fileQueue.size} file ($doneFiles/${fileQueue.size} selesai · $totalLines baris)",
             style = MaterialTheme.typography.labelSmall,
-            color = ParchmentDim
+            color = pal.textSecondary
         )
         TextButton(
             onClick = onClearQueue,
             enabled = !isRunning,
             modifier = Modifier.testTag("clear_queue_button")
         ) {
-          Text(tr("btnClearQueue"), color = CrimsonText, fontSize = 12.sp)
+          Text(tr("btnClearQueue"), color = pal.errorText, fontSize = 12.sp)
         }
       }
 
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         fileQueue.forEachIndexed { index, item ->
           val isSelectedForPreview = item.id == selectedPreviewFileId
-          val borderClr = if (isSelectedForPreview) GoldAccent else Color(0xFF3E231F)
+          val borderClr = if (isSelectedForPreview) pal.primaryAccent else pal.borderSoft
 
           Column(
               modifier = Modifier
                   .fillMaxWidth()
                   .clip(RoundedCornerShape(10.dp))
-                  .background(if (isSelectedForPreview) Color(0xFF211311) else Color(0xFF170E0D))
+                  .background(if (isSelectedForPreview) pal.cardElevated else pal.deepSurface)
                   .border(1.dp, borderClr, RoundedCornerShape(10.dp))
                   .clickable { onSelectPreviewFile(item.id) }
                   .padding(horizontal = 12.dp, vertical = 10.dp)
@@ -1577,7 +1609,7 @@ private fun QueueSection(
                 Text(
                     text = "${index + 1}. ${item.name}",
                     style = MaterialTheme.typography.titleSmall,
-                    color = Parchment,
+                    color = pal.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1591,7 +1623,7 @@ private fun QueueSection(
                 Text(
                     text = "${item.lines.size} baris$resumeInfo",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (item.cachedLinesCount > 0 && item.status == FileQueueStatus.WAIT) GoldAccent else ParchmentDim
+                    color = if (item.cachedLinesCount > 0 && item.status == FileQueueStatus.WAIT) pal.primaryAccent else pal.textSecondary
                 )
                 val renamedOutput = WarbandTextProcessor.buildExportFileName(
                     originalName = item.name,
@@ -1602,7 +1634,7 @@ private fun QueueSection(
                   Text(
                       text = "→ $renamedOutput",
                       style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                      color = GoldAccent,
+                      color = pal.primaryAccent,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis
                   )
@@ -1610,9 +1642,9 @@ private fun QueueSection(
                 val valReport = validationReports[item.id]
                 if (valReport != null) {
                   val (valColor, valText) = when (valReport.status) {
-                    CsvValidationStatus.VALID -> ForestText to "✓ ${tr("csvValOk")}"
-                    CsvValidationStatus.WARNING -> AmberText to "⚠ ${tr("csvValWarn")}: ${valReport.malformedLinesCount}"
-                    CsvValidationStatus.MALFORMED -> CrimsonText to "✕ ${tr("csvValMalformed")}"
+                    CsvValidationStatus.VALID -> pal.successText to "✓ ${tr("csvValOk")}"
+                    CsvValidationStatus.WARNING -> pal.warningText to "⚠ ${tr("csvValWarn")}: ${valReport.malformedLinesCount}"
+                    CsvValidationStatus.MALFORMED -> pal.errorText to "✕ ${tr("csvValMalformed")}"
                   }
                   Text(
                       text = valText,
@@ -1628,10 +1660,10 @@ private fun QueueSection(
               Spacer(modifier = Modifier.width(8.dp))
 
               val (badgeBg, badgeBorder, badgeTextColor, badgeLabel) = when (item.status) {
-                FileQueueStatus.WAIT -> Quad(Color(0xFF261715), BurgundyBorder, ParchmentDim, tr("stWait"))
-                FileQueueStatus.RUN -> Quad(AmberBg, GoldMuted, AmberText, tr("stRun"))
-                FileQueueStatus.DONE -> Quad(Color(0xFF0E2914), Forest, ForestText, tr("stDone"))
-                FileQueueStatus.ERROR -> Quad(Color(0xFF331015), Crimson, CrimsonText, tr("stErr"))
+                FileQueueStatus.WAIT -> Quad(pal.cardElevated, pal.border, pal.textSecondary, tr("stWait"))
+                FileQueueStatus.RUN -> Quad(pal.warningBg, pal.primaryMuted, pal.warningText, tr("stRun"))
+                FileQueueStatus.DONE -> Quad(pal.successBg, pal.successBorder, pal.successText, tr("stDone"))
+                FileQueueStatus.ERROR -> Quad(pal.errorBg, pal.errorBorder, pal.errorText, tr("stErr"))
               }
 
               Surface(
@@ -1651,8 +1683,8 @@ private fun QueueSection(
             if (item.resumePercentage > 0 && item.status != FileQueueStatus.DONE) {
               LinearProgressIndicator(
                   progress = { item.resumePercentage / 100f },
-                  color = if (item.status == FileQueueStatus.RUN) GoldAccent else GoldMuted,
-                  trackColor = Color(0xFF110808),
+                  color = if (item.status == FileQueueStatus.RUN) pal.primaryAccent else pal.primaryMuted,
+                  trackColor = pal.cardBottom,
                   modifier = Modifier
                       .fillMaxWidth()
                       .height(4.dp)
@@ -1675,7 +1707,7 @@ private fun QueueSection(
                   Icon(
                       imageVector = Icons.Default.ArrowUpward,
                       contentDescription = "Move Up",
-                      tint = if (index > 0) ParchmentDim else ParchmentDim.copy(alpha = 0.25f),
+                      tint = if (index > 0) pal.textSecondary else pal.textSecondary.copy(alpha = 0.25f),
                       modifier = Modifier.size(18.dp)
                   )
                 }
@@ -1687,7 +1719,7 @@ private fun QueueSection(
                   Icon(
                       imageVector = Icons.Default.ArrowDownward,
                       contentDescription = "Move Down",
-                      tint = if (index < fileQueue.lastIndex) ParchmentDim else ParchmentDim.copy(alpha = 0.25f),
+                      tint = if (index < fileQueue.lastIndex) pal.textSecondary else pal.textSecondary.copy(alpha = 0.25f),
                       modifier = Modifier.size(18.dp)
                   )
                 }
@@ -1696,21 +1728,21 @@ private fun QueueSection(
               if (!isRunning && item.status == FileQueueStatus.ERROR) {
                 OutlinedButton(
                     onClick = { onRetryItem(item.id) },
-                    border = BorderStroke(1.dp, GoldMuted),
+                    border = BorderStroke(1.dp, pal.primaryMuted),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                     modifier = Modifier.minimumInteractiveComponentSize()
                 ) {
-                  Icon(Icons.Default.Refresh, contentDescription = "Retry", tint = GoldAccent, modifier = Modifier.size(14.dp))
+                  Icon(Icons.Default.Refresh, contentDescription = "Retry", tint = pal.primaryAccent, modifier = Modifier.size(14.dp))
                 }
               }
 
               if (item.status == FileQueueStatus.DONE) {
                 OutlinedButton(
                     onClick = { onOpenQaEditor(item.id) },
-                    border = BorderStroke(1.dp, GoldMuted),
+                    border = BorderStroke(1.dp, pal.primaryMuted),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = AmberBg,
-                        contentColor = GoldAccent
+                        containerColor = pal.warningBg,
+                        contentColor = pal.primaryAccent
                     ),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                     modifier = Modifier
@@ -1724,10 +1756,10 @@ private fun QueueSection(
                 Spacer(modifier = Modifier.width(6.dp))
                 OutlinedButton(
                     onClick = { onSaveItem(item) },
-                    border = BorderStroke(1.dp, Forest),
+                    border = BorderStroke(1.dp, pal.successBorder),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Forest.copy(alpha = 0.45f),
-                        contentColor = ForestText
+                        containerColor = pal.successBg,
+                        contentColor = pal.successText
                     ),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     modifier = Modifier
@@ -1748,7 +1780,7 @@ private fun QueueSection(
                   Icon(
                       imageVector = Icons.Default.Close,
                       contentDescription = "Remove",
-                      tint = ParchmentDim,
+                      tint = pal.textSecondary,
                       modifier = Modifier.size(18.dp)
                   )
                 }
@@ -1777,6 +1809,7 @@ private fun ControlsAndProgressSection(
     onSaveAll: () -> Unit,
     onExportErrors: () -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
     if (progress.isRunning || progress.totalLines > 0) {
       MedievalCard {
@@ -1792,7 +1825,7 @@ private fun ControlsAndProgressSection(
                 "..."
               },
               style = MaterialTheme.typography.titleSmall,
-              color = GoldAccent,
+              color = pal.primaryAccent,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
               modifier = Modifier.weight(1f)
@@ -1801,19 +1834,19 @@ private fun ControlsAndProgressSection(
           Text(
               text = "${progress.percentage}% (${progress.processedLines} / ${progress.totalLines})",
               style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-              color = Parchment
+              color = pal.textPrimary
           )
         }
         Spacer(modifier = Modifier.height(8.dp))
         LinearProgressIndicator(
             progress = { progress.percentage / 100f },
-            color = GoldAccent,
-            trackColor = Color(0xFF110808),
+            color = pal.primaryAccent,
+            trackColor = pal.deepSurface,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(10.dp)
                 .clip(CircleShape)
-                .border(1.dp, BurgundyBorder, CircleShape)
+                .border(1.dp, pal.border, CircleShape)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Row(
@@ -1823,13 +1856,13 @@ private fun ControlsAndProgressSection(
           Text(
               text = "Cache hit: ${progress.cacheHits} ${tr("cacheUnit")}",
               style = MaterialTheme.typography.labelSmall,
-              color = ParchmentDim
+              color = pal.textSecondary
           )
           if (progress.etaText.isNotEmpty()) {
             Text(
                 text = "ETA: ${progress.etaText}",
                 style = MaterialTheme.typography.labelSmall,
-                color = ParchmentDim
+                color = pal.textSecondary
             )
           }
         }
@@ -1841,12 +1874,12 @@ private fun ControlsAndProgressSection(
         onClick = onStart,
         enabled = !progress.isRunning && hasWaitingFiles,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF754339),
-            contentColor = Parchment,
-            disabledContainerColor = Color(0xFF3A201C),
-            disabledContentColor = ParchmentDim.copy(alpha = 0.45f)
+            containerColor = pal.actionBg,
+            contentColor = pal.textPrimary,
+            disabledContainerColor = pal.cardBottom,
+            disabledContentColor = pal.textSecondary.copy(alpha = 0.45f)
         ),
-        border = BorderStroke(1.dp, if (!progress.isRunning && hasWaitingFiles) GoldMuted else BurgundyBorder),
+        border = BorderStroke(1.dp, if (!progress.isRunning && hasWaitingFiles) pal.primaryMuted else pal.border),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
@@ -1858,7 +1891,7 @@ private fun ControlsAndProgressSection(
       Text(
           text = tr("btnStart"),
           style = MaterialTheme.typography.titleMedium,
-          color = if (!progress.isRunning && hasWaitingFiles) Parchment else ParchmentDim.copy(alpha = 0.5f)
+          color = if (!progress.isRunning && hasWaitingFiles) pal.textPrimary else pal.textSecondary.copy(alpha = 0.5f)
       )
     }
 
@@ -1869,10 +1902,10 @@ private fun ControlsAndProgressSection(
       OutlinedButton(
           onClick = onTogglePause,
           enabled = progress.isRunning,
-          border = BorderStroke(1.dp, if (progress.isRunning) GoldMuted else BurgundyBorder),
+          border = BorderStroke(1.dp, if (progress.isRunning) pal.primaryMuted else pal.border),
           colors = ButtonDefaults.outlinedButtonColors(
-              containerColor = AmberBg,
-              contentColor = GoldAccent
+              containerColor = pal.warningBg,
+              contentColor = pal.primaryAccent
           ),
           shape = RoundedCornerShape(12.dp),
           modifier = Modifier
@@ -1892,10 +1925,10 @@ private fun ControlsAndProgressSection(
       OutlinedButton(
           onClick = onStop,
           enabled = progress.isRunning,
-          border = BorderStroke(1.dp, if (progress.isRunning) Crimson else BurgundyBorder),
+          border = BorderStroke(1.dp, if (progress.isRunning) pal.errorBorder else pal.border),
           colors = ButtonDefaults.outlinedButtonColors(
-              containerColor = Color(0xFF2A1114),
-              contentColor = CrimsonText
+              containerColor = pal.errorBg,
+              contentColor = pal.errorText
           ),
           shape = RoundedCornerShape(12.dp),
           modifier = Modifier
@@ -1917,10 +1950,10 @@ private fun ControlsAndProgressSection(
         ) {
           OutlinedButton(
               onClick = onOpenQaEditor,
-              border = BorderStroke(1.dp, GoldMuted),
+              border = BorderStroke(1.dp, pal.primaryMuted),
               colors = ButtonDefaults.outlinedButtonColors(
-                  containerColor = AmberBg,
-                  contentColor = GoldAccent
+                  containerColor = pal.warningBg,
+                  contentColor = pal.primaryAccent
               ),
               shape = RoundedCornerShape(12.dp),
               modifier = Modifier
@@ -1935,10 +1968,10 @@ private fun ControlsAndProgressSection(
 
           OutlinedButton(
               onClick = onSaveAll,
-              border = BorderStroke(1.dp, GoldMuted),
+              border = BorderStroke(1.dp, pal.primaryMuted),
               colors = ButtonDefaults.outlinedButtonColors(
-                  containerColor = Burgundy.copy(alpha = 0.35f),
-                  contentColor = GoldAccent
+                  containerColor = pal.actionBg.copy(alpha = 0.35f),
+                  contentColor = pal.primaryAccent
               ),
               shape = RoundedCornerShape(12.dp),
               modifier = Modifier
@@ -1955,10 +1988,10 @@ private fun ControlsAndProgressSection(
         Button(
             onClick = onSaveAll,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Forest.copy(alpha = 0.65f),
-                contentColor = ForestText
+                containerColor = pal.successBg,
+                contentColor = pal.successText
             ),
-            border = BorderStroke(1.dp, Forest),
+            border = BorderStroke(1.dp, pal.successBorder),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()
@@ -1975,10 +2008,10 @@ private fun ControlsAndProgressSection(
     if (failedCount > 0) {
       OutlinedButton(
           onClick = onExportErrors,
-          border = BorderStroke(1.dp, Crimson),
+          border = BorderStroke(1.dp, pal.errorBorder),
           colors = ButtonDefaults.outlinedButtonColors(
-              containerColor = Crimson.copy(alpha = 0.25f),
-              contentColor = CrimsonText
+              containerColor = pal.errorBg,
+              contentColor = pal.errorText
           ),
           shape = RoundedCornerShape(12.dp),
           modifier = Modifier
@@ -1999,6 +2032,7 @@ private fun LivePreviewSection(
     onSaveEdit: (Int, String) -> Unit,
     onOpenHelp: (String) -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   MedievalCard {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text("👁️", fontSize = 15.sp)
@@ -2006,7 +2040,7 @@ private fun LivePreviewSection(
       Text(
           text = tr("secPreview").uppercase(),
           style = MaterialTheme.typography.titleMedium,
-          color = GoldAccent,
+          color = pal.primaryAccent,
           modifier = Modifier.weight(1f, fill = false)
       )
       HelpIconButton(topicKey = "secPreview", contentDescription = tr("secPreview"), onOpenHelp = onOpenHelp)
@@ -2014,9 +2048,9 @@ private fun LivePreviewSection(
     Text(
         text = tr("previewHint"),
         style = MaterialTheme.typography.labelSmall,
-        color = ParchmentDim
+        color = pal.textSecondary
     )
-    HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
+    HorizontalDivider(color = pal.borderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
       previewRows.forEach { row ->
@@ -2027,8 +2061,8 @@ private fun LivePreviewSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(10.dp))
-                .background(MahoganyHeader)
-                .border(1.dp, Color(0xFF361D1A), RoundedCornerShape(10.dp))
+                .background(pal.cardElevated)
+                .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
                 .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -2040,21 +2074,21 @@ private fun LivePreviewSection(
             Text(
                 text = "[ASLI #${row.lineIndex + 1}] ${row.originalLine}",
                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                color = ParchmentDim.copy(alpha = 0.85f),
+                color = pal.textSecondary.copy(alpha = 0.85f),
                 modifier = Modifier.weight(1f)
             )
             Spacer(modifier = Modifier.width(6.dp))
             OutlinedButton(
                 onClick = { isEditing = !isEditing },
-                border = BorderStroke(1.dp, Color(0xFF5A342D)),
+                border = BorderStroke(1.dp, pal.border),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                 modifier = Modifier
                     .minimumInteractiveComponentSize()
                     .testTag("edit_preview_${row.lineIndex}")
             ) {
-              Icon(Icons.Default.Edit, contentDescription = tr("btnEdit"), tint = GoldAccent, modifier = Modifier.size(13.dp))
+              Icon(Icons.Default.Edit, contentDescription = tr("btnEdit"), tint = pal.primaryAccent, modifier = Modifier.size(13.dp))
               Spacer(modifier = Modifier.width(4.dp))
-              Text(tr("btnEdit"), color = GoldAccent, fontSize = 11.sp)
+              Text(tr("btnEdit"), color = pal.primaryAccent, fontSize = 11.sp)
             }
           }
 
@@ -2062,7 +2096,7 @@ private fun LivePreviewSection(
             Text(
                 text = "[HASIL] ${row.translatedLine}",
                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                color = ForestText
+                color = pal.successText
             )
           } else {
             OutlinedTextField(
@@ -2070,13 +2104,13 @@ private fun LivePreviewSection(
                 onValueChange = { editDraft = it },
                 textStyle = MaterialTheme.typography.bodySmall.copy(
                     fontFamily = FontFamily.Monospace,
-                    color = Parchment
+                    color = pal.textPrimary
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GoldAccent,
-                    unfocusedBorderColor = BurgundyBorder,
-                    focusedContainerColor = MahoganyInput,
-                    unfocusedContainerColor = MahoganyInput
+                    focusedBorderColor = pal.primaryAccent,
+                    unfocusedBorderColor = pal.border,
+                    focusedContainerColor = pal.inputBg,
+                    unfocusedContainerColor = pal.inputBg
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2087,11 +2121,14 @@ private fun LivePreviewSection(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-              TextButton(onClick = {
-                editDraft = row.translatedLine
-                isEditing = false
-              }) {
-                Text(tr("btnCancel"), color = ParchmentDim, fontSize = 12.sp)
+              TextButton(
+                  onClick = {
+                    editDraft = row.translatedLine
+                    isEditing = false
+                  },
+                  modifier = Modifier.minimumInteractiveComponentSize()
+              ) {
+                Text(tr("btnCancel"), color = pal.textSecondary, fontSize = 12.sp)
               }
               Spacer(modifier = Modifier.width(6.dp))
               Button(
@@ -2099,9 +2136,12 @@ private fun LivePreviewSection(
                     onSaveEdit(row.lineIndex, editDraft)
                     isEditing = false
                   },
-                  colors = ButtonDefaults.buttonColors(containerColor = Forest, contentColor = ForestText),
+                  colors = ButtonDefaults.buttonColors(containerColor = pal.successBg, contentColor = pal.successText),
+                  border = BorderStroke(1.dp, pal.successBorder),
                   contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                  modifier = Modifier.testTag("save_preview_edit_${row.lineIndex}")
+                  modifier = Modifier
+                      .minimumInteractiveComponentSize()
+                      .testTag("save_preview_edit_${row.lineIndex}")
               ) {
                 Text(tr("btnSave"), fontSize = 12.sp)
               }
@@ -2120,6 +2160,7 @@ private fun SystemLogSection(
     onClearLogs: () -> Unit,
     onOpenHelp: (String) -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   MedievalCard {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -2130,14 +2171,14 @@ private fun SystemLogSection(
         Text(
             text = tr("secLog").uppercase(),
             style = MaterialTheme.typography.labelMedium,
-            color = ParchmentDim
+            color = pal.textSecondary
         )
         HelpIconButton(topicKey = "secLog", contentDescription = tr("secLog"), onOpenHelp = onOpenHelp)
       }
       TextButton(onClick = onClearLogs, modifier = Modifier.testTag("clear_logs_button")) {
-        Icon(Icons.Default.Delete, contentDescription = null, tint = ParchmentDim, modifier = Modifier.size(15.dp))
+        Icon(Icons.Default.Delete, contentDescription = null, tint = pal.textSecondary, modifier = Modifier.size(15.dp))
         Spacer(modifier = Modifier.width(4.dp))
-        Text(tr("btnClearLog"), color = ParchmentDim, fontSize = 11.sp)
+        Text(tr("btnClearLog"), color = pal.textSecondary, fontSize = 11.sp)
       }
     }
 
@@ -2151,18 +2192,18 @@ private fun SystemLogSection(
             .fillMaxWidth()
             .height(160.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(ObsidianDeep)
-            .border(1.dp, Color(0xFF321B18), RoundedCornerShape(8.dp))
+            .background(pal.deepSurface)
+            .border(1.dp, pal.borderSoft, RoundedCornerShape(8.dp))
             .verticalScroll(scrollState)
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       logs.forEach { entry ->
         val color = when (entry.level) {
-          LogLevel.OK -> Color(0xFF4ADE80)
-          LogLevel.WARN -> AmberText
-          LogLevel.ERROR -> CrimsonText
-          LogLevel.INFO -> ParchmentDim
+          LogLevel.OK -> pal.successText
+          LogLevel.WARN -> pal.warningText
+          LogLevel.ERROR -> pal.errorText
+          LogLevel.INFO -> pal.textSecondary
         }
         Text(
             text = "[${entry.timestamp}] ${entry.message}",
@@ -2181,9 +2222,10 @@ private fun StickyProgressControlBar(
     onTogglePause: () -> Unit,
     onStop: () -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   Surface(
-      color = Color(0xFF160D0C).copy(alpha = 0.96f),
-      border = BorderStroke(1.dp, GoldAccent),
+      color = pal.headerBg.copy(alpha = 0.96f),
+      border = BorderStroke(1.dp, pal.primaryAccent),
       shadowElevation = 12.dp,
       modifier = Modifier.fillMaxWidth()
   ) {
@@ -2202,7 +2244,7 @@ private fun StickyProgressControlBar(
           Text(
               text = progress.currentFileName.ifEmpty { "..." },
               style = MaterialTheme.typography.labelMedium,
-              color = GoldAccent,
+              color = pal.primaryAccent,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
               modifier = Modifier.weight(1f)
@@ -2211,14 +2253,14 @@ private fun StickyProgressControlBar(
           Text(
               text = "${progress.percentage}% (${progress.processedLines}/${progress.totalLines})",
               style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-              color = Parchment
+              color = pal.textPrimary
           )
         }
         Spacer(modifier = Modifier.height(5.dp))
         LinearProgressIndicator(
             progress = { progress.percentage / 100f },
-            color = GoldAccent,
-            trackColor = Color(0xFF110808),
+            color = pal.primaryAccent,
+            trackColor = pal.deepSurface,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(6.dp)
@@ -2228,8 +2270,8 @@ private fun StickyProgressControlBar(
 
       OutlinedButton(
           onClick = onTogglePause,
-          border = BorderStroke(1.dp, GoldMuted),
-          colors = ButtonDefaults.outlinedButtonColors(containerColor = AmberBg, contentColor = GoldAccent),
+          border = BorderStroke(1.dp, pal.primaryMuted),
+          colors = ButtonDefaults.outlinedButtonColors(containerColor = pal.warningBg, contentColor = pal.primaryAccent),
           contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
           modifier = Modifier
               .minimumInteractiveComponentSize()
@@ -2240,8 +2282,8 @@ private fun StickyProgressControlBar(
 
       OutlinedButton(
           onClick = onStop,
-          border = BorderStroke(1.dp, Crimson),
-          colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFF2A1114), contentColor = CrimsonText),
+          border = BorderStroke(1.dp, pal.errorBorder),
+          colors = ButtonDefaults.outlinedButtonColors(containerColor = pal.errorBg, contentColor = pal.errorText),
           contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
           modifier = Modifier
               .minimumInteractiveComponentSize()

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,7 +54,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -65,21 +65,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.domain.QaAuditRow
 import com.example.domain.QaAuditSummary
 import com.example.domain.QaIssueType
-import com.example.ui.theme.AmberBg
-import com.example.ui.theme.AmberText
-import com.example.ui.theme.Burgundy
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Crimson
-import com.example.ui.theme.CrimsonText
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
-import com.example.ui.theme.MahoganyInput
-import com.example.ui.theme.ObsidianDeep
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
+import com.example.ui.theme.LocalWarbandPalette
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -92,6 +78,7 @@ fun FullEditorAndQaDialog(
     onDismiss: () -> Unit
 ) {
   if (summary == null) return
+  val pal = LocalWarbandPalette.current
 
   var searchQuery by remember(summary.fileId) { mutableStateOf("") }
   var onlyIssues by remember(summary.fileId) { mutableStateOf(summary.issueCount > 0) }
@@ -119,13 +106,14 @@ fun FullEditorAndQaDialog(
   ) {
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF1D1110),
-        border = BorderStroke(1.dp, BurgundyBorder),
+        color = pal.cardTop,
+        border = BorderStroke(1.dp, pal.border),
         shadowElevation = 12.dp,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 20.dp)
             .widthIn(max = 620.dp)
+            .heightIn(max = 700.dp)
             .testTag("qa_editor_dialog")
     ) {
       Column(
@@ -148,21 +136,21 @@ fun FullEditorAndQaDialog(
             Icon(
                 imageVector = Icons.Default.VerifiedUser,
                 contentDescription = null,
-                tint = GoldAccent,
+                tint = pal.primaryAccent,
                 modifier = Modifier.size(20.dp)
             )
             Column(modifier = Modifier.weight(1f)) {
               Text(
                   text = tr("qaEditorTitle"),
                   style = MaterialTheme.typography.titleMedium,
-                  color = GoldAccent,
+                  color = pal.primaryAccent,
                   maxLines = 1,
                   overflow = TextOverflow.Ellipsis
               )
               Text(
                   text = summary.fileName,
                   style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                  color = ParchmentDim,
+                  color = pal.textSecondary,
                   maxLines = 1,
                   overflow = TextOverflow.Ellipsis
               )
@@ -172,10 +160,10 @@ fun FullEditorAndQaDialog(
           if (summary.issueCount > 0) {
             OutlinedButton(
                 onClick = { onAutoFixMissingTokens(summary.fileId) },
-                border = BorderStroke(1.dp, GoldMuted),
+                border = BorderStroke(1.dp, pal.primaryMuted),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = AmberBg,
-                    contentColor = GoldAccent
+                    containerColor = pal.warningBg,
+                    contentColor = pal.primaryAccent
                 ),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                 modifier = Modifier
@@ -192,8 +180,8 @@ fun FullEditorAndQaDialog(
         // QA Status Banner
         Surface(
             shape = RoundedCornerShape(10.dp),
-            color = if (summary.issueCount == 0) Color(0xFF0E2914) else Color(0xFF2E170F),
-            border = BorderStroke(1.dp, if (summary.issueCount == 0) Forest else AmberText),
+            color = if (summary.issueCount == 0) pal.successBg else pal.warningBg,
+            border = BorderStroke(1.dp, if (summary.issueCount == 0) pal.successBorder else pal.warningText),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("qa_status_banner")
@@ -206,7 +194,7 @@ fun FullEditorAndQaDialog(
             Icon(
                 imageVector = if (summary.issueCount == 0) Icons.Default.CheckCircle else Icons.Default.WarningAmber,
                 contentDescription = null,
-                tint = if (summary.issueCount == 0) ForestText else AmberText,
+                tint = if (summary.issueCount == 0) pal.successText else pal.warningText,
                 modifier = Modifier.size(16.dp)
             )
             Text(
@@ -216,7 +204,7 @@ fun FullEditorAndQaDialog(
                   "${summary.issueCount}/${summary.totalRows} ${tr("qaIssuesFoundBanner")}"
                 },
                 style = MaterialTheme.typography.labelSmall,
-                color = if (summary.issueCount == 0) ForestText else AmberText
+                color = if (summary.issueCount == 0) pal.successText else pal.warningText
             )
           }
         }
@@ -232,15 +220,15 @@ fun FullEditorAndQaDialog(
               onValueChange = { searchQuery = it },
               singleLine = true,
               leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null, tint = GoldMuted, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Search, contentDescription = null, tint = pal.primaryMuted, modifier = Modifier.size(16.dp))
               },
-              placeholder = { Text(tr("qaSearchPlaceholder"), fontSize = 12.sp, color = ParchmentDim.copy(alpha = 0.5f)) },
-              textStyle = MaterialTheme.typography.bodySmall.copy(color = Parchment),
+              placeholder = { Text(tr("qaSearchPlaceholder"), fontSize = 12.sp, color = pal.textSecondary.copy(alpha = 0.6f)) },
+              textStyle = MaterialTheme.typography.bodySmall.copy(color = pal.textPrimary),
               colors = OutlinedTextFieldDefaults.colors(
-                  focusedBorderColor = GoldAccent,
-                  unfocusedBorderColor = BurgundyBorder,
-                  focusedContainerColor = MahoganyInput,
-                  unfocusedContainerColor = MahoganyInput
+                  focusedBorderColor = pal.primaryAccent,
+                  unfocusedBorderColor = pal.border,
+                  focusedContainerColor = pal.inputBg,
+                  unfocusedContainerColor = pal.inputBg
               ),
               modifier = Modifier
                   .weight(1f)
@@ -272,8 +260,8 @@ fun FullEditorAndQaDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(10.dp))
-                .background(Color(0xFF150C0B))
-                .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+                .background(pal.deepSurface)
+                .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
                 .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -286,14 +274,14 @@ fun FullEditorAndQaDialog(
                 onValueChange = { findText = it },
                 singleLine = true,
                 label = { Text(tr("qaFindLabel"), fontSize = 11.sp) },
-                textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, color = Parchment),
+                textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, color = pal.textPrimary),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GoldAccent,
-                    unfocusedBorderColor = BurgundyBorder,
-                    focusedContainerColor = MahoganyInput,
-                    unfocusedContainerColor = MahoganyInput,
-                    focusedLabelColor = GoldAccent,
-                    unfocusedLabelColor = ParchmentDim
+                    focusedBorderColor = pal.primaryAccent,
+                    unfocusedBorderColor = pal.border,
+                    focusedContainerColor = pal.inputBg,
+                    unfocusedContainerColor = pal.inputBg,
+                    focusedLabelColor = pal.primaryAccent,
+                    unfocusedLabelColor = pal.textSecondary
                 ),
                 modifier = Modifier
                     .weight(1f)
@@ -304,14 +292,14 @@ fun FullEditorAndQaDialog(
                 onValueChange = { replaceText = it },
                 singleLine = true,
                 label = { Text(tr("qaReplaceLabel"), fontSize = 11.sp) },
-                textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, color = Parchment),
+                textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, color = pal.textPrimary),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GoldAccent,
-                    unfocusedBorderColor = BurgundyBorder,
-                    focusedContainerColor = MahoganyInput,
-                    unfocusedContainerColor = MahoganyInput,
-                    focusedLabelColor = GoldAccent,
-                    unfocusedLabelColor = ParchmentDim
+                    focusedBorderColor = pal.primaryAccent,
+                    unfocusedBorderColor = pal.border,
+                    focusedContainerColor = pal.inputBg,
+                    unfocusedContainerColor = pal.inputBg,
+                    focusedLabelColor = pal.primaryAccent,
+                    unfocusedLabelColor = pal.textSecondary
                 ),
                 modifier = Modifier
                     .weight(1f)
@@ -326,26 +314,28 @@ fun FullEditorAndQaDialog(
           ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { caseSensitive = !caseSensitive }
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .clickable { caseSensitive = !caseSensitive }
             ) {
               Checkbox(
                   checked = caseSensitive,
                   onCheckedChange = { caseSensitive = it },
                   colors = CheckboxDefaults.colors(
-                      checkedColor = Burgundy,
-                      uncheckedColor = GoldMuted,
-                      checkmarkColor = Parchment
+                      checkedColor = pal.actionBg,
+                      uncheckedColor = pal.primaryMuted,
+                      checkmarkColor = pal.textPrimary
                   )
               )
-              Text(tr("qaCaseSensitive"), style = MaterialTheme.typography.labelSmall, color = ParchmentDim)
+              Text(tr("qaCaseSensitive"), style = MaterialTheme.typography.labelSmall, color = pal.textSecondary)
             }
 
             Button(
                 onClick = { onFindAndReplace(summary.fileId, findText, replaceText, caseSensitive) },
                 enabled = findText.isNotEmpty(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Burgundy,
-                    contentColor = Parchment
+                    containerColor = pal.actionBg,
+                    contentColor = pal.textPrimary
                 ),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                 modifier = Modifier
@@ -363,10 +353,11 @@ fun FullEditorAndQaDialog(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(260.dp)
+                .weight(1f, fill = false)
+                .heightIn(min = 140.dp, max = 280.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(ObsidianDeep)
-                .border(1.dp, BurgundyBorder, RoundedCornerShape(10.dp))
+                .background(pal.deepSurface)
+                .border(1.dp, pal.border, RoundedCornerShape(10.dp))
                 .padding(8.dp)
                 .testTag("qa_rows_list"),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -391,7 +382,7 @@ fun FullEditorAndQaDialog(
           }
         }
 
-        HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp)
+        HorizontalDivider(color = pal.borderSoft, thickness = 1.dp)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -399,8 +390,8 @@ fun FullEditorAndQaDialog(
         ) {
           OutlinedButton(
               onClick = onDismiss,
-              border = BorderStroke(1.dp, BurgundyBorder),
-              colors = ButtonDefaults.outlinedButtonColors(contentColor = Parchment),
+              border = BorderStroke(1.dp, pal.border),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.textPrimary),
               modifier = Modifier
                   .minimumInteractiveComponentSize()
                   .testTag("qa_editor_close_button")
@@ -425,12 +416,13 @@ private fun QaRowCard(
     onCancelEdit: () -> Unit,
     onSaveEdit: () -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   Column(
       modifier = Modifier
           .fillMaxWidth()
           .clip(RoundedCornerShape(8.dp))
-          .background(if (row.hasIssue) Color(0xFF241212) else Color(0xFF150D0C))
-          .border(1.dp, if (row.hasIssue) Crimson else BurgundyBorderSoft, RoundedCornerShape(8.dp))
+          .background(if (row.hasIssue) pal.errorBg.copy(alpha = 0.55f) else pal.cardBottom)
+          .border(1.dp, if (row.hasIssue) pal.errorBorder else pal.borderSoft, RoundedCornerShape(8.dp))
           .padding(8.dp)
           .testTag("qa_row_${row.lineIndex}"),
       verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -448,10 +440,13 @@ private fun QaRowCard(
         Text(
             text = "#${row.lineIndex + 1}",
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
-            color = GoldAccent
+            color = pal.primaryAccent
         )
         if (row.issues.isNotEmpty()) {
-          FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+          FlowRow(
+              horizontalArrangement = Arrangement.spacedBy(4.dp),
+              verticalArrangement = Arrangement.spacedBy(4.dp)
+          ) {
             row.issues.forEach { issue ->
               val label = when (issue) {
                 QaIssueType.MISSING_TOKEN -> "Missing: ${row.missingTokens.joinToString(",")}"
@@ -459,15 +454,17 @@ private fun QaRowCard(
                 QaIssueType.BROKEN_SEPARATOR -> "Separator!"
                 QaIssueType.LEFT_MARKER -> "ZXQ Marker!"
                 QaIssueType.UNTRANSLATED -> "Untranslated"
+                QaIssueType.COLUMN_COUNT_MISMATCH -> tr("qaIssueColMismatch")
+                QaIssueType.UNBALANCED_QUOTES -> tr("qaIssueQuotes")
               }
               Surface(
                   shape = RoundedCornerShape(4.dp),
-                  color = Crimson.copy(alpha = 0.35f),
-                  border = BorderStroke(1.dp, Crimson)
+                  color = pal.errorBg,
+                  border = BorderStroke(1.dp, pal.errorBorder)
               ) {
                 Text(
                     text = label,
-                    color = CrimsonText,
+                    color = pal.errorText,
                     fontSize = 9.sp,
                     modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                 )
@@ -481,11 +478,13 @@ private fun QaRowCard(
         TextButton(
             onClick = onStartEdit,
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-            modifier = Modifier.testTag("qa_edit_row_${row.lineIndex}")
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .testTag("qa_edit_row_${row.lineIndex}")
         ) {
-          Icon(Icons.Default.Edit, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(13.dp))
+          Icon(Icons.Default.Edit, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(13.dp))
           Spacer(modifier = Modifier.width(3.dp))
-          Text(tr("btnEdit"), color = GoldAccent, fontSize = 11.sp)
+          Text(tr("btnEdit"), color = pal.primaryAccent, fontSize = 11.sp)
         }
       }
     }
@@ -493,25 +492,25 @@ private fun QaRowCard(
     Text(
         text = row.originalLine,
         style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
-        color = ParchmentDim.copy(alpha = 0.85f)
+        color = pal.textSecondary.copy(alpha = 0.85f)
     )
 
     if (!isEditing) {
       Text(
           text = row.translatedLine,
           style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
-          color = ForestText
+          color = pal.successText
       )
     } else {
       OutlinedTextField(
           value = draft,
           onValueChange = onDraftChange,
-          textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, color = Parchment, fontSize = 11.sp),
+          textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, color = pal.textPrimary, fontSize = 11.sp),
           colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = GoldAccent,
-              unfocusedBorderColor = BurgundyBorder,
-              focusedContainerColor = MahoganyInput,
-              unfocusedContainerColor = MahoganyInput
+              focusedBorderColor = pal.primaryAccent,
+              unfocusedBorderColor = pal.border,
+              focusedContainerColor = pal.inputBg,
+              unfocusedContainerColor = pal.inputBg
           ),
           modifier = Modifier
               .fillMaxWidth()
@@ -522,15 +521,21 @@ private fun QaRowCard(
           horizontalArrangement = Arrangement.End,
           verticalAlignment = Alignment.CenterVertically
       ) {
-        TextButton(onClick = onCancelEdit) {
-          Text(tr("btnCancel"), color = ParchmentDim, fontSize = 11.sp)
+        TextButton(
+            onClick = onCancelEdit,
+            modifier = Modifier.minimumInteractiveComponentSize()
+        ) {
+          Text(tr("btnCancel"), color = pal.textSecondary, fontSize = 11.sp)
         }
         Spacer(modifier = Modifier.width(6.dp))
         Button(
             onClick = onSaveEdit,
-            colors = ButtonDefaults.buttonColors(containerColor = Forest, contentColor = ForestText),
+            colors = ButtonDefaults.buttonColors(containerColor = pal.successBg, contentColor = pal.successText),
+            border = BorderStroke(1.dp, pal.successBorder),
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-            modifier = Modifier.testTag("qa_save_row_${row.lineIndex}")
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .testTag("qa_save_row_${row.lineIndex}")
         ) {
           Text(tr("btnSave"), fontSize = 11.sp)
         }
@@ -546,10 +551,11 @@ private fun FilterChipButton(
     testTag: String,
     onClick: () -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   Surface(
       shape = CircleShape,
-      color = if (selected) Burgundy.copy(alpha = 0.6f) else Color(0xFF170E0D),
-      border = BorderStroke(1.dp, if (selected) GoldAccent else BurgundyBorder),
+      color = if (selected) pal.actionBg.copy(alpha = 0.6f) else pal.deepSurface,
+      border = BorderStroke(1.dp, if (selected) pal.primaryAccent else pal.border),
       modifier = Modifier
           .minimumInteractiveComponentSize()
           .clickable { onClick() }
@@ -558,7 +564,7 @@ private fun FilterChipButton(
     Text(
         text = label,
         style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal),
-        color = if (selected) GoldAccent else ParchmentDim,
+        color = if (selected) pal.primaryAccent else pal.textSecondary,
         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
     )
   }

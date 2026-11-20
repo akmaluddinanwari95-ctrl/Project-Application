@@ -51,7 +51,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -62,20 +61,7 @@ import com.example.domain.ExportEncoding
 import com.example.domain.TranslatorSettings
 import com.example.domain.UiLanguage
 import com.example.domain.WarbandTextProcessor
-import com.example.ui.theme.Burgundy
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Crimson
-import com.example.ui.theme.CrimsonText
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
 import com.example.ui.theme.LocalWarbandPalette
-import com.example.ui.theme.MahoganyInput
-import com.example.ui.theme.ObsidianDeep
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -129,14 +115,14 @@ fun SettingsScreenContent(
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = tr("secExportSettings"),
-                tint = GoldAccent,
+                tint = pal.primaryAccent,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = tr("secExportSettings").uppercase(),
                 style = MaterialTheme.typography.titleMedium,
-                color = GoldAccent,
+                color = pal.primaryAccent,
                 modifier = Modifier.weight(1f, fill = false)
             )
             HelpIconButton(
@@ -150,11 +136,11 @@ fun SettingsScreenContent(
         Text(
             text = tr("exportSettingsDesc"),
             style = MaterialTheme.typography.bodySmall,
-            color = ParchmentDim
+            color = pal.textSecondary
         )
 
         HorizontalDivider(
-            color = BurgundyBorderSoft,
+            color = pal.borderSoft,
             thickness = 1.dp,
             modifier = Modifier.padding(vertical = 12.dp)
         )
@@ -163,7 +149,7 @@ fun SettingsScreenContent(
         Text(
             text = tr("lblExportDelimiter"),
             style = MaterialTheme.typography.labelLarge,
-            color = GoldAccent
+            color = pal.primaryAccent
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -182,10 +168,10 @@ fun SettingsScreenContent(
                     .fillMaxWidth()
                     .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (selected) Color(0xFF2B1917) else Color(0xFF170E0D))
+                    .background(if (selected) pal.cardElevated else pal.deepSurface)
                     .border(
                         width = if (selected) 2.dp else 1.dp,
-                        color = if (selected) GoldAccent else BurgundyBorder,
+                        color = if (selected) pal.primaryAccent else pal.border,
                         shape = RoundedCornerShape(12.dp)
                     )
                     .clickable { onSelectExportDelimiter(delimiter) }
@@ -197,8 +183,8 @@ fun SettingsScreenContent(
                   selected = selected,
                   onClick = { onSelectExportDelimiter(delimiter) },
                   colors = RadioButtonDefaults.colors(
-                      selectedColor = GoldAccent,
-                      unselectedColor = GoldMuted
+                      selectedColor = pal.primaryAccent,
+                      unselectedColor = pal.primaryMuted
                   )
               )
               Spacer(modifier = Modifier.width(6.dp))
@@ -206,19 +192,19 @@ fun SettingsScreenContent(
                 Text(
                     text = delimiter.displayLabel,
                     style = MaterialTheme.typography.titleSmall,
-                    color = Parchment
+                    color = pal.textPrimary
                 )
                 Text(
                     text = desc,
                     style = MaterialTheme.typography.labelSmall,
-                    color = ParchmentDim
+                    color = pal.textSecondary
                 )
               }
               if (selected) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = GoldAccent,
+                    tint = pal.primaryAccent,
                     modifier = Modifier.size(18.dp)
                 )
               }
@@ -233,14 +219,14 @@ fun SettingsScreenContent(
           Icon(
               imageVector = Icons.Default.TextFields,
               contentDescription = null,
-              tint = GoldAccent,
+              tint = pal.primaryAccent,
               modifier = Modifier.size(16.dp)
           )
           Spacer(modifier = Modifier.width(6.dp))
           Text(
               text = tr("lblExportEncoding"),
               style = MaterialTheme.typography.labelLarge,
-              color = GoldAccent
+              color = pal.primaryAccent
           )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -260,10 +246,10 @@ fun SettingsScreenContent(
                     .fillMaxWidth()
                     .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (selected) Color(0xFF2B1917) else Color(0xFF170E0D))
+                    .background(if (selected) pal.cardElevated else pal.deepSurface)
                     .border(
                         width = if (selected) 2.dp else 1.dp,
-                        color = if (selected) GoldAccent else BurgundyBorder,
+                        color = if (selected) pal.primaryAccent else pal.border,
                         shape = RoundedCornerShape(12.dp)
                     )
                     .clickable { onSelectExportEncoding(encoding) }
@@ -275,8 +261,8 @@ fun SettingsScreenContent(
                   selected = selected,
                   onClick = { onSelectExportEncoding(encoding) },
                   colors = RadioButtonDefaults.colors(
-                      selectedColor = GoldAccent,
-                      unselectedColor = GoldMuted
+                      selectedColor = pal.primaryAccent,
+                      unselectedColor = pal.primaryMuted
                   )
               )
               Spacer(modifier = Modifier.width(6.dp))
@@ -284,22 +270,22 @@ fun SettingsScreenContent(
                 Text(
                     text = encoding.displayLabel,
                     style = MaterialTheme.typography.titleSmall,
-                    color = Parchment
+                    color = pal.textPrimary
                 )
                 Text(
                     text = desc,
                     style = MaterialTheme.typography.labelSmall,
-                    color = ParchmentDim
+                    color = pal.textSecondary
                 )
               }
               Surface(
                   shape = CircleShape,
-                  color = if (selected) Color(0xFF0E2914) else Color(0xFF1F1312),
-                  border = BorderStroke(1.dp, if (selected) Forest else BurgundyBorder)
+                  color = if (selected) pal.successBg else pal.cardElevated,
+                  border = BorderStroke(1.dp, if (selected) pal.successBorder else pal.border)
               ) {
                 Text(
                     text = encoding.charsetName,
-                    color = if (selected) ForestText else ParchmentDim,
+                    color = if (selected) pal.successText else pal.textSecondary,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold
@@ -318,21 +304,21 @@ fun SettingsScreenContent(
           Icon(
               imageVector = Icons.Default.DriveFileRenameOutline,
               contentDescription = null,
-              tint = GoldAccent,
+              tint = pal.primaryAccent,
               modifier = Modifier.size(16.dp)
           )
           Spacer(modifier = Modifier.width(6.dp))
           Text(
               text = tr("lblBatchRename"),
               style = MaterialTheme.typography.labelLarge,
-              color = GoldAccent
+              color = pal.primaryAccent
           )
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = tr("hintBatchRename"),
             style = MaterialTheme.typography.bodySmall,
-            color = ParchmentDim
+            color = pal.textSecondary
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -345,18 +331,18 @@ fun SettingsScreenContent(
               onValueChange = onExportPrefixChange,
               singleLine = true,
               label = { Text(tr("lblFilePrefix"), fontSize = 11.sp) },
-              placeholder = { Text("id_", fontSize = 11.sp, color = ParchmentDim.copy(alpha = 0.4f)) },
+              placeholder = { Text("id_", fontSize = 11.sp, color = pal.textSecondary.copy(alpha = 0.5f)) },
               textStyle = MaterialTheme.typography.bodySmall.copy(
                   fontFamily = FontFamily.Monospace,
-                  color = Parchment
+                  color = pal.textPrimary
               ),
               colors = OutlinedTextFieldDefaults.colors(
-                  focusedBorderColor = GoldAccent,
-                  unfocusedBorderColor = BurgundyBorder,
-                  focusedContainerColor = MahoganyInput,
-                  unfocusedContainerColor = MahoganyInput,
-                  focusedLabelColor = GoldAccent,
-                  unfocusedLabelColor = ParchmentDim
+                  focusedBorderColor = pal.primaryAccent,
+                  unfocusedBorderColor = pal.border,
+                  focusedContainerColor = pal.inputBg,
+                  unfocusedContainerColor = pal.inputBg,
+                  focusedLabelColor = pal.primaryAccent,
+                  unfocusedLabelColor = pal.textSecondary
               ),
               modifier = Modifier
                   .weight(1f)
@@ -367,18 +353,18 @@ fun SettingsScreenContent(
               onValueChange = onExportSuffixChange,
               singleLine = true,
               label = { Text(tr("lblFileSuffix"), fontSize = 11.sp) },
-              placeholder = { Text("_translated", fontSize = 11.sp, color = ParchmentDim.copy(alpha = 0.4f)) },
+              placeholder = { Text("_translated", fontSize = 11.sp, color = pal.textSecondary.copy(alpha = 0.5f)) },
               textStyle = MaterialTheme.typography.bodySmall.copy(
                   fontFamily = FontFamily.Monospace,
-                  color = Parchment
+                  color = pal.textPrimary
               ),
               colors = OutlinedTextFieldDefaults.colors(
-                  focusedBorderColor = GoldAccent,
-                  unfocusedBorderColor = BurgundyBorder,
-                  focusedContainerColor = MahoganyInput,
-                  unfocusedContainerColor = MahoganyInput,
-                  focusedLabelColor = GoldAccent,
-                  unfocusedLabelColor = ParchmentDim
+                  focusedBorderColor = pal.primaryAccent,
+                  unfocusedBorderColor = pal.border,
+                  focusedContainerColor = pal.inputBg,
+                  unfocusedContainerColor = pal.inputBg,
+                  focusedLabelColor = pal.primaryAccent,
+                  unfocusedLabelColor = pal.textSecondary
               ),
               modifier = Modifier
                   .weight(1f)
@@ -406,8 +392,8 @@ fun SettingsScreenContent(
             }
             Surface(
                 shape = CircleShape,
-                color = if (selected) Burgundy.copy(alpha = 0.55f) else Color(0xFF170E0D),
-                border = BorderStroke(1.dp, if (selected) GoldAccent else BurgundyBorder),
+                color = if (selected) pal.actionBg.copy(alpha = 0.55f) else pal.deepSurface,
+                border = BorderStroke(1.dp, if (selected) pal.primaryAccent else pal.border),
                 modifier = Modifier
                     .minimumInteractiveComponentSize()
                     .clickable {
@@ -425,7 +411,7 @@ fun SettingsScreenContent(
                   style = MaterialTheme.typography.labelSmall.copy(
                       fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
                   ),
-                  color = if (selected) GoldAccent else ParchmentDim,
+                  color = if (selected) pal.primaryAccent else pal.textSecondary,
                   modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
               )
             }
@@ -445,8 +431,8 @@ fun SettingsScreenContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(10.dp))
-                .background(ObsidianDeep)
-                .border(1.dp, BurgundyBorder, RoundedCornerShape(10.dp))
+                .background(pal.deepSurface)
+                .border(1.dp, pal.border, RoundedCornerShape(10.dp))
                 .padding(10.dp)
                 .testTag("settings_rename_preview"),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -454,7 +440,7 @@ fun SettingsScreenContent(
           Text(
               text = tr("lblRenamePreview"),
               style = MaterialTheme.typography.labelSmall,
-              color = ParchmentDim
+              color = pal.textSecondary
           )
           Text(
               text = "dialogs.csv  →  $renamedSample",
@@ -462,7 +448,7 @@ fun SettingsScreenContent(
                   fontFamily = FontFamily.Monospace,
                   fontWeight = FontWeight.SemiBold
               ),
-              color = GoldAccent
+              color = pal.primaryAccent
           )
         }
 
@@ -472,15 +458,15 @@ fun SettingsScreenContent(
         Text(
             text = tr("lblExportPreview"),
             style = MaterialTheme.typography.labelSmall,
-            color = ParchmentDim
+            color = pal.textSecondary
         )
         Spacer(modifier = Modifier.height(6.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(10.dp))
-                .background(ObsidianDeep)
-                .border(1.dp, BurgundyBorder, RoundedCornerShape(10.dp))
+                .background(pal.deepSurface)
+                .border(1.dp, pal.border, RoundedCornerShape(10.dp))
                 .padding(12.dp)
                 .testTag("settings_export_sample_preview")
         ) {
@@ -490,7 +476,7 @@ fun SettingsScreenContent(
                   fontFamily = FontFamily.Monospace,
                   fontSize = 11.sp
               ),
-              color = ForestText
+              color = pal.successText
           )
         }
       }
@@ -587,8 +573,8 @@ fun SettingsScreenContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(10.dp))
-                .background(Color(0xFF160D0C))
-                .border(1.dp, BurgundyBorderSoft, RoundedCornerShape(10.dp))
+                .background(pal.deepSurface)
+                .border(1.dp, pal.borderSoft, RoundedCornerShape(10.dp))
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -597,21 +583,21 @@ fun SettingsScreenContent(
             Text(
                 text = tr("lblCache"),
                 style = MaterialTheme.typography.labelMedium,
-                color = Parchment
+                color = pal.textPrimary
             )
             Text(
                 text = "$cacheCount ${tr("cacheUnit")}",
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                color = GoldAccent
+                color = pal.primaryAccent
             )
           }
 
           OutlinedButton(
               onClick = onClearCache,
-              border = BorderStroke(1.dp, Crimson),
+              border = BorderStroke(1.dp, pal.errorBorder),
               colors = ButtonDefaults.outlinedButtonColors(
-                  containerColor = Crimson.copy(alpha = 0.25f),
-                  contentColor = CrimsonText
+                  containerColor = pal.errorBg,
+                  contentColor = pal.errorText
               ),
               contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
               modifier = Modifier
@@ -632,30 +618,30 @@ fun SettingsScreenContent(
         ) {
           OutlinedButton(
               onClick = onExportCacheBackup,
-              border = BorderStroke(1.dp, Burgundy),
-              colors = ButtonDefaults.outlinedButtonColors(contentColor = Parchment),
+              border = BorderStroke(1.dp, pal.actionBg),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.textPrimary),
               contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
               modifier = Modifier
                   .weight(1f)
                   .minimumInteractiveComponentSize()
                   .testTag("export_cache_json_button")
           ) {
-            Icon(Icons.Default.Download, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+            Icon(Icons.Default.Download, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(15.dp))
             Spacer(modifier = Modifier.width(4.dp))
             Text(tr("btnExpCacheJson"), fontSize = 11.sp, maxLines = 1)
           }
 
           OutlinedButton(
               onClick = onImportCacheBackup,
-              border = BorderStroke(1.dp, Burgundy),
-              colors = ButtonDefaults.outlinedButtonColors(contentColor = Parchment),
+              border = BorderStroke(1.dp, pal.actionBg),
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.textPrimary),
               contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
               modifier = Modifier
                   .weight(1f)
                   .minimumInteractiveComponentSize()
                   .testTag("import_cache_json_button")
           ) {
-            Icon(Icons.Default.UploadFile, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+            Icon(Icons.Default.UploadFile, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(15.dp))
             Spacer(modifier = Modifier.width(4.dp))
             Text(tr("btnImpCacheJson"), fontSize = 11.sp, maxLines = 1)
           }

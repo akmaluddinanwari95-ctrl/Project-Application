@@ -669,6 +669,19 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
 
   fun dismissErrorAlert() = TranslationCoordinator.dismissErrorAlert()
 
+  fun resumeFromErrorAlert() {
+    TranslationCoordinator.resumeFromPause()
+  }
+
+  fun retryFromErrorAlert() {
+    if (progressState.value.isRunning && progressState.value.isPaused) {
+      TranslationCoordinator.resumeFromPause()
+    } else {
+      TranslationCoordinator.dismissErrorAlert()
+      retryAllErrors()
+    }
+  }
+
   fun dismissSessionSummary() = TranslationCoordinator.dismissSessionSummary()
 
   fun clearErrorLog() = TranslationCoordinator.clearErrorLog()

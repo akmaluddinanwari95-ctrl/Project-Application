@@ -337,4 +337,47 @@ class NewFeaturesRobolectricTest {
     composeTestRule.onNodeWithTag("validation_proceed_button").performClick()
     assertTrue(proceeded)
   }
+
+  @Test
+  fun errorAlertBanner_showsRateLimitCodeAndTriggersResumeAndRetry() {
+    var resumed = false
+    var retried = false
+    val alert = com.example.domain.ErrorAlert(
+        id = 1L,
+        title = "Rate Limit",
+        detail = "Please wait briefly",
+        lineInfo = "dialogs.csv · Row #12",
+        codeLabel = "HTTP 429",
+        isRateLimit = true,
+        canResume = true,
+        canRetry = true
+    )
+
+    composeTestRule.setContent {
+      WarbandTranslatorTheme {
+        ErrorAlertBanner(
+            alert = alert,
+            onDismiss = {},
+            resumeLabel = I18nStrings.get(UiLanguage.EN, "btnResumeProcess"),
+            retryLabel = I18nStrings.get(UiLanguage.EN, "btnRetryNow"),
+            onResume = { resumed = true },
+            onRetry = { retried = true }
+        )
+      }
+    }
+
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag("error_alert_banner").assertIsDisplayed()
+    composeTestRule.onNodeWithText("HTTP 429").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("error_alert_resume_button").performClick()
+    composeTestRule.onNodeWithTag("error_alert_retry_button").performClick()
+    assertTrue(resumed)
+    assertTrue(retried)
+
+    // Verify localized help topics exist across languages
+    for (lang in listOf(UiLanguage.ID, UiLanguage.EN, UiLanguage.TR)) {
+      assertTrue(I18nStrings.getHelp(lang, "batchSize")?.paragraphs?.isNotEmpty() == true)
+      assertTrue(I18nStrings.getHelp(lang, "medievalTone")?.paragraphs?.isNotEmpty() == true)
+    }
+  }
 }

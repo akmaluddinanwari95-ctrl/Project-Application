@@ -215,7 +215,13 @@ object I18nStrings {
           "btnAddCustomLang" to "+ Bahasa Kustom",
           "addLangTitle" to "Tambah Bahasa Tujuan (Room DB)",
           "addLangCode" to "Kode Bahasa (misal: de, fr, ja)",
-          "addLangLabel" to "Nama Tampilan (misal: Deutsch (de))"
+          "addLangLabel" to "Nama Tampilan (misal: Deutsch (de))",
+          "qaIssueColMismatch" to "Jumlah Kolom Tidak Cocok",
+          "qaIssueQuotes" to "Tanda Kutip Tidak Seimbang",
+          "btnResumeProcess" to "Lanjutkan",
+          "btnRetryNow" to "Coba Lagi",
+          "rateLimitPausedTitle" to "Limit Permintaan Server (HTTP 429)",
+          "rateLimitPausedDetail" to "Progres sudah disimpan ke checkpoint agar baris yang selesai tidak hilang. Tunggu beberapa detik, lalu ketuk Lanjutkan atau Coba Lagi."
       ),
       UiLanguage.EN to mapOf(
           "navTitle" to "M&B Warband Translator",
@@ -425,7 +431,13 @@ object I18nStrings {
           "btnAddCustomLang" to "+ Custom Language",
           "addLangTitle" to "Add Target Language (Room DB)",
           "addLangCode" to "Language Code (e.g., de, fr, ja)",
-          "addLangLabel" to "Display Name (e.g., Deutsch (de))"
+          "addLangLabel" to "Display Name (e.g., Deutsch (de))",
+          "qaIssueColMismatch" to "Column Count Mismatch",
+          "qaIssueQuotes" to "Unbalanced Quotes",
+          "btnResumeProcess" to "Resume",
+          "btnRetryNow" to "Retry",
+          "rateLimitPausedTitle" to "Server Rate Limit (HTTP 429)",
+          "rateLimitPausedDetail" to "Progress is safely checkpointed so completed rows are preserved. Wait a few seconds, then tap Resume or Retry."
       ),
       UiLanguage.TR to mapOf(
           "navTitle" to "M&B Warband Çeviri Aracı",
@@ -635,7 +647,13 @@ object I18nStrings {
           "btnAddCustomLang" to "+ Özel Dil",
           "addLangTitle" to "Hedef Dil Ekle (Room DB)",
           "addLangCode" to "Dil Kodu (ör. de, fr, ja)",
-          "addLangLabel" to "Görünen Ad (ör. Deutsch (de))"
+          "addLangLabel" to "Görünen Ad (ör. Deutsch (de))",
+          "qaIssueColMismatch" to "Sütun Sayısı Uyuşmuyor",
+          "qaIssueQuotes" to "Eşleşmeyen Tırnak",
+          "btnResumeProcess" to "Devam Et",
+          "btnRetryNow" to "Tekrar Dene",
+          "rateLimitPausedTitle" to "Sunucu Hız Sınırı (HTTP 429)",
+          "rateLimitPausedDetail" to "İlerleme kontrol noktasına kaydedildi, tamamlanan satırlar korunur. Birkaç saniye bekleyip Devam Et veya Tekrar Dene'ye dokunun."
       )
   )
 
@@ -1079,6 +1097,45 @@ object I18nStrings {
           UiLanguage.TR to HelpTopicContent(
               "Çeviri Hata Günlüğü",
               listOf("Başarısız satırları ve geçersiz CSV biçimlerini kaydeder; tüm toplu işlemi yeniden başlatmadan tek satırları yeniden denemenizi sağlar.")
+          )
+      ),
+      "batchSize" to mapOf(
+          UiLanguage.ID to HelpTopicContent(
+              "Mode Batch Permintaan",
+              listOf(
+                  "Menggabungkan 5 atau 10 baris sekaligus dalam 1 permintaan HTTP untuk mempercepat penerjemahan file besar (7.000–8.000 baris).",
+                  "Jika pemecahan segmen tidak cocok atau terkena limit HTTP 429, sistem otomatis turun ke mode 1 baris/permintaan agar akurasi tetap terjaga."
+              )
+          ),
+          UiLanguage.EN to HelpTopicContent(
+              "Batch Request Mode",
+              listOf(
+                  "Bundles 5 or 10 consecutive lines per HTTP request to translate large 7,000–8,000 row files significantly faster.",
+                  "Automatically falls back to single-line mode whenever segment alignment mismatches or rate limits occur."
+              )
+          ),
+          UiLanguage.TR to HelpTopicContent(
+              "Toplu İstek Modu",
+              listOf("Büyük dosyaları (7.000–8.000 satır) hızlandırmak için tek HTTP isteğinde 5 veya 10 satırı birlikte gönderir.")
+          )
+      ),
+      "medievalTone" to mapOf(
+          UiLanguage.ID to HelpTopicContent(
+              "Penghalus Gaya Bahasa Medieval",
+              listOf(
+                  "Merapikan spasi tanda baca dan mengganti frasa terjemahan kaku (seperti 'Tuanku saya' -> 'Tuanku', 'kastil saya' -> 'kastilku') agar lebih cocok dengan nuansa Mount & Blade: Warband.",
+                  "Seluruh token variabel ({playername}, ^^, \\n, kode warna) dikunci sementara sehingga tidak pernah berubah."
+              )
+          ),
+          UiLanguage.EN to HelpTopicContent(
+              "Medieval Tone Post-Processing",
+              listOf(
+                  "Cleans punctuation spacing and normalizes stiff literal translations into Mount & Blade: Warband medieval phrasing while masking variables and color tags."
+              )
+          ),
+          UiLanguage.TR to HelpTopicContent(
+              "Ortaçağ Üslubu İyileştirmesi",
+              listOf("Noktalama boşluklarını düzeltir ve değişkenleri koruyarak çevirileri Mount & Blade: Warband atmosferine uyarlar.")
           )
       )
   )

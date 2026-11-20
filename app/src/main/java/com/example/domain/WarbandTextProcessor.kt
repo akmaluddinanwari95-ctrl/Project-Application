@@ -14,7 +14,9 @@ data class ProtectedTextResult(
 object WarbandTextProcessor {
   private val curlyVarRegex = Regex("\\{[^}]+\\}")
   private val caretRegex = Regex("\\^\\^|\\^")
-  private val printfRegex = Regex("%[sd]")
+  private val escapedBreakRegex = Regex("\\\\[nt]")
+  private val printfRegex = Regex("%[sdif]")
+  private val hexColorRegex = Regex("<#[0-9A-Fa-f]{6,8}>|@[0-9A-Fa-f]{6}")
   private val restoreTokenRegex = Regex("\\s*ZXQ\\s*(\\d+)\\s*QXZ\\s*", RegexOption.IGNORE_CASE)
 
   fun parseGlossary(rawText: String): GlossaryRules {
@@ -53,20 +55,106 @@ object WarbandTextProcessor {
       rawLine
     }
 
-    val sepIdx = workingLine.indexOf(sep)
+    val sepIdx = findFirstDelimiterIndex(workingLine, sep)
     return if (sepIdx != -1) {
+      val rawCode = workingLine.substring(0, sepIdx)
+      val rawText = workingLine.substring(sepIdx + sep.length).trim()
+      val code = if (sep != "|") unquoteCsvCellIfWrapped(rawCode.trim()) else rawCode
+      val text = if (sep != "|") unquoteCsvCellIfWrapped(rawText) else rawText
       SplitLineResult(
           hasCode = true,
-          codePart = workingLine.substring(0, sepIdx),
-          textPart = workingLine.substring(sepIdx + sep.length).trim()
+          codePart = code,
+          textPart = text
       )
     } else {
+      val trimmed = workingLine.trim()
+      val text = if (sep != "|") unquoteCsvCellIfWrapped(trimmed) else trimmed
       SplitLineResult(
           hasCode = false,
           codePart = "",
-          textPart = workingLine.trim()
+          textPart = text
       )
     }
+  }
+
+  fun buildTranslatedLine(
+      codePart: String,
+      hasCode: Boolean,
+      textPart: String,
+      separator: String
+  ): String {
+    val sep = separator.ifEmpty { "|" }
+    if (!hasCode) {
+      return if (sep == "|") textPart else escapeCsvFieldIfNeeded(textPart, sep)
+    }
+    if (sep == "|") {
+      return "$codePart|$textPart"
+    }
+    val safeCode = escapeCsvFieldIfNeeded(codePart, sep)
+    val safeText = escapeCsvFieldIfNeeded(textPart, sep)
+    return "$safeCode$sep$safeText"
+  }
+
+  private fun findFirstDelimiterIndex(line: String, sep: String): Int {
+    if (sep.isEmpty()) return -1
+    if (sep == "|") return line.indexOf(sep)
+    var inQuotes = false
+    var i = 0
+    while (i < line.length) {
+      val ch = line[i]
+      if (ch == '"') {
+        if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
+          i += 2
+          continue
+        }
+        inQuotes = !inQuotes
+      } else if (!inQuotes && line.startsWith(sep, i)) {
+        return i
+      }
+      i++
+    }
+    return -1
+  }
+
+  private fun unquoteCsvCellIfWrapped(cell: String): String {
+    if (cell.length < 2 || !cell.startsWith('"') || !cell.endsWith('"')) return cell
+    var i = 1
+    while (i < cell.length - 1) {
+      if (cell[i] == '"') {
+        if (i + 1 < cell.length - 1 && cell[i + 1] == '"') {
+          i += 2
+          continue
+        }
+        // Closed before the end -> not a single outer quoted cell
+        return cell
+      }
+      i++
+    }
+    return cell.substring(1, cell.length - 1).replace("\"\"", "\"")
+  }
+
+  fun countUnquotedDelimiter(line: String, delimiter: String): Int {
+    if (delimiter.isEmpty()) return 0
+    if (delimiter == "|") return countOccurrences(line, delimiter)
+    var count = 0
+    var inQuotes = false
+    var i = 0
+    while (i < line.length) {
+      val ch = line[i]
+      if (ch == '"') {
+        if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
+          i += 2
+          continue
+        }
+        inQuotes = !inQuotes
+      } else if (!inQuotes && line.startsWith(delimiter, i)) {
+        count++
+        i += delimiter.length
+        continue
+      }
+      i++
+    }
+    return count
   }
 
   fun protectWarbandTokens(text: String, glossary: GlossaryRules): ProtectedTextResult {
@@ -80,7 +168,9 @@ object WarbandTextProcessor {
 
     var protectedText = curlyVarRegex.replace(text, ::pushToken)
     protectedText = caretRegex.replace(protectedText, ::pushToken)
+    protectedText = escapedBreakRegex.replace(protectedText, ::pushToken)
     protectedText = printfRegex.replace(protectedText, ::pushToken)
+    protectedText = hexColorRegex.replace(protectedText, ::pushToken)
 
     glossary.noTranslate.forEach { term ->
       val rx = Regex("\\b${Regex.escape(term)}\\b", RegexOption.IGNORE_CASE)
@@ -137,7 +227,9 @@ object WarbandTextProcessor {
     val tokens = mutableListOf<String>()
     curlyVarRegex.findAll(text).forEach { tokens.add(it.value) }
     caretRegex.findAll(text).forEach { tokens.add(it.value) }
+    escapedBreakRegex.findAll(text).forEach { tokens.add(it.value) }
     printfRegex.findAll(text).forEach { tokens.add(it.value) }
+    hexColorRegex.findAll(text).forEach { tokens.add(it.value) }
     return tokens.distinct()
   }
 
@@ -192,14 +284,12 @@ object WarbandTextProcessor {
     }
     val outSep = if (exportDelimiter == ExportDelimiter.SOURCE_PIPE) srcSep else exportDelimiter.symbol
     val formatted = lines.map { line ->
-      val idx = line.indexOf(srcSep)
-      if (idx == -1) {
-        escapeCsvFieldIfNeeded(line, outSep)
+      val split = splitLine(line, srcSep, "")
+      if (!split.hasCode) {
+        escapeCsvFieldIfNeeded(split.textPart, outSep)
       } else {
-        val codePart = line.substring(0, idx)
-        val textPart = line.substring(idx + srcSep.length)
-        val escapedCode = escapeCsvFieldIfNeeded(codePart, outSep)
-        val escapedText = escapeCsvFieldIfNeeded(textPart, outSep)
+        val escapedCode = escapeCsvFieldIfNeeded(split.codePart, outSep)
+        val escapedText = escapeCsvFieldIfNeeded(split.textPart, outSep)
         "$escapedCode$outSep$escapedText"
       }
     }
@@ -358,13 +448,18 @@ object WarbandTextProcessor {
   ): String {
     if (!enabled || text.isBlank()) return text
 
-    // Temporarily mask curly/caret tokens so tone replacements never touch inside {...}
+    // Temporarily mask curly/caret/newline/color tokens so tone replacements never touch inside them
     val protectedTokens = mutableListOf<String>()
-    var working = curlyVarRegex.replace(text) { m ->
+    fun maskMatch(m: MatchResult): CharSequence {
       val idx = protectedTokens.size
       protectedTokens.add(m.value)
-      "@@TOK${idx}@@"
+      return "@@TOK${idx}@@"
     }
+    var working = curlyVarRegex.replace(text, ::maskMatch)
+    working = caretRegex.replace(working, ::maskMatch)
+    working = escapedBreakRegex.replace(working, ::maskMatch)
+    working = printfRegex.replace(working, ::maskMatch)
+    working = hexColorRegex.replace(working, ::maskMatch)
 
     working = spaceBeforePunctRegex.replace(working, "$1")
     working = multiSpaceRegex.replace(working, " ")
@@ -416,6 +511,16 @@ object WarbandTextProcessor {
       val issues = mutableListOf<QaIssueType>()
       if (origSplit.hasCode && (!transSplit.hasCode || origSplit.codePart != transSplit.codePart)) {
         issues.add(QaIssueType.BROKEN_SEPARATOR)
+      }
+
+      val origDelimCount = countUnquotedDelimiter(origLine, sep)
+      val transDelimCount = countUnquotedDelimiter(transLine, sep)
+      if (origDelimCount != transDelimCount) {
+        issues.add(QaIssueType.COLUMN_COUNT_MISMATCH)
+      }
+
+      if (transLine.count { it == '"' } % 2 != 0) {
+        issues.add(QaIssueType.UNBALANCED_QUOTES)
       }
 
       val origTokens = extractProtectedTokens(origSplit.textPart)
@@ -477,7 +582,12 @@ object WarbandTextProcessor {
       fixedText = if (fixedText.isEmpty()) missing.joinToString(" ") else "$fixedText ${missing.joinToString(" ")}"
     }
 
-    return if (origSplit.hasCode) "${origSplit.codePart}$sep$fixedText" else fixedText
+    return buildTranslatedLine(
+        codePart = origSplit.codePart,
+        hasCode = origSplit.hasCode,
+        textPart = fixedText,
+        separator = sep
+    )
   }
 
   fun mergeModUpdateDiff(
@@ -544,17 +654,23 @@ object WarbandTextProcessor {
     )
     var replacedRowsCount = 0
     val updated = lines.map { line ->
-      val idx = line.indexOf(sep)
-      if (idx == -1) {
-        val next = rx.replace(line, Regex.escapeReplacement(replaceWith))
-        if (next != line) replacedRowsCount++
-        next
+      val split = splitLine(line, sep, "")
+      if (!split.hasCode) {
+        val next = rx.replace(split.textPart, Regex.escapeReplacement(replaceWith))
+        if (next != split.textPart) {
+          replacedRowsCount++
+          buildTranslatedLine("", false, next, sep)
+        } else {
+          line
+        }
       } else {
-        val codePart = line.substring(0, idx)
-        val textPart = line.substring(idx + sep.length)
-        val nextText = rx.replace(textPart, Regex.escapeReplacement(replaceWith))
-        if (nextText != textPart) replacedRowsCount++
-        "$codePart$sep$nextText"
+        val nextText = rx.replace(split.textPart, Regex.escapeReplacement(replaceWith))
+        if (nextText != split.textPart) {
+          replacedRowsCount++
+          buildTranslatedLine(split.codePart, true, nextText, sep)
+        } else {
+          line
+        }
       }
     }
     return updated to replacedRowsCount
@@ -754,7 +870,7 @@ object WarbandTextProcessor {
       }
 
       val split = splitLine(rawLine, sep, stripTag)
-      val sepOccurrences = countOccurrences(rawLine, sep)
+      val sepOccurrences = countUnquotedDelimiter(rawLine, sep)
       columnCounts[sepOccurrences] = (columnCounts[sepOccurrences] ?: 0) + 1
 
       val hasOddQuotes = rawLine.count { it == '"' } % 2 != 0

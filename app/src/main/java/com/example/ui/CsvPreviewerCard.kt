@@ -40,19 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.CsvStructurePreview
 import com.example.domain.QueuedFileItem
-import com.example.ui.theme.AmberBg
-import com.example.ui.theme.AmberText
-import com.example.ui.theme.Burgundy
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
-import com.example.ui.theme.MahoganyHeader
-import com.example.ui.theme.ObsidianDeep
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
+import com.example.ui.theme.LocalWarbandPalette
 
 @Composable
 fun CsvPreviewerCard(
@@ -63,6 +51,7 @@ fun CsvPreviewerCard(
     onOpenHelp: (String) -> Unit
 ) {
   if (preview == null || fileQueue.isEmpty()) return
+  val pal = LocalWarbandPalette.current
 
   MedievalCard(modifier = Modifier.testTag("csv_structure_preview_card")) {
     Row(
@@ -74,14 +63,14 @@ fun CsvPreviewerCard(
         Icon(
             imageVector = Icons.Default.TableChart,
             contentDescription = tr("secCsvStruct"),
-            tint = GoldAccent,
+            tint = pal.primaryAccent,
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = tr("secCsvStruct").uppercase(),
             style = MaterialTheme.typography.titleMedium,
-            color = GoldAccent,
+            color = pal.primaryAccent,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false)
@@ -97,7 +86,7 @@ fun CsvPreviewerCard(
     Text(
         text = tr("csvStructHint"),
         style = MaterialTheme.typography.labelSmall,
-        color = ParchmentDim
+        color = pal.textSecondary
     )
 
     if (fileQueue.size > 1) {
@@ -112,8 +101,8 @@ fun CsvPreviewerCard(
           val selected = item.id == preview.fileId
           Surface(
               shape = RoundedCornerShape(8.dp),
-              color = if (selected) Burgundy.copy(alpha = 0.55f) else Color(0xFF170E0D),
-              border = BorderStroke(1.dp, if (selected) GoldAccent else BurgundyBorder),
+              color = if (selected) pal.actionBg.copy(alpha = 0.55f) else pal.deepSurface,
+              border = BorderStroke(1.dp, if (selected) pal.primaryAccent else pal.border),
               modifier = Modifier
                   .minimumInteractiveComponentSize()
                   .clickable { onSelectFile(item.id) }
@@ -124,7 +113,7 @@ fun CsvPreviewerCard(
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                 ),
-                color = if (selected) GoldAccent else ParchmentDim,
+                color = if (selected) pal.primaryAccent else pal.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
@@ -135,7 +124,7 @@ fun CsvPreviewerCard(
     }
 
     HorizontalDivider(
-        color = BurgundyBorderSoft,
+        color = pal.borderSoft,
         thickness = 1.dp,
         modifier = Modifier.padding(vertical = 10.dp)
     )
@@ -143,9 +132,9 @@ fun CsvPreviewerCard(
     // Structure verification diagnostic pill
     val rowCount = preview.rows.size
     val sepLooksHealthy = rowCount == 0 || preview.matchedSeparatorCount > 0
-    val diagBg = if (sepLooksHealthy) Color(0xFF0E2914) else AmberBg
-    val diagBorder = if (sepLooksHealthy) Forest else GoldMuted
-    val diagText = if (sepLooksHealthy) ForestText else AmberText
+    val diagBg = if (sepLooksHealthy) pal.successBg else pal.warningBg
+    val diagBorder = if (sepLooksHealthy) pal.successBorder else pal.primaryMuted
+    val diagText = if (sepLooksHealthy) pal.successText else pal.warningText
 
     Surface(
         shape = RoundedCornerShape(8.dp),
@@ -184,47 +173,47 @@ fun CsvPreviewerCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(ObsidianDeep)
-            .border(1.dp, BurgundyBorder, RoundedCornerShape(10.dp))
+            .background(pal.deepSurface)
+            .border(1.dp, pal.border, RoundedCornerShape(10.dp))
             .horizontalScroll(horizontalScroll)
     ) {
       // Table header
       Row(
           modifier = Modifier
-              .background(MahoganyHeader)
+              .background(pal.cardElevated)
               .padding(horizontal = 10.dp, vertical = 8.dp),
           verticalAlignment = Alignment.CenterVertically
       ) {
         Text(
             text = tr("csvColIdx"),
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = GoldAccent,
+            color = pal.primaryAccent,
             modifier = Modifier.width(34.dp)
         )
         Text(
             text = tr("csvColKey"),
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = GoldAccent,
+            color = pal.primaryAccent,
             modifier = Modifier.width(170.dp)
         )
         Text(
             text = tr("csvColText"),
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = GoldAccent,
+            color = pal.primaryAccent,
             modifier = Modifier.width(260.dp)
         )
         Text(
             text = tr("csvColStatus"),
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = GoldAccent,
+            color = pal.primaryAccent,
             modifier = Modifier.width(110.dp)
         )
       }
 
-      HorizontalDivider(color = BurgundyBorder, thickness = 1.dp)
+      HorizontalDivider(color = pal.border, thickness = 1.dp)
 
       preview.rows.forEachIndexed { idx, row ->
-        val rowBg = if (idx % 2 == 0) Color(0xFF140C0B) else Color(0xFF1A100F)
+        val rowBg = if (idx % 2 == 0) pal.deepSurface else pal.cardBottom
         Row(
             modifier = Modifier
                 .background(rowBg)
@@ -235,7 +224,7 @@ fun CsvPreviewerCard(
           Text(
               text = "${row.rowNumber}",
               style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-              color = ParchmentDim.copy(alpha = 0.7f),
+              color = pal.textSecondary.copy(alpha = 0.7f),
               modifier = Modifier.width(34.dp)
           )
 
@@ -245,7 +234,7 @@ fun CsvPreviewerCard(
                   fontFamily = FontFamily.Monospace,
                   fontSize = 11.sp
               ),
-              color = if (row.hasSeparator) GoldAccent.copy(alpha = 0.92f) else AmberText,
+              color = if (row.hasSeparator) pal.primaryAccent.copy(alpha = 0.92f) else pal.warningText,
               maxLines = 2,
               overflow = TextOverflow.Ellipsis,
               modifier = Modifier
@@ -256,7 +245,7 @@ fun CsvPreviewerCard(
           Text(
               text = row.columnText.ifEmpty { row.rawLine },
               style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-              color = if (row.isSkippedByRegex) ParchmentDim.copy(alpha = 0.55f) else Parchment,
+              color = if (row.isSkippedByRegex) pal.textSecondary.copy(alpha = 0.55f) else pal.textPrimary,
               maxLines = 2,
               overflow = TextOverflow.Ellipsis,
               modifier = Modifier
@@ -269,40 +258,40 @@ fun CsvPreviewerCard(
               row.isSkippedByRegex -> {
                 PreviewTagPill(
                     text = tr("csvSkipTag"),
-                    bg = AmberBg,
-                    border = GoldMuted,
-                    textColor = AmberText
+                    bg = pal.warningBg,
+                    border = pal.primaryMuted,
+                    textColor = pal.warningText
                 )
               }
               !row.hasSeparator -> {
                 PreviewTagPill(
                     text = tr("csvNoSepTag"),
-                    bg = Color(0xFF2B1816),
-                    border = BurgundyBorder,
-                    textColor = ParchmentDim
+                    bg = pal.errorBg.copy(alpha = 0.65f),
+                    border = pal.border,
+                    textColor = pal.textSecondary
                 )
               }
               row.protectedTokens.isNotEmpty() -> {
                 PreviewTagPill(
                     text = row.protectedTokens.take(2).joinToString(" "),
-                    bg = Color(0xFF0E2914),
-                    border = Forest,
-                    textColor = ForestText
+                    bg = pal.successBg,
+                    border = pal.successBorder,
+                    textColor = pal.successText
                 )
               }
               else -> {
                 PreviewTagPill(
                     text = "OK",
-                    bg = Color(0xFF1F1312),
-                    border = BurgundyBorderSoft,
-                    textColor = ParchmentDim
+                    bg = pal.cardElevated,
+                    border = pal.borderSoft,
+                    textColor = pal.textSecondary
                 )
               }
             }
           }
         }
         if (idx < preview.rows.lastIndex) {
-          HorizontalDivider(color = BurgundyBorderSoft.copy(alpha = 0.55f), thickness = 0.5.dp)
+          HorizontalDivider(color = pal.borderSoft.copy(alpha = 0.55f), thickness = 0.5.dp)
         }
       }
     }
