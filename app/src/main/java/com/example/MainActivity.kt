@@ -12,8 +12,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.TranslatorScreen
 import com.example.ui.TranslatorViewModel
 import com.example.ui.UiEvent
@@ -26,7 +28,8 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      WarbandTranslatorTheme {
+      val settings by viewModel.settings.collectAsStateWithLifecycle()
+      WarbandTranslatorTheme(medievalTheme = settings.medievalThemeEnabled) {
         val snackbarHostState = remember { SnackbarHostState() }
 
         val csvPickerLauncher = rememberLauncherForActivityResult(
@@ -137,7 +140,16 @@ class MainActivity : ComponentActivity() {
               singleCsvPickerLauncher.launch(csvMimeTypes)
             },
             onImportGlossary = {
-              glossaryImportLauncher.launch(arrayOf("text/plain", "text/*"))
+              glossaryImportLauncher.launch(
+                  arrayOf(
+                      "text/plain",
+                      "text/csv",
+                      "text/comma-separated-values",
+                      "application/csv",
+                      "application/json",
+                      "text/*"
+                  )
+              )
             },
             onExportGlossary = {
               glossaryExportLauncher.launch("warband_glossary.txt")

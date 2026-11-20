@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
@@ -41,6 +42,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
@@ -68,6 +71,7 @@ import com.example.ui.theme.Forest
 import com.example.ui.theme.ForestText
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldMuted
+import com.example.ui.theme.LocalWarbandPalette
 import com.example.ui.theme.MahoganyInput
 import com.example.ui.theme.ObsidianDeep
 import com.example.ui.theme.Parchment
@@ -84,11 +88,13 @@ fun SettingsScreenContent(
     onExportPrefixChange: (String) -> Unit = {},
     onExportSuffixChange: (String) -> Unit = {},
     onSelectUiLanguage: (UiLanguage) -> Unit,
+    onToggleMedievalTheme: (Boolean) -> Unit = {},
     onClearCache: () -> Unit,
     onExportCacheBackup: () -> Unit = {},
     onImportCacheBackup: () -> Unit = {},
     onOpenHelp: (String) -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   val sampleExport = remember(settings.separator, settings.exportDelimiter) {
     WarbandTextProcessor.formatExportContent(
         lines = listOf(
@@ -489,18 +495,68 @@ fun SettingsScreenContent(
         }
       }
 
-      // Interface Language & Cache Maintenance Card
+      // Interface Language, Medieval Theme & Cache Maintenance Card
       MedievalCard {
         Text(
             text = tr("secUiPref").uppercase(),
             style = MaterialTheme.typography.titleMedium,
-            color = GoldAccent
+            color = pal.primaryAccent
         )
         HorizontalDivider(
-            color = BurgundyBorderSoft,
+            color = pal.borderSoft,
             thickness = 1.dp,
             modifier = Modifier.padding(vertical = 10.dp)
         )
+
+        // Medieval Theme Toggle Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(pal.deepSurface)
+                .border(
+                    width = 1.dp,
+                    color = if (settings.medievalThemeEnabled) pal.primaryAccent else pal.border,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .clickable { onToggleMedievalTheme(!settings.medievalThemeEnabled) }
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          Icon(
+              imageVector = Icons.Default.AutoAwesome,
+              contentDescription = tr("lblMedievalTheme"),
+              tint = pal.primaryAccent,
+              modifier = Modifier.size(20.dp)
+          )
+          Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = tr("lblMedievalTheme"),
+                style = MaterialTheme.typography.titleSmall,
+                color = pal.textPrimary
+            )
+            Text(
+                text = tr("lblMedievalThemeSub"),
+                style = MaterialTheme.typography.labelSmall,
+                color = pal.textSecondary
+            )
+          }
+          Switch(
+              checked = settings.medievalThemeEnabled,
+              onCheckedChange = onToggleMedievalTheme,
+              colors = SwitchDefaults.colors(
+                  checkedThumbColor = pal.textPrimary,
+                  checkedTrackColor = pal.actionBg,
+                  checkedBorderColor = pal.primaryAccent,
+                  uncheckedThumbColor = pal.textSecondary,
+                  uncheckedTrackColor = pal.inputBg
+              ),
+              modifier = Modifier.testTag("medieval_theme_switch")
+          )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -510,10 +566,10 @@ fun SettingsScreenContent(
             val selected = settings.uiLanguage == langItem
             OutlinedButton(
                 onClick = { onSelectUiLanguage(langItem) },
-                border = BorderStroke(1.dp, if (selected) GoldAccent else BurgundyBorder),
+                border = BorderStroke(1.dp, if (selected) pal.primaryAccent else pal.border),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (selected) Burgundy.copy(alpha = 0.55f) else Color(0xFF170E0D),
-                    contentColor = if (selected) GoldAccent else ParchmentDim
+                    containerColor = if (selected) pal.actionBg.copy(alpha = 0.55f) else pal.deepSurface,
+                    contentColor = if (selected) pal.primaryAccent else pal.textSecondary
                 ),
                 modifier = Modifier
                     .weight(1f)

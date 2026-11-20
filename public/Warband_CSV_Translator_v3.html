@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Warband CSV Translator v3 — Alat Terjemahan Mod Tanpa API Key</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&family=MedievalSharp&display=swap" rel="stylesheet">
 <script>
   tailwind.config = {
     theme: {
@@ -25,7 +25,8 @@
           crimson: '#8B2635'
         },
         fontFamily: {
-          medieval: ['Cinzel', 'serif'],
+          medieval: ['Cinzel', 'MedievalSharp', 'serif'],
+          gothic: ['MedievalSharp', 'Cinzel', 'serif'],
           serifBody: ['Crimson Pro', 'Georgia', 'serif'],
           sans: ['Inter', 'sans-serif']
         }
@@ -35,12 +36,46 @@
 </script>
 <style>
   body {
-    background-color: #120A0A;
+    background-color: #140B08;
     background-image:
-      radial-gradient(ellipse 80% 45% at 50% 0%, rgba(102, 58, 50, 0.28) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 50% at 100% 100%, rgba(74, 38, 32, 0.18) 0%, transparent 60%);
-    color: #EADCC2;
+      radial-gradient(ellipse 85% 48% at 50% 0%, rgba(138, 82, 46, 0.34) 0%, transparent 72%),
+      radial-gradient(ellipse 55% 55% at 100% 100%, rgba(92, 49, 28, 0.24) 0%, transparent 62%),
+      linear-gradient(180deg, #1F140E 0%, #170E0A 55%, #0E0806 100%);
+    color: #F1E3C6;
+    font-family: 'Crimson Pro', Georgia, serif;
+  }
+
+  body.theme-standard {
+    background-color: #0E1219;
+    background-image:
+      radial-gradient(ellipse 80% 45% at 50% 0%, rgba(30, 58, 95, 0.28) 0%, transparent 70%),
+      linear-gradient(180deg, #11161F 0%, #0E1219 55%, #0A0D12 100%);
+    color: #F1F5F9;
     font-family: 'Inter', sans-serif;
+  }
+  body.theme-standard .font-medieval,
+  body.theme-standard .font-gothic {
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0.01em;
+  }
+  body.theme-standard .font-serifBody {
+    font-family: 'Inter', sans-serif !important;
+    font-style: normal;
+  }
+  body.theme-standard .card-medieval {
+    background: linear-gradient(165deg, #1A222E 0%, #141A24 100%);
+    border-color: #334155;
+  }
+  body.theme-standard .text-goldAccent {
+    color: #60A5FA !important;
+  }
+  body.theme-standard .border-goldAccent {
+    border-color: #60A5FA !important;
+  }
+  body.theme-standard .btn-gold {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    border-color: #60A5FA;
+    color: #F8FAFC;
   }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -49,9 +84,9 @@
   ::-webkit-scrollbar-thumb:hover { background: #663A32; }
 
   .card-medieval {
-    background: linear-gradient(165deg, #1E1211 0%, #160D0C 100%);
-    border: 1px solid #4A2A24;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(234, 220, 194, 0.08);
+    background: linear-gradient(165deg, #251711 0%, #190F0B 100%);
+    border: 1px solid #5A3727;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(241, 227, 198, 0.09);
   }
 
   .btn-gold {
@@ -287,19 +322,14 @@
           <div class="sm:col-span-1 text-center text-goldAccent font-bold text-lg pt-2 sm:pt-5">➔</div>
 
           <div class="sm:col-span-5">
-            <label class="flex items-center text-xs text-parchmentDim mb-1">
-              <span data-i18n="lblTgtLang">Bahasa Tujuan (Hasil)</span>
-              <button type="button" onclick="openHelpModal('lblTgtLang', event)" class="help-btn" aria-label="Info Bahasa Tujuan">?</button>
+            <label class="flex items-center justify-between text-xs text-parchmentDim mb-1">
+              <span class="flex items-center">
+                <span data-i18n="lblTgtLang">Bahasa Tujuan (Hasil)</span>
+                <button type="button" onclick="openHelpModal('lblTgtLang', event)" class="help-btn" aria-label="Info Bahasa Tujuan">?</button>
+              </span>
+              <button type="button" onclick="openAddLangModal()" class="text-[11px] font-semibold text-goldAccent hover:underline" data-i18n="btnAddLang">+ Bahasa Kustom</button>
             </label>
-            <select id="tgtLang" onchange="onSettingsChanged()" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2.5 text-sm text-parchment focus:outline-none focus:border-goldAccent">
-              <option value="id" selected>Bahasa Indonesia (id)</option>
-              <option value="ms">Bahasa Melayu (ms)</option>
-              <option value="en">English (en)</option>
-              <option value="tr">Türkçe (tr)</option>
-              <option value="ar">العربية (ar)</option>
-              <option value="ru">Русский (ru)</option>
-              <option value="zh">中文 (zh)</option>
-            </select>
+            <select id="tgtLang" onchange="onSettingsChanged()" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2.5 text-sm text-parchment focus:outline-none focus:border-goldAccent"></select>
           </div>
         </div>
 
@@ -380,15 +410,15 @@
           <textarea id="glossaryText" rows="5" placeholder="Contoh (1 istilah per baris):&#10;Swadia&#10;Calradia&#10;Vassal=Vasali&#10;Fief=Tanah Wilayah" class="w-full bg-[#150C0B] border border-[#4A2A24] rounded-lg p-3 text-xs sm:text-sm font-mono text-parchment placeholder-parchmentDim/40 focus:outline-none focus:border-goldAccent leading-relaxed"></textarea>
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" onclick="exportGlossary()" class="px-3 py-1.5 rounded-lg bg-[#241514] hover:bg-[#321E1C] border border-[#5A342D] text-xs text-parchment transition flex items-center gap-1.5">
-              <span>📤</span> <span data-i18n="btnExpGloss">Ekspor Glosarium (.txt)</span>
+              <span>📤</span> <span data-i18n="btnExpGloss">Ekspor (.txt)</span>
             </button>
             <button type="button" onclick="document.getElementById('glossFileInput').click()" class="px-3 py-1.5 rounded-lg bg-[#241514] hover:bg-[#321E1C] border border-[#5A342D] text-xs text-parchment transition flex items-center gap-1.5">
-              <span>📥</span> <span data-i18n="btnImpGloss">Impor Glosarium (.txt)</span>
+              <span>📥</span> <span data-i18n="btnImpGloss">Impor CSV / JSON / TXT</span>
             </button>
             <button type="button" onclick="clearGlossaryText()" class="px-3 py-1.5 rounded-lg bg-crimson/25 hover:bg-crimson/45 border border-crimson/70 text-xs text-red-200 transition flex items-center gap-1.5">
               <span>🗑️</span> <span data-i18n="btnClearGloss">Kosongkan</span>
             </button>
-            <input type="file" id="glossFileInput" accept=".txt" class="hidden" onchange="importGlossary(event)">
+            <input type="file" id="glossFileInput" accept=".txt,.csv,.tsv,.json,application/json,text/csv" class="hidden" onchange="importGlossary(event)">
           </div>
         </div>
       </section>
@@ -514,6 +544,66 @@
         </div>
       </section>
 
+      <!-- 5a. Ringkasan Sesi Batch & Grafik Produktivitas -->
+      <section id="sessionSummaryCard" class="hidden card-medieval rounded-xl p-4 sm:p-5 space-y-3">
+        <div class="flex items-start justify-between gap-2 border-b border-[#3A201C] pb-2.5">
+          <div>
+            <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent flex items-center gap-1.5">
+              <span>📊</span>
+              <span data-i18n="secSummary">Ringkasan Sesi Batch</span>
+              <button type="button" onclick="openHelpModal('secSummary', event)" class="help-btn" aria-label="Info Ringkasan Sesi">?</button>
+            </h2>
+            <p class="text-xs text-parchmentDim mt-0.5" data-i18n="summarySub">Laporan baris diterjemahkan, error, durasi proses, dan produktivitas sesi.</p>
+          </div>
+          <button type="button" onclick="dismissSessionSummary()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-xs font-bold">✕</button>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="rounded-xl bg-[#0D0707] border border-[#3A201C] p-3">
+            <div class="text-[11px] text-parchmentDim" data-i18n="summaryTransVsOrig">Diterjemahkan / Asli</div>
+            <div id="sumLinesVal" class="font-mono font-bold text-sm text-green-300 mt-1">0 / 0 (0%)</div>
+          </div>
+          <div class="rounded-xl bg-[#0D0707] border border-[#3A201C] p-3">
+            <div class="text-[11px] text-parchmentDim" data-i18n="summaryErrors">Error Ditemui</div>
+            <div id="sumErrorsVal" class="font-mono font-bold text-sm text-green-300 mt-1">0</div>
+          </div>
+          <div class="rounded-xl bg-[#0D0707] border border-[#3A201C] p-3">
+            <div class="text-[11px] text-parchmentDim" data-i18n="summaryDuration">Total Waktu Proses</div>
+            <div id="sumDurationVal" class="font-mono font-bold text-sm text-goldAccent mt-1">0.0s</div>
+          </div>
+          <div class="rounded-xl bg-[#0D0707] border border-[#3A201C] p-3">
+            <div class="text-[11px] text-parchmentDim" data-i18n="summaryWords">Kata Diproses</div>
+            <div id="sumWordsVal" class="font-mono font-bold text-sm text-parchment mt-1">0</div>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-[#0D0707] border border-[#3A201C] p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span class="font-semibold text-goldAccent" data-i18n="prodWordsPerDay">Kata Diproses per Hari (7 Hari Terakhir)</span>
+            <div id="sumPassFailBadges" class="flex items-center gap-2 text-[11px]"></div>
+          </div>
+          <canvas id="summaryProdBarCanvas" height="110" class="w-full h-[110px] block"></canvas>
+        </div>
+      </section>
+
+      <!-- 5ab. Log Error Terjemahan (Inspeksi & Coba Ulang Manual) -->
+      <section id="errorLogSection" class="hidden card-medieval rounded-xl p-4 sm:p-5 space-y-3 border-crimson/70">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#3A201C] pb-2">
+          <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-red-300 flex items-center gap-1.5">
+            <span>⚠️</span>
+            <span id="errorLogHeaderTitle">Log Error Terjemahan (0)</span>
+            <button type="button" onclick="openHelpModal('secErrorLog', event)" class="help-btn" aria-label="Info Log Error">?</button>
+          </h2>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" id="btnRetryAllErrors" onclick="retryAllRowErrors()" class="px-2.5 py-1 rounded-lg bg-burgundy/60 hover:bg-burgundy border border-goldMuted text-xs font-semibold text-parchment transition" data-i18n="btnRetryAllErrors">Coba Ulang Semua Baris</button>
+            <button type="button" onclick="exportErrorLog()" class="px-2.5 py-1 rounded-lg bg-crimson/25 hover:bg-crimson/45 border border-crimson text-xs text-red-200 transition" data-i18n="btnExpErrorsShort">Ekspor Error</button>
+            <button type="button" onclick="clearErrorLogEntries()" class="px-2.5 py-1 rounded-lg bg-[#190F0E] border border-[#4A2A24] text-xs text-parchmentDim hover:text-parchment transition" data-i18n="btnClearLog">Bersihkan</button>
+          </div>
+        </div>
+        <p class="text-xs text-parchmentDim" data-i18n="errLogHint">Inspeksi baris gagal atau format CSV rusak, lalu klik Coba Ulang tanpa mengulang seluruh batch.</p>
+        <div id="errorLogList" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+      </section>
+
       <!-- 5b. Grafik Kecepatan & Progres Real-Time -->
       <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#3A201C] pb-2">
@@ -616,6 +706,24 @@
             Bersihkan Riwayat
           </button>
         </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="text" id="historySearchInput" oninput="renderHistoryScreen()" data-i18n-placeholder="historySearchPlaceholder" placeholder="Cari nama file, bahasa, atau mesin..." class="flex-1 bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs text-parchment focus:outline-none focus:border-goldAccent">
+          <div id="historyFilterChips" class="flex flex-wrap items-center gap-1.5"></div>
+        </div>
+      </section>
+
+      <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="font-medieval text-xs sm:text-sm font-bold uppercase tracking-wider text-goldAccent" data-i18n="secProductivity">Analitik Produktivitas Terjemahan</h3>
+          <div id="historyProdDonutBadges" class="flex items-center gap-2 text-[11px]"></div>
+        </div>
+        <div class="rounded-xl bg-[#0D0707] border border-[#3A201C] p-3">
+          <canvas id="historyProdBarCanvas" height="115" class="w-full h-[115px] block"></canvas>
+        </div>
+      </section>
+
+      <section class="card-medieval rounded-xl p-4 sm:p-5">
         <div id="historyListContainer" class="space-y-2.5"></div>
       </section>
     </div>
@@ -678,9 +786,18 @@
         </div>
       </section>
 
-      <!-- Interface Language & Cache Maintenance -->
+      <!-- Interface Language, Medieval Theme & Cache Maintenance -->
       <section class="card-medieval rounded-xl p-4 sm:p-5 space-y-3">
         <h2 class="font-medieval text-sm sm:text-base font-bold uppercase tracking-wider text-goldAccent border-b border-[#3A201C] pb-2" data-i18n="secUiPref">Bahasa Antarmuka & Memori</h2>
+        <div class="flex items-center justify-between gap-3 bg-[#160D0C] border border-[#3A201C] rounded-xl p-3">
+          <div>
+            <div class="text-xs font-semibold text-parchment" data-i18n="lblMedievalTheme">Tema Medieval Perkamen</div>
+            <div class="text-[11px] text-parchmentDim" data-i18n="lblMedievalThemeSub">Gradien perkamen gelap & tipografi Gotik M&B Warband</div>
+          </div>
+          <label class="inline-flex items-center gap-2 cursor-pointer shrink-0">
+            <input type="checkbox" id="medievalThemeChk" checked onchange="toggleMedievalTheme(this.checked)" class="w-4 h-4 accent-amber-500 rounded">
+          </label>
+        </div>
         <div class="grid grid-cols-3 gap-2">
           <button type="button" onclick="setLanguage('id')" class="settings-lang-btn py-2 rounded-lg border border-[#4A2A24] bg-[#170E0D] text-xs font-bold text-parchmentDim transition">ID</button>
           <button type="button" onclick="setLanguage('en')" class="settings-lang-btn py-2 rounded-lg border border-[#4A2A24] bg-[#170E0D] text-xs font-bold text-parchmentDim transition">EN</button>
@@ -893,6 +1010,46 @@
     </div>
   </div>
 
+  <!-- Modal: Peringatan Validasi Struktur CSV -->
+  <div id="csvValOverlay" onclick="closeCsvValModal()" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div onclick="event.stopPropagation()" class="w-full max-w-lg rounded-2xl bg-[#1D1110] border-2 border-amber-600 shadow-2xl p-4 sm:p-5 space-y-3 text-parchment max-h-[88vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-[#3A201C] pb-2">
+        <h3 class="font-medieval text-sm sm:text-base font-bold text-amber-300 flex items-center gap-2">
+          <span>⚠️</span>
+          <span data-i18n="csvValTitle">Peringatan Validasi Struktur CSV</span>
+        </h3>
+        <button type="button" onclick="closeCsvValModal()" class="w-7 h-7 rounded-lg bg-[#2B1816] hover:bg-crimson/60 border border-[#5A342D] text-parchmentDim hover:text-white text-sm font-bold">✕</button>
+      </div>
+      <p class="text-xs text-parchmentDim" data-i18n="csvValDesc">Beberapa file antrean memiliki struktur kolom atau pemisah yang mencurigakan:</p>
+      <div id="csvValReportList" class="space-y-2 overflow-y-auto flex-1 pr-1"></div>
+      <div class="flex justify-end gap-2 border-t border-[#3A201C] pt-3">
+        <button type="button" onclick="closeCsvValModal()" class="px-3.5 py-2 rounded-xl border border-[#4A2A24] text-xs font-semibold text-parchmentDim" data-i18n="btnFixSeparator">Periksa Pemisah</button>
+        <button type="button" onclick="proceedTranslationBypassValidation()" class="px-4 py-2 rounded-xl bg-burgundy hover:bg-burgundyHover border border-goldMuted text-xs font-bold text-parchment" data-i18n="btnProceedAnyway">Tetap Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Tambah Bahasa Tujuan Kustom -->
+  <div id="addLangOverlay" onclick="closeAddLangModal()" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div onclick="event.stopPropagation()" class="w-full max-w-sm rounded-2xl bg-[#1D1110] border-2 border-[#4A2A24] shadow-2xl p-4 sm:p-5 space-y-3 text-parchment">
+      <h3 class="font-medieval text-sm sm:text-base font-bold text-goldAccent" data-i18n="addLangTitle">Tambah Bahasa Tujuan</h3>
+      <div class="space-y-2.5">
+        <div>
+          <label class="text-[11px] text-parchmentDim block mb-1" data-i18n="addLangCode">Kode Bahasa ISO (cth: uk, pl, vi, ko)</label>
+          <input type="text" id="customLangCodeInput" maxlength="10" placeholder="pl" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs font-mono text-parchment focus:outline-none focus:border-goldAccent">
+        </div>
+        <div>
+          <label class="text-[11px] text-parchmentDim block mb-1" data-i18n="addLangLabel">Nama Tampilan</label>
+          <input type="text" id="customLangLabelInput" maxlength="40" placeholder="Polski (pl)" class="w-full bg-[#221413] border border-[#4A2A24] rounded-lg px-3 py-2 text-xs text-parchment focus:outline-none focus:border-goldAccent">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeAddLangModal()" class="px-3 py-1.5 rounded-lg border border-[#4A2A24] text-xs text-parchmentDim" data-i18n="btnCancel">Batal</button>
+        <button type="button" onclick="saveCustomTargetLanguage()" class="px-3.5 py-1.5 rounded-lg bg-burgundy hover:bg-burgundyHover border border-goldMuted text-xs font-semibold text-parchment" data-i18n="btnSave">Simpan</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Pop-up Bantuan Ikon (?) Modal -->
   <div id="helpModalOverlay" onclick="closeHelpModal()" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div id="helpModalCard" onclick="event.stopPropagation()" class="w-full max-w-md rounded-2xl bg-gradient-to-b from-[#231413] to-[#160D0C] border-2 border-goldAccent shadow-2xl p-5 space-y-3 text-parchment relative">
@@ -1092,7 +1249,40 @@ const I18N = {
     modDiffSkipped: 'Dilewati',
     modDiffApply: 'Masukkan ke Antrean',
     btnEdit: 'Edit',
-    btnSave: 'Simpan'
+    btnSave: 'Simpan',
+    btnImpGloss: 'Impor CSV / JSON / TXT',
+    btnAddLang: '+ Bahasa Kustom',
+    addLangTitle: 'Tambah Bahasa Tujuan',
+    addLangCode: 'Kode Bahasa ISO (cth: uk, pl, vi)',
+    addLangLabel: 'Nama Tampilan (Opsional)',
+    lblMedievalTheme: 'Tema Medieval Perkamen',
+    lblMedievalThemeSub: 'Gradien perkamen gelap & tipografi Gotik M&B Warband',
+    secSummary: 'Ringkasan Sesi Batch',
+    summarySub: 'Laporan baris diterjemahkan, error, durasi proses, dan produktivitas sesi.',
+    summaryTransVsOrig: 'Diterjemahkan / Asli',
+    summaryErrors: 'Error Ditemui',
+    summaryDuration: 'Total Waktu Proses',
+    summaryWords: 'Kata Diproses',
+    secProductivity: 'Analitik Produktivitas Terjemahan',
+    prodWordsPerDay: 'Kata Diproses per Hari (7 Hari Terakhir)',
+    prodPassVsFail: 'File Selesai vs Gagal',
+    prodSucceeded: 'Selesai',
+    prodFailed: 'Gagal',
+    secErrorLog: 'Log Error Terjemahan',
+    errLogHint: 'Inspeksi baris gagal atau format CSV rusak, lalu klik Coba Ulang tanpa mengulang seluruh batch.',
+    btnRetryRow: 'Coba Ulang',
+    btnRetryAllErrors: 'Coba Ulang Semua Baris',
+    btnInspectError: 'Inspeksi',
+    errRetrying: 'Mengulang...',
+    errBadgeFormat: 'FORMAT CSV',
+    errBadgeRow: 'BARIS',
+    btnExpErrorsShort: 'Ekspor Error',
+    csvValTitle: 'Peringatan Validasi Struktur CSV',
+    csvValDesc: 'Beberapa file antrean memiliki struktur kolom atau pemisah yang mencurigakan:',
+    btnProceedAnyway: 'Tetap Lanjutkan',
+    btnFixSeparator: 'Periksa Pemisah',
+    historySearchPlaceholder: 'Cari nama file, bahasa, atau mesin...',
+    filterAll: 'Semua'
   },
   en: {
     navTitle: 'M&B Warband Translator',
@@ -1254,7 +1444,40 @@ const I18N = {
     modDiffSkipped: 'Skipped',
     modDiffApply: 'Add to Queue',
     btnEdit: 'Edit',
-    btnSave: 'Save'
+    btnSave: 'Save',
+    btnImpGloss: 'Import CSV / JSON / TXT',
+    btnAddLang: '+ Custom Lang',
+    addLangTitle: 'Add Custom Target Language',
+    addLangCode: 'ISO Code (e.g., uk, pl, vi)',
+    addLangLabel: 'Display Name (Optional)',
+    lblMedievalTheme: 'Medieval Parchment Theme',
+    lblMedievalThemeSub: 'Dark parchment gradient backdrop & M&B Warband gothic typography',
+    secSummary: 'Batch Session Summary',
+    summarySub: 'Translated vs original lines report, errors encountered, duration, and throughput.',
+    summaryTransVsOrig: 'Translated / Original',
+    summaryErrors: 'Errors Encountered',
+    summaryDuration: 'Total Processing Time',
+    summaryWords: 'Words Processed',
+    secProductivity: 'Translation Productivity Analytics',
+    prodWordsPerDay: 'Words Processed Per Day (Last 7 Days)',
+    prodPassVsFail: 'Completed vs Failed Files',
+    prodSucceeded: 'Succeeded',
+    prodFailed: 'Failed',
+    secErrorLog: 'Translation Error Log',
+    errLogHint: 'Inspect failed rows or malformed CSV entries and retry manually without restarting the batch.',
+    btnRetryRow: 'Retry',
+    btnRetryAllErrors: 'Retry All Failed Rows',
+    btnInspectError: 'Inspect',
+    errRetrying: 'Retrying...',
+    errBadgeFormat: 'CSV FORMAT',
+    errBadgeRow: 'ROW',
+    btnExpErrorsShort: 'Export Errors',
+    csvValTitle: 'CSV Structure Validation Alert',
+    csvValDesc: 'One or more queued files have suspicious delimiter alignment or formatting:',
+    btnProceedAnyway: 'Translate Anyway',
+    btnFixSeparator: 'Review Separator',
+    historySearchPlaceholder: 'Search filename, language, or engine...',
+    filterAll: 'All'
   },
   tr: {
     navTitle: 'M&B Warband Çeviri Aracı',
@@ -1416,7 +1639,40 @@ const I18N = {
     modDiffSkipped: 'Atlanan',
     modDiffApply: 'Kuyruğa Ekle',
     btnEdit: 'Düzenle',
-    btnSave: 'Kaydet'
+    btnSave: 'Kaydet',
+    btnImpGloss: 'CSV / JSON / TXT İçe Aktar',
+    btnAddLang: '+ Özel Dil',
+    addLangTitle: 'Özel Hedef Dil Ekle',
+    addLangCode: 'ISO Kodu (ör. uk, pl, vi)',
+    addLangLabel: 'Görünen Ad (İsteğe Bağlı)',
+    lblMedievalTheme: 'Orta Çağ Parşömen Teması',
+    lblMedievalThemeSub: 'Koyu parşömen gradyanı ve M&B Warband gotik tipografisi',
+    secSummary: 'Toplu Oturum Özeti',
+    summarySub: 'Çevrilen ve orijinal satırlar, hatalar, toplam süre ve verimlilik raporu.',
+    summaryTransVsOrig: 'Çevrilen / Orijinal',
+    summaryErrors: 'Karşılaşılan Hatalar',
+    summaryDuration: 'Toplam İşlem Süresi',
+    summaryWords: 'İşlenen Kelimeler',
+    secProductivity: 'Çeviri Verimlilik Analizi',
+    prodWordsPerDay: 'Günlük İşlenen Kelimeler (Son 7 Gün)',
+    prodPassVsFail: 'Başarılı ve Başarısız Dosyalar',
+    prodSucceeded: 'Başarılı',
+    prodFailed: 'Başarısız',
+    secErrorLog: 'Çeviri Hata Günlüğü',
+    errLogHint: 'Başarısız satırları veya bozuk CSV formatlarını inceleyin ve tüm toplu işlemi baştan başlatmadan yeniden deneyin.',
+    btnRetryRow: 'Yeniden Dene',
+    btnRetryAllErrors: 'Tüm Satırları Yeniden Dene',
+    btnInspectError: 'İncele',
+    errRetrying: 'Deneniyor...',
+    errBadgeFormat: 'CSV FORMATI',
+    errBadgeRow: 'SATIR',
+    btnExpErrorsShort: 'Hataları Dışa Aktar',
+    csvValTitle: 'CSV Yapı Doğrulama Uyarısı',
+    csvValDesc: 'Kuyruktaki bir veya daha fazla dosyada şüpheli ayırıcı veya sütun hizalama hatası tespit edildi:',
+    btnProceedAnyway: 'Yine de Çevir',
+    btnFixSeparator: 'Ayırıcıyı İncele',
+    historySearchPlaceholder: 'Dosya adı, dil veya motor ara...',
+    filterAll: 'Tümü'
   }
 };
 
@@ -1550,6 +1806,16 @@ const HELP_TOPICS = {
     id: { title: 'Penghalus Gaya Bahasa Medieval', body: '<p>Merapikan spasi tanda baca, huruf kapital awal kalimat, serta mengubah frasa kaku seperti <em>Tuanku saya</em> menjadi <em>Tuanku</em> atau <em>pasukan saya</em> menjadi <em>pasukanku</em> secara lokal tanpa API eksternal.</p>' },
     en: { title: 'Medieval Tone Post-Processing', body: '<p>Cleans punctuation spacing, sentence capitalization, and formal medieval titles deterministically without corrupting Warband tokens.</p>' },
     tr: { title: 'Orta Çağ Üslup İyileştirmesi', body: '<p>Noktalama boşluklarını ve Orta Çağ hitaplarını yerel kurallarla düzenler.</p>' }
+  },
+  secSummary: {
+    id: { title: 'Ringkasan Sesi & Produktivitas', body: '<p>Menampilkan laporan rasio baris diterjemahkan dibanding total baris, total kata yang diproses per hari, durasi sesi, dan jumlah error yang muncul.</p>' },
+    en: { title: 'Session Summary & Productivity', body: '<p>Displays translated vs original line counts, errors encountered, total processing duration, and daily word productivity charts.</p>' },
+    tr: { title: 'Oturum Özeti ve Verimlilik', body: '<p>Çevrilen ve orijinal satır sayısını, hataları, toplam süreyi ve günlük kelime grafiklerini gösterir.</p>' }
+  },
+  secErrorLog: {
+    id: { title: 'Log Error & Coba Ulang Baris', body: '<p>Mencatat baris terjemahan yang gagal beserta error format CSV. Anda dapat menginspeksi teks mentah dan menekan Coba Ulang tanpa mengulang seluruh batch.</p>' },
+    en: { title: 'Error Log & Manual Retry', body: '<p>Logs failed translation rows and malformed CSV structures so you can inspect and retry individual rows without restarting the entire batch.</p>' },
+    tr: { title: 'Hata Günlüğü ve Yeniden Deneme', body: '<p>Başarısız satırları ve bozuk CSV uyarılarını kaydeder; tek tek yeniden denemenizi sağlar.</p>' }
   }
 };
 
@@ -1627,6 +1893,9 @@ let isRunning = false;
 let isPaused = false;
 let shouldStop = false;
 let failedRowsLog = [];
+let errorLogEntries = [];
+let validationReportsMap = new Map();
+let activeHistoryFilter = 'ALL';
 let activeProxyIndex = 0;
 
 let telemetrySamples = [];
@@ -1635,14 +1904,31 @@ let peakSpeedLinesPerSec = 0;
 const CACHE_STORAGE_KEY = 'warband_csv_translator_cache_v3';
 const SETTINGS_STORAGE_KEY = 'warband_csv_translator_settings_v3';
 const HISTORY_STORAGE_KEY = 'warband_csv_translator_history_v3';
+const LANGS_STORAGE_KEY = 'warband_csv_translator_langs_v3';
 
+const DEFAULT_TARGET_LANGUAGES = [
+  { code: 'id', label: 'Bahasa Indonesia (id)', isCustom: false },
+  { code: 'ms', label: 'Bahasa Melayu (ms)', isCustom: false },
+  { code: 'en', label: 'English (en)', isCustom: false },
+  { code: 'tr', label: 'Türkçe (tr)', isCustom: false },
+  { code: 'ar', label: 'العربية (ar)', isCustom: false },
+  { code: 'ru', label: 'Русский (ru)', isCustom: false },
+  { code: 'zh', label: '中文 (zh)', isCustom: false },
+  { code: 'de', label: 'Deutsch (de)', isCustom: false },
+  { code: 'fr', label: 'Français (fr)', isCustom: false },
+  { code: 'es', label: 'Español (es)', isCustom: false },
+  { code: 'ja', label: '日本語 (ja)', isCustom: false }
+];
+
+let supportedTargetLanguages = [...DEFAULT_TARGET_LANGUAGES];
 let translationCache = new Map();
 let historyEntries = [];
 let exportSettings = {
   delimiter: 'pipe', // pipe | comma | tab | semicolon
-  encoding: 'utf8',  // utf8 | utf16
+  encoding: 'utf8',  // utf8 | utf8_bom | utf16le | utf16be
   prefix: '',
-  suffix: ''
+  suffix: '',
+  medievalTheme: true
 };
 
 let modalPreviewItems = [];
@@ -1735,16 +2021,86 @@ function loadSettings() {
         delimiter: parsed.delimiter || 'pipe',
         encoding: normalizeEncodingId(parsed.encoding || 'utf8'),
         prefix: sanitizeFilenameAffix(parsed.prefix || ''),
-        suffix: sanitizeFilenameAffix(parsed.suffix || '')
+        suffix: sanitizeFilenameAffix(parsed.suffix || ''),
+        medievalTheme: parsed.medievalTheme !== false
       };
     }
   } catch (_) {}
+  applyMedievalThemeClass();
 }
 
 function saveSettings() {
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(exportSettings));
   } catch (_) {}
+}
+
+function applyMedievalThemeClass() {
+  document.body.classList.toggle('theme-standard', !exportSettings.medievalTheme);
+  const chk = document.getElementById('medievalThemeChk');
+  if (chk) chk.checked = !!exportSettings.medievalTheme;
+}
+
+function toggleMedievalTheme(enabled) {
+  exportSettings.medievalTheme = !!enabled;
+  saveSettings();
+  applyMedievalThemeClass();
+  showToast(enabled ? 'Tema Medieval Perkamen diaktifkan.' : 'Tema Gelap Standar diaktifkan.');
+}
+
+function loadSupportedLanguages() {
+  try {
+    const saved = localStorage.getItem(LANGS_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        supportedTargetLanguages = parsed;
+      }
+    }
+  } catch (_) {}
+  renderTargetLanguageDropdown();
+}
+
+function renderTargetLanguageDropdown(preserveCode) {
+  const sel = document.getElementById('tgtLang');
+  if (!sel) return;
+  const current = preserveCode || sel.value || 'id';
+  sel.innerHTML = supportedTargetLanguages.map(item =>
+    `<option value="${escapeHtmlAttr(item.code)}">${escapeHtml(item.label)}</option>`
+  ).join('');
+  if (supportedTargetLanguages.some(l => l.code === current)) {
+    sel.value = current;
+  }
+}
+
+function openAddLangModal() {
+  document.getElementById('customLangCodeInput').value = '';
+  document.getElementById('customLangLabelInput').value = '';
+  document.getElementById('addLangOverlay').classList.remove('hidden');
+}
+
+function closeAddLangModal() {
+  document.getElementById('addLangOverlay').classList.add('hidden');
+}
+
+function saveCustomTargetLanguage() {
+  const code = (document.getElementById('customLangCodeInput').value || '').trim().toLowerCase();
+  const labelRaw = (document.getElementById('customLangLabelInput').value || '').trim();
+  if (!code) return;
+  const display = labelRaw || `${code.toUpperCase()} (${code})`;
+  const existingIdx = supportedTargetLanguages.findIndex(l => l.code === code);
+  if (existingIdx >= 0) {
+    supportedTargetLanguages[existingIdx] = { code, label: display, isCustom: true };
+  } else {
+    supportedTargetLanguages.push({ code, label: display, isCustom: true });
+  }
+  try {
+    localStorage.setItem(LANGS_STORAGE_KEY, JSON.stringify(supportedTargetLanguages));
+  } catch (_) {}
+  renderTargetLanguageDropdown(code);
+  onSettingsChanged();
+  closeAddLangModal();
+  showToast(`Bahasa tujuan ditambahkan: ${display}`);
 }
 
 function loadHistory() {
@@ -1758,11 +2114,23 @@ function loadHistory() {
 
 function saveHistory() {
   try {
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(historyEntries.slice(0, 40)));
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(historyEntries.slice(0, 60)));
   } catch (_) {}
 }
 
-function recordHistorySession(fileItem, status, processedLines) {
+function countWordsInLines(lines, sep, stripTag) {
+  let words = 0;
+  lines.forEach(raw => {
+    if (checkSkipRegex(raw)) return;
+    const s = parseSplitLine(raw, sep, stripTag);
+    if (s.textPart) {
+      words += s.textPart.trim().split(/\s+/).length;
+    }
+  });
+  return words;
+}
+
+function recordHistorySession(fileItem, status, processedLines, wordsProcessed = 0, durationMs = 0) {
   const tl = document.getElementById('tgtLang').value;
   const sl = document.getElementById('srcLang').value;
   const entry = {
@@ -1772,6 +2140,8 @@ function recordHistorySession(fileItem, status, processedLines) {
     status,
     totalLines: fileItem.lines.length,
     processedLines,
+    wordsProcessed,
+    durationMs,
     sourceLang: sl,
     targetLang: tl,
     engineName: selectedEngine.toUpperCase(),
@@ -2223,6 +2593,65 @@ function refreshAutoResumeCounts() {
   });
 }
 
+function validateCsvStructure(item) {
+  const sep = document.getElementById('sepChar').value || '|';
+  const stripTag = document.getElementById('stripTag').value;
+  if (!item.lines || item.lines.length === 0) {
+    return {
+      fileId: item.id,
+      fileName: item.name,
+      status: 'MALFORMED',
+      summary: 'File kosong / tidak memiliki baris teks.',
+      issues: [{ line: 1, reason: 'File kosong' }]
+    };
+  }
+  let skipped = 0;
+  let matched = 0;
+  let malformed = 0;
+  const issues = [];
+  item.lines.forEach((raw, idx) => {
+    const lineNo = idx + 1;
+    if (checkSkipRegex(raw)) { skipped++; return; }
+    const s = parseSplitLine(raw, sep, stripTag);
+    const quoteCount = (raw.match(/"/g) || []).length;
+    const sepOcc = raw.split(sep).length - 1;
+    if (quoteCount % 2 !== 0) {
+      malformed++;
+      if (issues.length < 10) issues.push({ line: lineNo, reason: 'Tanda kutip tidak berpasangan' });
+    } else if (!s.hasCode) {
+      malformed++;
+      if (issues.length < 10) issues.push({ line: lineNo, reason: `Pemisah '${sep}' tidak ditemukan` });
+    } else if (!s.codePart.trim()) {
+      malformed++;
+      if (issues.length < 10) issues.push({ line: lineNo, reason: `Kolom ID kiri '${sep}' kosong` });
+    } else {
+      matched++;
+      if (sepOcc > 1 && issues.length < 10) {
+        issues.push({ line: lineNo, reason: `Ditemukan ${sepOcc} pemisah '${sep}'` });
+      }
+    }
+  });
+  const activeLines = Math.max(1, item.lines.length - skipped);
+  const ratio = matched / activeLines;
+  const status = (matched === 0 || ratio < 0.6)
+    ? 'MALFORMED'
+    : (malformed > 0 || issues.length > 0) ? 'WARNING' : 'VALID';
+  const summary = status === 'VALID'
+    ? `${matched}/${activeLines} baris cocok dengan pemisah '${sep}'.`
+    : status === 'WARNING'
+      ? `${matched}/${activeLines} cocok, ${malformed} baris perlu perhatian.`
+      : `Format mencurigakan: hanya ${matched}/${activeLines} baris cocok dengan '${sep}'.`;
+  return { fileId: item.id, fileName: item.name, status, summary, issues };
+}
+
+function revalidateQueue() {
+  validationReportsMap.clear();
+  fileQueue.forEach(item => {
+    const rep = validateCsvStructure(item);
+    validationReportsMap.set(item.id, rep);
+  });
+}
+
 function enqueueFiles(files) {
   const allowed = ['.csv', '.txt', '.tsv'];
   files.forEach(file => {
@@ -2230,6 +2659,14 @@ function enqueueFiles(files) {
     const ext = dotIdx !== -1 ? file.name.slice(dotIdx).toLowerCase() : '';
     if (!allowed.includes(ext)) {
       appendLog(`Format tidak didukung: ${file.name}`, 'err');
+      recordStructuredError({
+        fileId: null,
+        fileName: file.name,
+        lineIndex: null,
+        originalLine: '',
+        errorMessage: `Ekstensi tidak didukung (${ext || 'unknown'}). Gunakan .csv, .txt, atau .tsv.`,
+        isFormatError: true
+      });
       showErrorPopup('Format File Tidak Didukung', `File "${file.name}" diabaikan. Gunakan format .csv, .txt, atau .tsv.`);
       return;
     }
@@ -2251,10 +2688,22 @@ function enqueueFiles(files) {
       item.cachedLinesCount = countCachedLinesForFile(item);
       fileQueue.push(item);
       selectedPreviewFileId = item.id;
+      const rep = validateCsvStructure(item);
+      validationReportsMap.set(item.id, rep);
+      if (rep.status === 'MALFORMED') {
+        recordStructuredError({
+          fileId: item.id,
+          fileName: item.name,
+          lineIndex: null,
+          originalLine: item.lines[0] || '',
+          errorMessage: rep.summary,
+          isFormatError: true
+        });
+      }
       renderQueue();
       renderCsvPreviewer();
       updateControlButtons();
-      appendLog(`Dimuat: ${file.name} (${item.lines.length.toLocaleString()} baris)`, 'info');
+      appendLog(`Dimuat: ${file.name} (${item.lines.length.toLocaleString()} baris) · Validasi: ${rep.status}`, rep.status === 'MALFORMED' ? 'warn' : 'info');
     };
     reader.readAsText(file, 'utf-8');
   });
@@ -2287,6 +2736,15 @@ function renderQueue() {
     else if (item.status === 'run') badgeHtml = `<span class="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 text-[11px] animate-pulse-slow">${t('stRun')}</span>`;
     else if (item.status === 'done') badgeHtml = `<span class="px-2 py-0.5 rounded bg-green-950 border border-green-700 text-green-300 text-[11px]">${t('stDone')}</span>`;
     else badgeHtml = `<span class="px-2 py-0.5 rounded bg-red-950 border border-red-700 text-red-300 text-[11px]">${t('stErr')}</span>`;
+
+    const rep = validationReportsMap.get(item.id);
+    const valBadge = rep
+      ? rep.status === 'VALID'
+        ? `<span class="px-1.5 py-0.5 rounded bg-green-950/60 border border-green-700/70 text-green-300 text-[10px]">✓ Valid</span>`
+        : rep.status === 'WARNING'
+          ? `<span class="px-1.5 py-0.5 rounded bg-amber-950/60 border border-amber-700/70 text-amber-300 text-[10px]">⚠ Warning</span>`
+          : `<span class="px-1.5 py-0.5 rounded bg-red-950/60 border border-red-700/70 text-red-300 text-[10px]">✕ Malformed</span>`
+      : '';
 
     const pct = item.lines.length > 0 ? Math.min(100, Math.round((Math.max(item.processedCount, item.cachedLinesCount) / item.lines.length) * 100)) : 0;
     const resumeSub = item.status === 'wait' && item.cachedLinesCount > 0
@@ -2328,7 +2786,7 @@ function renderQueue() {
           <div class="text-[11px] ${item.cachedLinesCount > 0 && item.status === 'wait' ? 'text-goldAccent' : 'text-parchmentDim'}">${item.lines.length.toLocaleString()} ${t('cacheUnit')}${resumeSub}</div>
           ${renameLine}
         </div>
-        <div class="flex items-center gap-1.5 shrink-0">${badgeHtml}</div>
+        <div class="flex items-center gap-1.5 shrink-0">${valBadge}${badgeHtml}</div>
       </div>
       ${progressBarHtml}
       <div class="flex items-center justify-end gap-1.5">${moveBtns}${qaBtn}${dlBtn}${rmBtn}</div>
@@ -2587,15 +3045,55 @@ function checkSkipRegex(line) {
   try { return new RegExp(pattern).test(line); } catch (_) { return false; }
 }
 
-async function startTranslation() {
+function closeCsvValModal() {
+  document.getElementById('csvValOverlay').classList.add('hidden');
+}
+
+function proceedTranslationBypassValidation() {
+  closeCsvValModal();
+  startTranslation(true);
+}
+
+async function startTranslation(bypassValidation = false) {
   const pendingFiles = fileQueue.filter(f => f.status === 'wait');
   if (pendingFiles.length === 0) return;
+
+  revalidateQueue();
+  renderQueue();
+
+  if (!bypassValidation) {
+    const flagged = pendingFiles
+      .map(f => validationReportsMap.get(f.id))
+      .filter(r => r && r.status !== 'VALID');
+    if (flagged.length > 0) {
+      const box = document.getElementById('csvValReportList');
+      box.innerHTML = flagged.map(rep => `
+        <div class="rounded-lg bg-[#0D0707] border border-amber-700/70 p-2.5 text-xs space-y-1">
+          <div class="font-semibold text-parchment">${escapeHtml(rep.fileName)} <span class="text-amber-300">[${rep.status}]</span></div>
+          <div class="text-amber-200">${escapeHtml(rep.summary)}</div>
+          ${rep.issues.slice(0, 2).map(iss => `<div class="font-mono text-[10px] text-parchmentDim">#${iss.line}: ${escapeHtml(iss.reason)}</div>`).join('')}
+        </div>
+      `).join('');
+      document.getElementById('csvValOverlay').classList.remove('hidden');
+      return;
+    }
+  }
 
   isRunning = true;
   isPaused = false;
   shouldStop = false;
   failedRowsLog = [];
+  errorLogEntries = errorLogEntries.filter(e => e.isFormatError);
+  renderErrorLogSection();
   updateControlButtons();
+
+  const batchStartTime = Date.now();
+  let batchOrigLines = 0;
+  let batchTranslatedLines = 0;
+  let batchWordsProcessed = 0;
+  let batchFilesDone = 0;
+  let batchFilesFailed = 0;
+  let batchErrorsCount = 0;
 
   document.getElementById('progressCard').classList.remove('hidden');
   document.getElementById('btnExportErrors').classList.add('hidden');
@@ -2729,22 +3227,43 @@ async function startTranslation() {
     saveCache();
     refreshAutoResumeCounts();
 
+    const fileDurationMs = Date.now() - startTime;
+    const fileWords = countWordsInLines(fileItem.lines.slice(0, fileItem.processedCount), sep, stripTag);
+    batchOrigLines += total;
+    batchTranslatedLines += fileItem.processedCount;
+    batchWordsProcessed += fileWords;
+
     if (!shouldStop) {
       fileItem.status = 'done';
+      batchFilesDone++;
       renderLivePreview(fileItem);
-      recordHistorySession(fileItem, 'DONE', total);
+      recordHistorySession(fileItem, 'DONE', total, fileWords, fileDurationMs);
       appendLog(`Selesai: ${fileItem.name} (${total.toLocaleString()} baris)`, 'ok');
     } else {
       fileItem.status = 'wait';
-      recordHistorySession(fileItem, 'STOPPED', fileItem.processedCount);
+      batchFilesFailed++;
+      recordHistorySession(fileItem, 'STOPPED', fileItem.processedCount, fileWords, fileDurationMs);
       appendLog(`Dihentikan pada ${fileItem.name}. Progres tersimpan di cache!`, 'warn');
     }
     renderQueue();
   }
 
+  batchErrorsCount = errorLogEntries.filter(e => !e.isFormatError).length;
+  const totalBatchDuration = Math.max(100, Date.now() - batchStartTime);
+
   isRunning = false;
   isPaused = false;
   updateControlButtons();
+  renderErrorLogSection();
+  renderSessionSummaryDashboard({
+    translatedLines: batchTranslatedLines,
+    originalLines: batchOrigLines,
+    errorsEncountered: batchErrorsCount,
+    totalDurationMs: totalBatchDuration,
+    wordsProcessed: batchWordsProcessed,
+    filesSucceeded: batchFilesDone,
+    filesFailed: batchFilesFailed
+  });
 
   if (failedRowsLog.length > 0) {
     const errBtn = document.getElementById('btnExportErrors');
@@ -2877,10 +3396,142 @@ function updateBatchRenameFromInputs(prefix, suffix) {
   renderExportPreviewModal();
 }
 
+function computeDailyProductivityStats(daysCount = 7) {
+  const now = new Date();
+  const buckets = [];
+  for (let offset = daysCount - 1; offset >= 0; offset--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+    const label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    buckets.push({ dayMs: d.getTime(), label, words: 0, done: 0, failed: 0 });
+  }
+  historyEntries.forEach(e => {
+    const dt = new Date(e.timestamp);
+    const dayStart = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+    const b = buckets.find(item => item.dayMs === dayStart);
+    if (!b) return;
+    b.words += (e.wordsProcessed > 0 ? e.wordsProcessed : (e.processedLines || 0) * 6);
+    if (e.status === 'DONE') b.done++;
+    else b.failed++;
+  });
+  return buckets;
+}
+
+function drawDailyProductivityBarChart(canvasId, buckets) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth || 520;
+  const height = 110;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, width, height);
+
+  const maxWords = Math.max(10, ...buckets.map(b => b.words));
+  const barColor = exportSettings.medievalTheme ? '#D4AF37' : '#60A5FA';
+  const emptyColor = exportSettings.medievalTheme ? '#3F251B' : '#334155';
+  const labelColor = exportSettings.medievalTheme ? '#CBB692' : '#94A3B8';
+
+  const padB = 20, padT = 12;
+  const usableH = height - padB - padT;
+  const slotW = width / Math.max(1, buckets.length);
+  const barW = Math.min(36, Math.max(12, slotW * 0.52));
+
+  buckets.forEach((b, idx) => {
+    const ratio = Math.min(1, b.words / maxWords);
+    const barH = Math.max(4, usableH * ratio);
+    const x = idx * slotW + (slotW - barW) / 2;
+    const y = padT + usableH - barH;
+    ctx.fillStyle = b.words > 0 ? barColor : emptyColor;
+    ctx.fillRect(x, y, barW, barH);
+
+    ctx.fillStyle = labelColor;
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    const valStr = b.words >= 1000 ? `${Math.floor(b.words / 1000)}k` : String(b.words);
+    ctx.fillText(valStr, x + barW / 2, y - 3);
+    ctx.fillText(b.label, x + barW / 2, height - 4);
+  });
+}
+
+function formatDurationMs(ms) {
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m > 0) return `${m}m ${s}s`;
+  const tenths = Math.floor((ms % 1000) / 100);
+  return `${s}.${tenths}s`;
+}
+
+function renderSessionSummaryDashboard(summary) {
+  const card = document.getElementById('sessionSummaryCard');
+  if (!card) return;
+  card.classList.remove('hidden');
+  const ratio = summary.originalLines > 0
+    ? Math.round((summary.translatedLines / summary.originalLines) * 100)
+    : 0;
+  document.getElementById('sumLinesVal').textContent = `${summary.translatedLines} / ${summary.originalLines} (${ratio}%)`;
+  const errEl = document.getElementById('sumErrorsVal');
+  errEl.textContent = String(summary.errorsEncountered);
+  errEl.className = `font-mono font-bold text-sm mt-1 ${summary.errorsEncountered > 0 ? 'text-red-300' : 'text-green-300'}`;
+  document.getElementById('sumDurationVal').textContent = formatDurationMs(summary.totalDurationMs);
+  document.getElementById('sumWordsVal').textContent = summary.wordsProcessed.toLocaleString();
+  document.getElementById('sumPassFailBadges').innerHTML = `
+    <span class="px-2 py-0.5 rounded-full bg-green-950/70 border border-green-700 text-green-300">${t('prodSucceeded')}: ${summary.filesSucceeded}</span>
+    <span class="px-2 py-0.5 rounded-full bg-red-950/70 border border-red-700 text-red-300">${t('prodFailed')}: ${summary.filesFailed}</span>
+  `;
+  drawDailyProductivityBarChart('summaryProdBarCanvas', computeDailyProductivityStats(7));
+}
+
+function dismissSessionSummary() {
+  document.getElementById('sessionSummaryCard')?.classList.add('hidden');
+}
+
+function setHistoryFilter(status) {
+  activeHistoryFilter = status;
+  renderHistoryScreen();
+}
+
 function renderHistoryScreen() {
   const box = document.getElementById('historyListContainer');
+  const chipsBox = document.getElementById('historyFilterChips');
   if (!box) return;
-  if (historyEntries.length === 0) {
+
+  if (chipsBox) {
+    const statuses = [
+      { id: 'ALL', label: t('filterAll') },
+      { id: 'DONE', label: t('histStatusDone') },
+      { id: 'STOPPED', label: t('histStatusStopped') },
+      { id: 'ERROR', label: t('histStatusError') }
+    ];
+    chipsBox.innerHTML = statuses.map(s => `
+      <button type="button" onclick="setHistoryFilter('${s.id}')" class="px-2.5 py-1.5 rounded-full text-[11px] font-semibold border transition ${activeHistoryFilter === s.id ? 'bg-burgundy/65 border-goldAccent text-goldAccent' : 'bg-[#170E0D] border-[#4A2A24] text-parchmentDim'}">${escapeHtml(s.label)}</button>
+    `).join('');
+  }
+
+  const doneCount = historyEntries.filter(e => e.status === 'DONE').length;
+  const failCount = historyEntries.length - doneCount;
+  const prodBadges = document.getElementById('historyProdDonutBadges');
+  if (prodBadges) {
+    prodBadges.innerHTML = `
+      <span class="px-2 py-0.5 rounded-full bg-green-950/70 border border-green-700 text-green-300">${t('prodSucceeded')}: ${doneCount}</span>
+      <span class="px-2 py-0.5 rounded-full bg-red-950/70 border border-red-700 text-red-300">${t('prodFailed')}: ${failCount}</span>
+    `;
+  }
+  drawDailyProductivityBarChart('historyProdBarCanvas', computeDailyProductivityStats(7));
+
+  const query = (document.getElementById('historySearchInput')?.value || '').trim().toLowerCase();
+  const filtered = historyEntries.filter(entry => {
+    if (activeHistoryFilter !== 'ALL' && entry.status !== activeHistoryFilter) return false;
+    if (!query) return true;
+    return (entry.fileName || '').toLowerCase().includes(query)
+      || (entry.status || '').toLowerCase().includes(query)
+      || (entry.targetLang || '').toLowerCase().includes(query)
+      || (entry.engineName || '').toLowerCase().includes(query);
+  });
+
+  if (filtered.length === 0) {
     box.innerHTML = `
       <div class="text-center py-8 space-y-1.5">
         <div class="text-3xl">📜</div>
@@ -2891,7 +3542,7 @@ function renderHistoryScreen() {
     return;
   }
 
-  box.innerHTML = historyEntries.map(entry => {
+  box.innerHTML = filtered.map(entry => {
     const dateStr = new Date(entry.timestamp).toLocaleString();
     const stColor = entry.status === 'DONE'
       ? 'bg-green-950 border-green-700 text-green-300'
@@ -3147,8 +3798,139 @@ document.addEventListener('keydown', e => {
     closeExportPreviewModal();
     closeQaEditorModal();
     closeModDiffModal();
+    closeCsvValModal();
+    closeAddLangModal();
   }
 });
+
+function recordStructuredError({ fileId, fileName, lineIndex, originalLine, errorMessage, isFormatError }) {
+  const id = String(Date.now() + Math.random());
+  errorLogEntries.unshift({
+    id,
+    fileId: fileId || null,
+    fileName,
+    lineIndex: lineIndex !== undefined ? lineIndex : null,
+    originalLine: originalLine || '',
+    errorMessage: errorMessage || 'Error',
+    isFormatError: !!isFormatError,
+    isRetrying: false,
+    inspected: false
+  });
+  if (errorLogEntries.length > 200) errorLogEntries.length = 200;
+  renderErrorLogSection();
+}
+
+function renderErrorLogSection() {
+  const sec = document.getElementById('errorLogSection');
+  const list = document.getElementById('errorLogList');
+  const header = document.getElementById('errorLogHeaderTitle');
+  const retryAllBtn = document.getElementById('btnRetryAllErrors');
+  if (!sec || !list) return;
+
+  if (errorLogEntries.length === 0) {
+    sec.classList.add('hidden');
+    return;
+  }
+  sec.classList.remove('hidden');
+  header.textContent = `${t('secErrorLog')} (${errorLogEntries.length})`;
+  const retryableCount = errorLogEntries.filter(e => !e.isFormatError && e.fileId && e.lineIndex !== null).length;
+  if (retryAllBtn) {
+    retryAllBtn.classList.toggle('hidden', retryableCount === 0);
+    retryAllBtn.disabled = isRunning;
+  }
+
+  list.innerHTML = errorLogEntries.map(entry => {
+    const badge = entry.isFormatError
+      ? `<span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-700 text-amber-300 text-[10px] font-bold">${t('errBadgeFormat')}</span>`
+      : `<span class="px-1.5 py-0.5 rounded bg-red-950 border border-red-700 text-red-300 text-[10px] font-bold">${t('errBadgeRow')} #${(entry.lineIndex || 0) + 1}</span>`;
+    const inspectBtn = entry.originalLine
+      ? `<button type="button" onclick="toggleErrorInspect('${entry.id}')" class="px-2 py-1 rounded bg-[#1F1312] border border-[#4A2A24] text-[11px] text-goldAccent">${t('btnInspectError')}</button>`
+      : '';
+    const retryBtn = !entry.isFormatError && entry.fileId && entry.lineIndex !== null
+      ? `<button type="button" onclick="retryErrorEntry('${entry.id}')" ${isRunning || entry.isRetrying ? 'disabled' : ''} class="px-2.5 py-1 rounded bg-burgundy/60 hover:bg-burgundy border border-goldMuted text-[11px] font-semibold text-parchment">${entry.isRetrying ? t('errRetrying') : t('btnRetryRow')}</button>`
+      : '';
+    const inspectedBox = entry.inspected && entry.originalLine
+      ? `<div class="mt-1.5 rounded bg-[#140B0B] border border-[#3A201C] p-2 font-mono text-[11px] text-parchment break-all">${escapeHtml(entry.originalLine)}</div>`
+      : '';
+    return `
+      <div class="rounded-lg bg-[#0D0707] border border-crimson/60 p-2.5 space-y-1.5 text-xs">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 min-w-0">${badge}<span class="font-semibold text-parchment truncate">${escapeHtml(entry.fileName)}</span></div>
+          <button type="button" onclick="dismissErrorEntry('${entry.id}')" class="text-parchmentDim hover:text-white px-1 font-bold">✕</button>
+        </div>
+        <div class="text-red-300 text-[11px]">${escapeHtml(entry.errorMessage)}</div>
+        <div class="flex items-center justify-between gap-2">${inspectBtn}<span></span>${retryBtn}</div>
+        ${inspectedBox}
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleErrorInspect(id) {
+  const entry = errorLogEntries.find(e => e.id === id);
+  if (!entry) return;
+  entry.inspected = !entry.inspected;
+  renderErrorLogSection();
+}
+
+function dismissErrorEntry(id) {
+  errorLogEntries = errorLogEntries.filter(e => e.id !== id);
+  renderErrorLogSection();
+}
+
+function clearErrorLogEntries() {
+  errorLogEntries = [];
+  renderErrorLogSection();
+}
+
+async function retryErrorEntry(id) {
+  if (isRunning) return;
+  const entry = errorLogEntries.find(e => e.id === id);
+  if (!entry || entry.isFormatError || !entry.fileId || entry.lineIndex === null) return;
+  const fileItem = fileQueue.find(f => f.id === entry.fileId);
+  if (!fileItem) return;
+
+  entry.isRetrying = true;
+  renderErrorLogSection();
+
+  const engines = [selectedEngine, ...['google', 'lingva', 'mymemory'].filter(e => e !== selectedEngine)];
+  let successOut = null;
+  let lastErr = '';
+  for (const eng of engines) {
+    try {
+      const res = await processSingleLine(entry.originalLine, eng);
+      successOut = res.output;
+      break;
+    } catch (err) {
+      lastErr = err && err.message ? err.message : 'Retry failed';
+    }
+  }
+
+  if (successOut !== null) {
+    while (fileItem.results.length <= entry.lineIndex) {
+      fileItem.results.push(fileItem.lines[fileItem.results.length] || '');
+    }
+    fileItem.results[entry.lineIndex] = successOut;
+    saveCache();
+    errorLogEntries = errorLogEntries.filter(e => e.id !== id);
+    renderQueue();
+    if (activeFileObj && activeFileObj.id === fileItem.id) renderLivePreview(fileItem);
+    showToast(`Baris #${entry.lineIndex + 1} berhasil diterjemahkan ulang!`);
+  } else {
+    entry.isRetrying = false;
+    entry.errorMessage = lastErr || entry.errorMessage;
+    showErrorPopup('Gagal Coba Ulang Baris', entry.errorMessage, `${entry.fileName} · #${entry.lineIndex + 1}`);
+  }
+  renderErrorLogSection();
+}
+
+async function retryAllRowErrors() {
+  if (isRunning) return;
+  const targets = errorLogEntries.filter(e => !e.isFormatError && e.fileId && e.lineIndex !== null).map(e => e.id);
+  for (const errId of targets) {
+    await retryErrorEntry(errId);
+  }
+}
 
 async function translateSingleWithRetry(originalLine, lineIndex, fileName, primaryEngine, useFallback, fallbackPool) {
   let lastErrMessage = 'Koneksi gagal';
@@ -3172,6 +3954,14 @@ async function translateSingleWithRetry(originalLine, lineIndex, fileName, prima
     }
   }
   failedRowsLog.push(`[${fileName} | Baris ${lineIndex + 1}] ${originalLine}`);
+  recordStructuredError({
+    fileId: activeFileObj ? activeFileObj.id : null,
+    fileName,
+    lineIndex,
+    originalLine,
+    errorMessage: lastErrMessage,
+    isFormatError: false
+  });
   appendLog(`Gagal baris ${lineIndex + 1} di ${fileName} (${lastErrMessage})`, 'err');
   showErrorPopup('Gagal Menerjemahkan Baris', lastErrMessage, `${fileName} · Baris #${lineIndex + 1}`);
   return { output: originalLine, fromCache: true };
@@ -3589,8 +4379,11 @@ function triggerDownload(blob, filename) {
 }
 
 function exportErrorLog() {
-  if (failedRowsLog.length === 0) return;
-  triggerDownload(new Blob([failedRowsLog.join('\r\n')], { type: 'text/plain;charset=utf-8' }), 'warband_translation_errors.txt');
+  const lines = errorLogEntries.length > 0
+    ? errorLogEntries.map(e => `[${e.fileName}${e.lineIndex !== null ? ` #${e.lineIndex + 1}` : ''}] (${e.errorMessage}) ${e.originalLine}`)
+    : failedRowsLog;
+  if (lines.length === 0) return;
+  triggerDownload(new Blob([lines.join('\r\n')], { type: 'text/plain;charset=utf-8' }), 'warband_translation_errors.txt');
 }
 
 function exportGlossary() {
@@ -3598,14 +4391,111 @@ function exportGlossary() {
   showToast('Glosarium berhasil diekspor!');
 }
 
+function parseCsvRowFields(line, delimiter) {
+  const fields = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === delimiter && !inQuotes) {
+      fields.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  fields.push(cur);
+  return fields;
+}
+
+function parseImportedGlossaryContent(rawContent, fileName) {
+  const clean = String(rawContent || '').replace(/^\uFEFF/, '').trim();
+  if (!clean) return { lines: [], format: 'EMPTY' };
+  const lower = (fileName || '').toLowerCase();
+
+  if (lower.endsWith('.json') || clean.startsWith('{') || clean.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(clean);
+      const list = Array.isArray(parsed)
+        ? parsed
+        : (Array.isArray(parsed.entries) ? parsed.entries : (Array.isArray(parsed.glossary) ? parsed.glossary : null));
+      const out = [];
+      if (list) {
+        list.forEach(item => {
+          if (typeof item === 'string' && item.trim()) out.push(item.trim());
+          else if (item && typeof item === 'object') {
+            const k = (item.source || item.key || item.original || item.term || '').trim();
+            const v = (item.target || item.value || item.translation || item.translated || '').trim();
+            if (k) out.push(v ? `${k}=${v}` : k);
+          }
+        });
+      } else if (parsed && typeof parsed === 'object') {
+        Object.keys(parsed).forEach(k => {
+          const cleanK = k.trim();
+          const v = String(parsed[k] || '').trim();
+          if (cleanK) out.push(v ? `${cleanK}=${v}` : cleanK);
+        });
+      }
+      return { lines: out, format: 'JSON' };
+    } catch (_) {}
+  }
+
+  if (lower.endsWith('.csv') || lower.endsWith('.tsv') || (!clean.includes('=') && (clean.includes(',') || clean.includes(';') || clean.includes('\t')))) {
+    const rawLines = clean.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    if (rawLines.length > 0) {
+      const first = rawLines[0];
+      const del = first.includes('\t') ? '\t' : (first.includes(';') && !first.includes(',')) ? ';' : (first.includes('|') && !first.includes(',')) ? '|' : ',';
+      const headers = new Set(['source', 'key', 'original', 'term', 'id', 'english']);
+      const out = [];
+      rawLines.forEach((line, idx) => {
+        const cols = parseCsvRowFields(line, del);
+        const c0 = (cols[0] || '').trim();
+        const c1 = (cols[1] || '').trim();
+        if (idx === 0 && headers.has(c0.toLowerCase())) return;
+        if (c0) out.push(c1 ? `${c0}=${c1}` : c0);
+      });
+      return { lines: out, format: lower.endsWith('.tsv') ? 'TSV' : 'CSV' };
+    }
+  }
+
+  const txtLines = clean.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => {
+    if (!l.includes('=') && l.includes('|')) {
+      const idx = l.indexOf('|');
+      const k = l.slice(0, idx).trim();
+      const v = l.slice(idx + 1).trim();
+      return v ? `${k}=${v}` : k;
+    }
+    return l;
+  });
+  return { lines: txtLines, format: 'TXT' };
+}
+
 function importGlossary(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    document.getElementById('glossaryText').value = e.target.result;
+    const imported = parseImportedGlossaryContent(e.target.result, file.name);
+    const textarea = document.getElementById('glossaryText');
+    const existing = (textarea.value || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const seen = new Set(existing.map(line => {
+      const eq = line.indexOf('=');
+      return (eq > 0 ? line.slice(0, eq) : line).trim().toLowerCase();
+    }));
+    imported.lines.forEach(line => {
+      const eq = line.indexOf('=');
+      const key = (eq > 0 ? line.slice(0, eq) : line).trim().toLowerCase();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        existing.push(line);
+      }
+    });
+    textarea.value = existing.join('\n');
     updateGlossaryBadge();
-    showToast(`Glosarium "${file.name}" dimuat!`);
+    showToast(`Glosarium (${imported.format}) "${file.name}": ${imported.lines.length} istilah digabung!`);
   };
   reader.readAsText(file, 'utf-8');
   event.target.value = '';
@@ -3657,12 +4547,15 @@ document.getElementById('skipRegex').addEventListener('input', function () {
     status.textContent = '✕ Pola regex tidak valid';
     status.className = 'text-[11px] text-red-400 mt-1';
   }
+  revalidateQueue();
+  renderQueue();
   renderCsvPreviewer();
 });
 
 window.addEventListener('resize', drawTelemetryChart);
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+  loadSupportedLanguages();
   loadCache();
   loadHistory();
   updateGlossaryBadge();

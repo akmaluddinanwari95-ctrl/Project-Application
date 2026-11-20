@@ -559,4 +559,342 @@ object WarbandTextProcessor {
     }
     return updated to replacedRowsCount
   }
+
+  fun importGlossaryFromContent(rawContent: String, fileName: String): GlossaryImportResult {
+    val clean = rawContent.removePrefix("\uFEFF").trim()
+    if (clean.isEmpty()) {
+      return GlossaryImportResult(importedLinesText = "", importedCount = 0, formatDetected = "EMPTY")
+    }
+
+    val lowerName = fileName.lowercase()
+    val looksLikeJson = lowerName.endsWith(".json") || clean.startsWith("{") || clean.startsWith("[")
+    if (looksLikeJson) {
+      val parsedJson = parseGlossaryJson(clean)
+      if (parsedJson != null) {
+        return GlossaryImportResult(
+            importedLinesText = parsedJson.joinToString("\n"),
+            importedCount = parsedJson.size,
+            formatDetected = "JSON"
+        )
+      }
+    }
+
+    val looksLikeCsv = lowerName.endsWith(".csv") || lowerName.endsWith(".tsv") ||
+        (!clean.contains('=') && (clean.contains(',') || clean.contains(';') || clean.contains('\t')))
+    if (looksLikeCsv) {
+      val parsedCsv = parseGlossaryCsvOrTsv(clean)
+      return GlossaryImportResult(
+          importedLinesText = parsedCsv.joinToString("\n"),
+          importedCount = parsedCsv.size,
+          formatDetected = if (lowerName.endsWith(".tsv")) "TSV" else "CSV"
+      )
+    }
+
+    val lines = clean.lines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") }
+        .map { line ->
+          if (!line.contains('=') && line.contains('|')) {
+            val idx = line.indexOf('|')
+            val k = line.substring(0, idx).trim()
+            val v = line.substring(idx + 1).trim()
+            if (v.isEmpty()) k else "$k=$v"
+          } else {
+            line
+          }
+        }
+    return GlossaryImportResult(
+        importedLinesText = lines.joinToString("\n"),
+        importedCount = lines.size,
+        formatDetected = "TXT"
+    )
+  }
+
+  private fun parseGlossaryJson(clean: String): List<String>? {
+    return try {
+      val result = mutableListOf<String>()
+      if (clean.startsWith("[")) {
+        val arr = org.json.JSONArray(clean)
+        for (i in 0 until arr.length()) {
+          val elem = arr.opt(i)
+          when (elem) {
+            is org.json.JSONObject -> {
+              val key = elem.optString("source", "").ifBlank {
+                elem.optString("key", "").ifBlank {
+                  elem.optString("original", "").ifBlank { elem.optString("term", "") }
+                }
+              }.trim()
+              val target = elem.optString("target", "").ifBlank {
+                elem.optString("value", "").ifBlank {
+                  elem.optString("translation", "").ifBlank { elem.optString("translated", "") }
+                }
+              }.trim()
+              if (key.isNotEmpty()) {
+                result.add(if (target.isEmpty()) key else "$key=$target")
+              }
+            }
+            is String -> {
+              val term = elem.trim()
+              if (term.isNotEmpty()) result.add(term)
+            }
+          }
+        }
+      } else if (clean.startsWith("{")) {
+        val obj = org.json.JSONObject(clean)
+        val innerArray = obj.optJSONArray("entries") ?: obj.optJSONArray("glossary")
+        if (innerArray != null) {
+          return parseGlossaryJson(innerArray.toString())
+        }
+        val keys = obj.keys()
+        while (keys.hasNext()) {
+          val k = keys.next().trim()
+          val v = obj.optString(k, "").trim()
+          if (k.isNotEmpty()) {
+            result.add(if (v.isEmpty()) k else "$k=$v")
+          }
+        }
+      }
+      result
+    } catch (_: Exception) {
+      null
+    }
+  }
+
+  private fun parseGlossaryCsvOrTsv(clean: String): List<String> {
+    val rawLines = clean.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
+    if (rawLines.isEmpty()) return emptyList()
+
+    val firstLine = rawLines.first()
+    val delimiter = when {
+      firstLine.contains('\t') -> '\t'
+      firstLine.contains(';') && !firstLine.contains(',') -> ';'
+      firstLine.contains('|') && !firstLine.contains(',') -> '|'
+      else -> ','
+    }
+
+    val headerNames = setOf("source", "key", "original", "term", "id", "english")
+    val entries = mutableListOf<String>()
+    rawLines.forEachIndexed { idx, line ->
+      val cols = parseCsvFields(line, delimiter)
+      if (cols.isEmpty()) return@forEachIndexed
+      val c0 = cols[0].trim()
+      val c1 = cols.getOrNull(1)?.trim().orEmpty()
+      if (idx == 0 && c0.lowercase() in headerNames) {
+        return@forEachIndexed
+      }
+      if (c0.isNotEmpty()) {
+        entries.add(if (c1.isEmpty()) c0 else "$c0=$c1")
+      }
+    }
+    return entries
+  }
+
+  private fun parseCsvFields(line: String, delimiter: Char): List<String> {
+    val fields = mutableListOf<String>()
+    val current = StringBuilder()
+    var inQuotes = false
+    var i = 0
+    while (i < line.length) {
+      val ch = line[i]
+      when {
+        ch == '"' -> {
+          if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
+            current.append('"')
+            i++
+          } else {
+            inQuotes = !inQuotes
+          }
+        }
+        ch == delimiter && !inQuotes -> {
+          fields.add(current.toString())
+          current.setLength(0)
+        }
+        else -> current.append(ch)
+      }
+      i++
+    }
+    fields.add(current.toString())
+    return fields
+  }
+
+  fun validateCsvStructure(
+      file: QueuedFileItem,
+      separator: String,
+      stripTag: String,
+      skipRegex: String
+  ): CsvValidationReport {
+    val sep = separator.ifEmpty { "|" }
+    if (file.lines.isEmpty()) {
+      return CsvValidationReport(
+          fileId = file.id,
+          fileName = file.name,
+          status = CsvValidationStatus.MALFORMED,
+          totalLines = 0,
+          separatorMatchedLines = 0,
+          skippedLines = 0,
+          alignedColumnsCount = 0,
+          malformedLinesCount = 1,
+          issues = listOf(CsvValidationIssue(1, "File kosong / tidak memiliki baris teks.", "")),
+          summaryMessage = "File kosong atau tidak berisi baris valid."
+      )
+    }
+
+    var skipped = 0
+    var matchedSep = 0
+    var alignedCols = 0
+    var malformedCount = 0
+    val issues = mutableListOf<CsvValidationIssue>()
+    val columnCounts = HashMap<Int, Int>()
+
+    file.lines.forEachIndexed { idx, rawLine ->
+      val lineNo = idx + 1
+      if (matchesSkipRegex(rawLine, skipRegex)) {
+        skipped++
+        return@forEachIndexed
+      }
+
+      val split = splitLine(rawLine, sep, stripTag)
+      val sepOccurrences = countOccurrences(rawLine, sep)
+      columnCounts[sepOccurrences] = (columnCounts[sepOccurrences] ?: 0) + 1
+
+      val hasOddQuotes = rawLine.count { it == '"' } % 2 != 0
+      when {
+        hasOddQuotes -> {
+          malformedCount++
+          if (issues.size < 12) {
+            issues.add(CsvValidationIssue(lineNo, "Tanda kutip tidak berpasangan", rawLine.take(72)))
+          }
+        }
+        !split.hasCode -> {
+          malformedCount++
+          if (issues.size < 12) {
+            issues.add(CsvValidationIssue(lineNo, "Pemisah '$sep' tidak ditemukan (kolom tidak sejajar)", rawLine.take(72)))
+          }
+        }
+        split.codePart.isBlank() -> {
+          malformedCount++
+          if (issues.size < 12) {
+            issues.add(CsvValidationIssue(lineNo, "Kolom ID di kiri '$sep' kosong", rawLine.take(72)))
+          }
+        }
+        else -> {
+          matchedSep++
+          if (sepOccurrences == 1) {
+            alignedCols++
+          } else {
+            // Multiple delimiters in one line can indicate accidental unescaped separator in dialogue
+            if (issues.size < 12) {
+              issues.add(CsvValidationIssue(lineNo, "Ditemukan $sepOccurrences pemisah '$sep' pada satu baris", rawLine.take(72)))
+            }
+          }
+        }
+      }
+    }
+
+    val activeLines = (file.lines.size - skipped).coerceAtLeast(1)
+    val matchRatio = matchedSep.toFloat() / activeLines.toFloat()
+    val status = when {
+      matchedSep == 0 && activeLines > 0 -> CsvValidationStatus.MALFORMED
+      matchRatio < 0.6f -> CsvValidationStatus.MALFORMED
+      malformedCount > 0 || issues.isNotEmpty() -> CsvValidationStatus.WARNING
+      else -> CsvValidationStatus.VALID
+    }
+
+    val summaryMsg = when (status) {
+      CsvValidationStatus.VALID -> "$matchedSep/$activeLines baris terstruktur rapi dengan pemisah '$sep'."
+      CsvValidationStatus.WARNING -> "$matchedSep/$activeLines cocok, $malformedCount baris perlu perhatian struktur kolom."
+      CsvValidationStatus.MALFORMED -> "Format mencurigakan: hanya $matchedSep/$activeLines baris cocok dengan pemisah '$sep'."
+    }
+
+    return CsvValidationReport(
+        fileId = file.id,
+        fileName = file.name,
+        status = status,
+        totalLines = file.lines.size,
+        separatorMatchedLines = matchedSep,
+        skippedLines = skipped,
+        alignedColumnsCount = alignedCols,
+        malformedLinesCount = malformedCount,
+        issues = issues,
+        summaryMessage = summaryMsg
+    )
+  }
+
+  private fun countOccurrences(text: String, needle: String): Int {
+    if (needle.isEmpty()) return 0
+    var count = 0
+    var idx = 0
+    while (true) {
+      val found = text.indexOf(needle, idx)
+      if (found == -1) break
+      count++
+      idx = found + needle.length
+    }
+    return count
+  }
+
+  fun countWordsInLines(lines: List<String>, separator: String, stripTag: String, skipRegex: String): Int {
+    val sep = separator.ifEmpty { "|" }
+    var words = 0
+    lines.forEach { line ->
+      if (!matchesSkipRegex(line, skipRegex)) {
+        val text = splitLine(line, sep, stripTag).textPart
+        if (text.isNotBlank()) {
+          words += text.trim().split(Regex("\\s+")).size
+        }
+      }
+    }
+    return words
+  }
+
+  fun computeDailyProductivityStats(
+      history: List<com.example.data.local.TranslationHistoryEntity>,
+      daysCount: Int = 7
+  ): List<DailyProductivityStat> {
+    val cal = java.util.Calendar.getInstance()
+    cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+    cal.set(java.util.Calendar.MINUTE, 0)
+    cal.set(java.util.Calendar.SECOND, 0)
+    cal.set(java.util.Calendar.MILLISECOND, 0)
+
+    val dayFormat = java.text.SimpleDateFormat("dd/MM", java.util.Locale.getDefault())
+    val dayBuckets = LinkedHashMap<Long, DailyProductivityStat>()
+    for (offset in (daysCount - 1) downTo 0) {
+      val c = (cal.clone() as java.util.Calendar)
+      c.add(java.util.Calendar.DAY_OF_YEAR, -offset)
+      val dayEpoch = c.timeInMillis
+      dayBuckets[dayEpoch] = DailyProductivityStat(
+          dayLabel = dayFormat.format(java.util.Date(dayEpoch)),
+          dayEpoch = dayEpoch,
+          wordsCount = 0,
+          linesCount = 0,
+          filesDone = 0,
+          filesFailed = 0
+      )
+    }
+
+    history.forEach { item ->
+      val c = java.util.Calendar.getInstance()
+      c.timeInMillis = item.timestamp
+      c.set(java.util.Calendar.HOUR_OF_DAY, 0)
+      c.set(java.util.Calendar.MINUTE, 0)
+      c.set(java.util.Calendar.SECOND, 0)
+      c.set(java.util.Calendar.MILLISECOND, 0)
+      val bucketKey = c.timeInMillis
+      val existing = dayBuckets[bucketKey] ?: return@forEach
+      val derivedWords = if (item.wordsProcessed > 0) {
+        item.wordsProcessed
+      } else {
+        item.processedLines * 6
+      }
+      dayBuckets[bucketKey] = existing.copy(
+          wordsCount = existing.wordsCount + derivedWords,
+          linesCount = existing.linesCount + item.processedLines,
+          filesDone = existing.filesDone + if (item.status == "DONE") 1 else 0,
+          filesFailed = existing.filesFailed + if (item.status != "DONE") 1 else 0
+      )
+    }
+
+    return dayBuckets.values.toList()
+  }
 }

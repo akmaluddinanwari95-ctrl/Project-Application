@@ -60,40 +60,24 @@ import com.example.domain.ConnectionBadgeType
 import com.example.domain.ConnectionStatus
 import com.example.domain.ErrorAlert
 import com.example.domain.HelpTopicContent
-import com.example.ui.theme.AmberBg
-import com.example.ui.theme.AmberText
-import com.example.ui.theme.Burgundy
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Crimson
-import com.example.ui.theme.CrimsonText
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
-import com.example.ui.theme.MahoganyCardBottom
-import com.example.ui.theme.MahoganyCardTop
-import com.example.ui.theme.MahoganyInput
-import com.example.ui.theme.MahoganyLight
-import com.example.ui.theme.Obsidian
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
+import com.example.ui.theme.LocalWarbandPalette
 
 @Composable
 fun MedievalCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   Column(
       modifier = modifier
           .fillMaxWidth()
           .clip(RoundedCornerShape(14.dp))
           .background(
               Brush.verticalGradient(
-                  colors = listOf(MahoganyCardTop, MahoganyCardBottom)
+                  colors = listOf(pal.cardTop, pal.cardBottom)
               )
           )
-          .border(1.dp, BurgundyBorder, RoundedCornerShape(14.dp))
+          .border(1.dp, pal.border, RoundedCornerShape(14.dp))
           .padding(16.dp),
       content = content
   )
@@ -106,6 +90,7 @@ fun HelpIconButton(
     onOpenHelp: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+  val pal = LocalWarbandPalette.current
   Box(
       modifier = modifier
           .minimumInteractiveComponentSize()
@@ -118,13 +103,13 @@ fun HelpIconButton(
         modifier = Modifier
             .size(20.dp)
             .clip(CircleShape)
-            .background(Color(0xFF2B1816))
-            .border(1.dp, GoldMuted, CircleShape),
+            .background(pal.cardElevated)
+            .border(1.dp, pal.primaryMuted, CircleShape),
         contentAlignment = Alignment.Center
     ) {
       Text(
           text = "?",
-          color = GoldAccent,
+          color = pal.primaryAccent,
           fontSize = 11.sp,
           fontWeight = FontWeight.Bold
       )
@@ -134,11 +119,12 @@ fun HelpIconButton(
 
 @Composable
 fun ConnectionBadge(status: ConnectionStatus) {
+  val pal = LocalWarbandPalette.current
   val (bg, border, textColor) = when (status.type) {
-    ConnectionBadgeType.OK -> Triple(Color(0xFF0E2914), Color(0xFF2E7D32), ForestText)
-    ConnectionBadgeType.WARN -> Triple(AmberBg, GoldMuted, AmberText)
-    ConnectionBadgeType.ERROR -> Triple(Color(0xFF331015), Crimson, CrimsonText)
-    ConnectionBadgeType.NEUTRAL -> Triple(Color(0xFF1F1312), BurgundyBorder, ParchmentDim)
+    ConnectionBadgeType.OK -> Triple(pal.successBg, pal.successBorder, pal.successText)
+    ConnectionBadgeType.WARN -> Triple(pal.warningBg, pal.primaryMuted, pal.warningText)
+    ConnectionBadgeType.ERROR -> Triple(pal.errorBg, pal.errorBorder, pal.errorText)
+    ConnectionBadgeType.NEUTRAL -> Triple(pal.cardBottom, pal.border, pal.textSecondary)
   }
 
   Surface(
@@ -166,6 +152,7 @@ fun <T> MedievalDropdown(
     testTag: String,
     modifier: Modifier = Modifier
 ) {
+  val pal = LocalWarbandPalette.current
   var expanded by remember { mutableStateOf(false) }
 
   Box(modifier = modifier) {
@@ -174,8 +161,8 @@ fun <T> MedievalDropdown(
             .fillMaxWidth()
             .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(10.dp))
-            .background(MahoganyInput)
-            .border(1.dp, BurgundyBorder, RoundedCornerShape(10.dp))
+            .background(pal.inputBg)
+            .border(1.dp, pal.border, RoundedCornerShape(10.dp))
             .clickable { expanded = true }
             .padding(horizontal = 12.dp, vertical = 10.dp)
             .testTag(testTag),
@@ -184,7 +171,7 @@ fun <T> MedievalDropdown(
     ) {
       Text(
           text = selectedLabel,
-          color = Parchment,
+          color = pal.textPrimary,
           style = MaterialTheme.typography.bodySmall,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
@@ -193,7 +180,7 @@ fun <T> MedievalDropdown(
       Icon(
           imageVector = Icons.Default.KeyboardArrowDown,
           contentDescription = null,
-          tint = GoldAccent,
+          tint = pal.primaryAccent,
           modifier = Modifier.size(18.dp)
       )
     }
@@ -201,14 +188,14 @@ fun <T> MedievalDropdown(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = { expanded = false },
-        modifier = Modifier.background(MahoganyLight)
+        modifier = Modifier.background(pal.cardElevated)
     ) {
       items.forEach { item ->
         DropdownMenuItem(
             text = {
               Text(
                   text = itemLabel(item),
-                  color = Parchment,
+                  color = pal.textPrimary,
                   style = MaterialTheme.typography.bodySmall
               )
             },
@@ -234,6 +221,7 @@ fun MedievalAccordionCard(
     trailingBadge: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   val rotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f, label = "arrow")
 
   Column(
@@ -241,9 +229,9 @@ fun MedievalAccordionCard(
           .fillMaxWidth()
           .clip(RoundedCornerShape(14.dp))
           .background(
-              Brush.verticalGradient(colors = listOf(MahoganyCardTop, MahoganyCardBottom))
+              Brush.verticalGradient(colors = listOf(pal.cardTop, pal.cardBottom))
           )
-          .border(1.dp, BurgundyBorder, RoundedCornerShape(14.dp))
+          .border(1.dp, pal.border, RoundedCornerShape(14.dp))
   ) {
     Row(
         modifier = Modifier
@@ -259,7 +247,7 @@ fun MedievalAccordionCard(
       Text(
           text = title.uppercase(),
           style = MaterialTheme.typography.titleMedium,
-          color = GoldAccent,
+          color = pal.primaryAccent,
           maxLines = 2,
           overflow = TextOverflow.Ellipsis,
           modifier = Modifier.weight(1f)
@@ -276,7 +264,7 @@ fun MedievalAccordionCard(
       Icon(
           imageVector = Icons.Default.KeyboardArrowDown,
           contentDescription = null,
-          tint = GoldAccent,
+          tint = pal.primaryAccent,
           modifier = Modifier
               .size(22.dp)
               .rotate(rotation)
@@ -293,7 +281,7 @@ fun MedievalAccordionCard(
               .fillMaxWidth()
               .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
       ) {
-        HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp)
+        HorizontalDivider(color = pal.borderSoft, thickness = 1.dp)
         Spacer(modifier = Modifier.height(12.dp))
         content()
       }
@@ -308,12 +296,13 @@ fun HelpModalDialog(
     onDismiss: () -> Unit
 ) {
   if (topic == null) return
+  val pal = LocalWarbandPalette.current
 
   AlertDialog(
       onDismissRequest = onDismiss,
-      containerColor = Color(0xFF1D1110),
-      titleContentColor = GoldAccent,
-      textContentColor = ParchmentDim,
+      containerColor = pal.cardTop,
+      titleContentColor = pal.primaryAccent,
+      textContentColor = pal.textSecondary,
       shape = RoundedCornerShape(18.dp),
       title = {
         Row(
@@ -324,13 +313,13 @@ fun HelpModalDialog(
               modifier = Modifier
                   .size(26.dp)
                   .clip(CircleShape)
-                  .background(Burgundy.copy(alpha = 0.6f))
-                  .border(1.dp, GoldAccent, CircleShape),
+                  .background(pal.actionBg.copy(alpha = 0.6f))
+                  .border(1.dp, pal.primaryAccent, CircleShape),
               contentAlignment = Alignment.Center
           ) {
             Text(
                 text = "?",
-                color = GoldAccent,
+                color = pal.primaryAccent,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -338,7 +327,7 @@ fun HelpModalDialog(
           Text(
               text = topic.title,
               style = MaterialTheme.typography.titleMedium,
-              color = GoldAccent
+              color = pal.primaryAccent
           )
         }
       },
@@ -348,7 +337,7 @@ fun HelpModalDialog(
             Text(
                 text = para,
                 style = MaterialTheme.typography.bodyMedium,
-                color = ParchmentDim
+                color = pal.textSecondary
             )
           }
         }
@@ -357,10 +346,10 @@ fun HelpModalDialog(
         Button(
             onClick = onDismiss,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Burgundy,
-                contentColor = Parchment
+                containerColor = pal.actionBg,
+                contentColor = pal.textPrimary
             ),
-            border = BorderStroke(1.dp, GoldMuted),
+            border = BorderStroke(1.dp, pal.primaryMuted),
             modifier = Modifier.testTag("help_modal_close_button")
         ) {
           Text(text = closeButtonLabel)
@@ -385,16 +374,17 @@ fun SaveDestinationDialog(
     onDismiss: () -> Unit
 ) {
   if (!visible) return
+  val pal = LocalWarbandPalette.current
 
   AlertDialog(
       onDismissRequest = onDismiss,
-      containerColor = Color(0xFF1D1110),
+      containerColor = pal.cardTop,
       shape = RoundedCornerShape(18.dp),
       title = {
         Text(
             text = "$title ($fileCount)",
             style = MaterialTheme.typography.titleMedium,
-            color = GoldAccent
+            color = pal.primaryAccent
         )
       },
       text = {
@@ -402,14 +392,14 @@ fun SaveDestinationDialog(
           Text(
               text = description,
               style = MaterialTheme.typography.bodySmall,
-              color = ParchmentDim
+              color = pal.textSecondary
           )
 
           Surface(
               onClick = onSaveToDownloads,
               shape = RoundedCornerShape(12.dp),
-              color = Forest.copy(alpha = 0.25f),
-              border = BorderStroke(1.dp, Forest),
+              color = pal.successBg,
+              border = BorderStroke(1.dp, pal.successBorder),
               modifier = Modifier
                   .fillMaxWidth()
                   .testTag("save_to_downloads_option")
@@ -422,18 +412,18 @@ fun SaveDestinationDialog(
               Icon(
                   imageVector = Icons.Default.Download,
                   contentDescription = downloadsLabel,
-                  tint = ForestText
+                  tint = pal.successText
               )
               Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = downloadsLabel,
                     style = MaterialTheme.typography.titleSmall,
-                    color = ForestText
+                    color = pal.successText
                 )
                 Text(
                     text = downloadsSub,
                     style = MaterialTheme.typography.labelSmall,
-                    color = ParchmentDim
+                    color = pal.textSecondary
                 )
               }
             }
@@ -442,8 +432,8 @@ fun SaveDestinationDialog(
           Surface(
               onClick = onPickFolder,
               shape = RoundedCornerShape(12.dp),
-              color = Burgundy.copy(alpha = 0.35f),
-              border = BorderStroke(1.dp, GoldMuted),
+              color = pal.actionBg.copy(alpha = 0.35f),
+              border = BorderStroke(1.dp, pal.primaryMuted),
               modifier = Modifier
                   .fillMaxWidth()
                   .testTag("save_to_folder_option")
@@ -456,18 +446,18 @@ fun SaveDestinationDialog(
               Icon(
                   imageVector = Icons.Default.FolderOpen,
                   contentDescription = folderLabel,
-                  tint = GoldAccent
+                  tint = pal.primaryAccent
               )
               Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = folderLabel,
                     style = MaterialTheme.typography.titleSmall,
-                    color = Parchment
+                    color = pal.textPrimary
                 )
                 Text(
                     text = folderSub,
                     style = MaterialTheme.typography.labelSmall,
-                    color = ParchmentDim
+                    color = pal.textSecondary
                 )
               }
             }
@@ -478,8 +468,8 @@ fun SaveDestinationDialog(
       dismissButton = {
         OutlinedButton(
             onClick = onDismiss,
-            border = BorderStroke(1.dp, BurgundyBorder),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = ParchmentDim)
+            border = BorderStroke(1.dp, pal.border),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = pal.textSecondary)
         ) {
           Text(cancelLabel)
         }
@@ -493,12 +483,13 @@ fun ErrorAlertBanner(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+  val pal = LocalWarbandPalette.current
   AnimatedVisibility(visible = alert != null, modifier = modifier) {
     if (alert != null) {
       Surface(
           shape = RoundedCornerShape(12.dp),
-          color = Color(0xFF2E1115),
-          border = BorderStroke(1.5.dp, Crimson),
+          color = pal.errorBg,
+          border = BorderStroke(1.5.dp, pal.errorBorder),
           shadowElevation = 8.dp,
           modifier = Modifier.fillMaxWidth()
       ) {
@@ -510,26 +501,26 @@ fun ErrorAlertBanner(
           Icon(
               imageVector = Icons.Default.Warning,
               contentDescription = null,
-              tint = CrimsonText,
+              tint = pal.errorText,
               modifier = Modifier.size(20.dp)
           )
           Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = alert.title,
                 style = MaterialTheme.typography.labelMedium,
-                color = CrimsonText
+                color = pal.errorText
             )
             if (alert.lineInfo.isNotEmpty()) {
               Text(
                   text = alert.lineInfo,
                   style = MaterialTheme.typography.labelSmall,
-                  color = GoldAccent
+                  color = pal.primaryAccent
               )
             }
             Text(
                 text = alert.detail,
                 style = MaterialTheme.typography.bodySmall,
-                color = ParchmentDim
+                color = pal.textSecondary
             )
           }
           IconButton(
@@ -539,7 +530,7 @@ fun ErrorAlertBanner(
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Close",
-                tint = CrimsonText,
+                tint = pal.errorText,
                 modifier = Modifier.size(16.dp)
             )
           }

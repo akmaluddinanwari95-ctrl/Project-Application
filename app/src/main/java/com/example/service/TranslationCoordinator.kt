@@ -14,14 +14,17 @@ import com.example.domain.LogEntry
 import com.example.domain.LogLevel
 import com.example.domain.PreviewRow
 import com.example.domain.QueuedFileItem
+import com.example.domain.SessionSummaryReport
 import com.example.domain.TelemetrySample
 import com.example.domain.TranslationEngine
+import com.example.domain.TranslationErrorItem
 import com.example.domain.TranslationProgressState
 import com.example.domain.TranslatorSettings
 import com.example.domain.WarbandTextProcessor
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.Dispatchers
@@ -50,8 +53,14 @@ object TranslationCoordinator {
   private val _logs = MutableStateFlow<List<LogEntry>>(emptyList())
   val logs: StateFlow<List<LogEntry>> = _logs.asStateFlow()
 
+  private val _errorLogEntries = MutableStateFlow<List<TranslationErrorItem>>(emptyList())
+  val errorLogEntries: StateFlow<List<TranslationErrorItem>> = _errorLogEntries.asStateFlow()
+
   private val _failedRows = MutableStateFlow<List<String>>(emptyList())
   val failedRows: StateFlow<List<String>> = _failedRows.asStateFlow()
+
+  private val _sessionSummary = MutableStateFlow<SessionSummaryReport?>(null)
+  val sessionSummary: StateFlow<SessionSummaryReport?> = _sessionSummary.asStateFlow()
 
   private val _connectionStatus = MutableStateFlow(
       ConnectionStatus("Siap digunakan", ConnectionBadgeType.NEUTRAL)
@@ -172,6 +181,8 @@ object TranslationCoordinator {
     _previewRows.value = emptyList()
     _progressState.value = TranslationProgressState()
     _failedRows.value = emptyList()
+    _errorLogEntries.value = emptyList()
+    _sessionSummary.value = null
   }
 
   fun togglePause() {
@@ -199,6 +210,57 @@ object TranslationCoordinator {
 
   fun dismissErrorAlert() {
     _errorAlert.value = null
+  }
+
+  fun dismissSessionSummary() {
+    _sessionSummary.value = null
+  }
+
+  fun clearErrorLog() {
+    _errorLogEntries.value = emptyList()
+    _failedRows.value = emptyList()
+  }
+
+  fun dismissErrorEntry(errorId: String) {
+    _errorLogEntries.update { list -> list.filterNot { it.id == errorId } }
+    syncFailedRowsStrings()
+  }
+
+  fun recordFormatError(
+      fileId: String? = null,
+      fileName: String,
+      errorMessage: String,
+      sampleLine: String = ""
+  ) {
+    _errorLogEntries.update { current ->
+      val duplicate = current.any {
+        it.isFormatError && it.fileName == fileName && it.errorMessage == errorMessage
+      }
+      if (duplicate) {
+        current
+      } else {
+        current + TranslationErrorItem(
+            id = UUID.randomUUID().toString(),
+            fileId = fileId,
+            fileName = fileName,
+            lineIndex = null,
+            originalLine = sampleLine,
+            errorMessage = errorMessage,
+            isFormatError = true
+        )
+      }
+    }
+    syncFailedRowsStrings()
+  }
+
+  private fun syncFailedRowsStrings() {
+    _failedRows.value = _errorLogEntries.value.map { entry ->
+      if (entry.lineIndex != null) {
+        "[${entry.fileName} | Baris ${entry.lineIndex + 1}] (${entry.errorMessage}) ${entry.originalLine}"
+      } else {
+        "[${entry.fileName} | FORMAT] ${entry.errorMessage}"
+      }
+    }
   }
 
   fun consumeCompletionToast() {
@@ -402,7 +464,19 @@ object TranslationCoordinator {
     val historyRepo = TranslationHistoryRepository(db.translationHistoryDao())
     isPausedFlag.set(false)
     shouldStopFlag.set(false)
-    _failedRows.value = emptyList()
+    // Preserve pre-flight format errors? Clear only previous row errors before batch run
+    _errorLogEntries.update { list -> list.filter { it.isFormatError } }
+    syncFailedRowsStrings()
+    _sessionSummary.value = null
+
+    val batchStartMs = System.currentTimeMillis()
+    var sessionOriginalLines = 0
+    var sessionTranslatedLines = 0
+    var sessionSkippedLines = 0
+    var sessionErrors = 0
+    var sessionWords = 0
+    var sessionFilesSucceeded = 0
+    var sessionFilesFailed = 0
 
     val fallbackPool = TranslationEngine.entries.filter { it != settings.engine }
     val glossary = WarbandTextProcessor.parseGlossary(settings.glossaryText)
@@ -425,8 +499,12 @@ object TranslationCoordinator {
 
       val lines = pendingItem.lines
       val total = lines.size
+      val fileStartMs = System.currentTimeMillis()
       val results = ArrayList<String>(total)
       var cacheHits = 0
+      var fileTranslatedLines = 0
+      var fileSkippedLines = 0
+      var fileErrorsCount = 0
       var activeElapsedMs = 0L
       var lastTickMs = System.currentTimeMillis()
       var lastSampleMs = 0L
@@ -615,6 +693,7 @@ object TranslationCoordinator {
 
         if (WarbandTextProcessor.matchesSkipRegex(originalLine, settings.skipRegex)) {
           results.add(originalLine)
+          fileSkippedLines++
           val doneNow = results.size
           val force = (doneNow == total) || (doneNow % 25 == 0)
           val p = sampleTelemetry(doneNow, forceSample = force)
@@ -632,6 +711,7 @@ object TranslationCoordinator {
           val emptyOut = if (split.hasCode) "${split.codePart}$sep" else ""
           results.add(emptyOut)
           cacheHits++
+          fileSkippedLines++
           val doneNow = results.size
           val force = (doneNow == total) || (doneNow % 25 == 0)
           val p = sampleTelemetry(doneNow, forceSample = force)
@@ -649,6 +729,7 @@ object TranslationCoordinator {
           val out = if (split.hasCode) "${split.codePart}$sep$cached" else cached
           results.add(out)
           cacheHits++
+          fileTranslatedLines++
           val doneNow = results.size
           val force = (doneNow == total) || (doneNow % 25 == 0)
           val p = sampleTelemetry(doneNow, forceSample = force)
@@ -730,6 +811,7 @@ object TranslationCoordinator {
               )
               val finalOut = if (bItem.split.hasCode) "${bItem.split.codePart}$sep$polished" else polished
               results.add(finalOut)
+              fileTranslatedLines++
               pendingBuffer.add(
                   TranslationCacheEntity(
                       targetLang = settings.targetLang,
@@ -777,6 +859,7 @@ object TranslationCoordinator {
         val finalOut: String
         if (translatedText != null) {
           finalOut = if (split.hasCode) "${split.codePart}$sep$translatedText" else translatedText
+          fileTranslatedLines++
           pendingBuffer.add(
               TranslationCacheEntity(
                   targetLang = settings.targetLang,
@@ -786,8 +869,20 @@ object TranslationCoordinator {
           )
         } else {
           finalOut = originalLine
+          fileErrorsCount++
           _connectionStatus.value = ConnectionStatus("Koneksi Terputus / Limit", ConnectionBadgeType.ERROR)
-          _failedRows.update { it + "[${pendingItem.name} | Baris ${i + 1}] $originalLine" }
+          _errorLogEntries.update { current ->
+            current + TranslationErrorItem(
+                id = UUID.randomUUID().toString(),
+                fileId = pendingItem.id,
+                fileName = pendingItem.name,
+                lineIndex = i,
+                originalLine = originalLine,
+                errorMessage = lastErrorMsg,
+                isFormatError = false
+            )
+          }
+          syncFailedRowsStrings()
           appendLog("Gagal baris ${i + 1} di ${pendingItem.name} ($lastErrorMsg)", LogLevel.ERROR)
           emitThrottledErrorAlert(
               title = "Gagal Menerjemahkan Baris",
@@ -830,7 +925,21 @@ object TranslationCoordinator {
       }
       dao.trimOldEntries(15000)
 
+      val fileDurationMs = (System.currentTimeMillis() - fileStartMs).coerceAtLeast(1L)
+      val fileWordsCount = WarbandTextProcessor.countWordsInLines(
+          lines = lines.take(results.size),
+          separator = sep,
+          stripTag = settings.stripTag,
+          skipRegex = settings.skipRegex
+      )
+      sessionOriginalLines += total
+      sessionTranslatedLines += fileTranslatedLines
+      sessionSkippedLines += fileSkippedLines
+      sessionErrors += fileErrorsCount
+      sessionWords += fileWordsCount
+
       if (!shouldStopFlag.get()) {
+        sessionFilesSucceeded++
         val completedResults = results.toList()
         updateQueueItem(pendingItem.id) {
           it.copy(
@@ -857,10 +966,13 @@ object TranslationCoordinator {
                 targetLang = settings.targetLang,
                 engineName = settings.engine.displayName,
                 sourceSnapshot = srcJoin,
-                translatedSnapshot = trJoin
+                translatedSnapshot = trJoin,
+                wordsProcessed = fileWordsCount,
+                durationMs = fileDurationMs
             )
         )
       } else {
+        sessionFilesFailed++
         updateQueueItem(pendingItem.id) {
           it.copy(
               status = FileQueueStatus.WAIT,
@@ -887,7 +999,9 @@ object TranslationCoordinator {
                 targetLang = settings.targetLang,
                 engineName = settings.engine.displayName,
                 sourceSnapshot = srcJoin,
-                translatedSnapshot = ""
+                translatedSnapshot = "",
+                wordsProcessed = fileWordsCount,
+                durationMs = fileDurationMs
             )
         )
       }
@@ -897,10 +1011,110 @@ object TranslationCoordinator {
     isPausedFlag.set(false)
     shouldStopFlag.set(false)
     _progressState.update { it.copy(isRunning = false, isPaused = false) }
+    val batchDurationMs = (System.currentTimeMillis() - batchStartMs).coerceAtLeast(1L)
+    _sessionSummary.value = SessionSummaryReport(
+        sessionId = System.currentTimeMillis(),
+        completedAt = System.currentTimeMillis(),
+        originalLines = sessionOriginalLines,
+        translatedLines = sessionTranslatedLines,
+        skippedLines = sessionSkippedLines,
+        errorsEncountered = sessionErrors,
+        totalDurationMs = batchDurationMs,
+        wordsProcessed = sessionWords,
+        filesSucceeded = sessionFilesSucceeded,
+        filesFailed = sessionFilesFailed,
+        stoppedEarly = stoppedByUser
+    )
     refreshAutoResumeCounts(context, settings)
     if (!stoppedByUser) {
       _completionToast.value = "Semua file dalam antrean selesai diterjemahkan!"
     }
+  }
+
+  suspend fun retryErrorEntry(
+      context: Context,
+      settings: TranslatorSettings,
+      errorId: String
+  ): Boolean {
+    val entry = _errorLogEntries.value.firstOrNull { it.id == errorId } ?: return false
+    if (entry.isFormatError || entry.fileId == null || entry.lineIndex == null) return false
+
+    _errorLogEntries.update { list ->
+      list.map { if (it.id == errorId) it.copy(isRetrying = true) else it }
+    }
+
+    val glossary = WarbandTextProcessor.parseGlossary(settings.glossaryText)
+    val sep = settings.separator.ifEmpty { "|" }
+    val split = WarbandTextProcessor.splitLine(entry.originalLine, sep, settings.stripTag)
+    val protected = WarbandTextProcessor.protectWarbandTokens(split.textPart, glossary)
+    val fallbackPool = TranslationEngine.entries.filter { it != settings.engine }
+
+    var translated: String? = null
+    var lastError = "Koneksi gagal"
+    val enginesToTry = if (settings.autoFallback) listOf(settings.engine) + fallbackPool else listOf(settings.engine)
+
+    for (eng in enginesToTry) {
+      try {
+        val raw = apiClient.translate(
+            engine = eng,
+            text = protected.protectedText,
+            sourceLang = settings.sourceLang,
+            targetLang = settings.targetLang
+        )
+        val restored = WarbandTextProcessor.restoreWarbandTokens(raw, protected.tokens, glossary)
+        translated = WarbandTextProcessor.applyMedievalTonePostProcessing(
+            restored,
+            settings.targetLang,
+            settings.medievalToneEnabled
+        )
+        break
+      } catch (e: Exception) {
+        lastError = e.message ?: lastError
+      }
+    }
+
+    return if (translated != null) {
+      val finalLine = if (split.hasCode) "${split.codePart}$sep$translated" else translated
+      updateLineInQueueFile(
+          context = context,
+          fileId = entry.fileId,
+          lineIndex = entry.lineIndex,
+          newTranslatedLine = finalLine,
+          separator = sep,
+          targetLang = settings.targetLang
+      )
+      _errorLogEntries.update { list -> list.filterNot { it.id == errorId } }
+      syncFailedRowsStrings()
+      _sessionSummary.update { current ->
+        current?.copy(
+            translatedLines = current.translatedLines + 1,
+            errorsEncountered = (current.errorsEncountered - 1).coerceAtLeast(0)
+        )
+      }
+      appendLog("Retry berhasil: ${entry.fileName} baris #${entry.lineIndex + 1}", LogLevel.OK)
+      true
+    } else {
+      _errorLogEntries.update { list ->
+        list.map { if (it.id == errorId) it.copy(isRetrying = false, errorMessage = lastError) else it }
+      }
+      syncFailedRowsStrings()
+      appendLog("Retry gagal: ${entry.fileName} baris #${entry.lineIndex + 1} ($lastError)", LogLevel.ERROR)
+      false
+    }
+  }
+
+  suspend fun retryAllRowErrors(context: Context, settings: TranslatorSettings): Pair<Int, Int> {
+    val rowErrors = _errorLogEntries.value.filter { !it.isFormatError && it.fileId != null && it.lineIndex != null }
+    var succeeded = 0
+    var failed = 0
+    for (err in rowErrors) {
+      if (retryErrorEntry(context, settings, err.id)) {
+        succeeded++
+      } else {
+        failed++
+      }
+    }
+    return succeeded to failed
   }
 
   private fun updateQueueItem(id: String, transform: (QueuedFileItem) -> QueuedFileItem) {

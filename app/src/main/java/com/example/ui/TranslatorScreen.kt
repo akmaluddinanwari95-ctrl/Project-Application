@@ -96,10 +96,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.BatchSizeOptions
+import com.example.domain.CsvValidationReport
+import com.example.domain.CsvValidationStatus
 import com.example.domain.DelayOptions
 import com.example.domain.FileQueueStatus
 import com.example.domain.GlossaryPreset
 import com.example.domain.I18nStrings
+import com.example.domain.LanguageOption
 import com.example.domain.LogLevel
 import com.example.domain.PreviewRow
 import com.example.domain.QueuedFileItem
@@ -120,6 +123,7 @@ import com.example.ui.theme.Forest
 import com.example.ui.theme.ForestText
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldMuted
+import com.example.ui.theme.LocalWarbandPalette
 import com.example.ui.theme.MahoganyHeader
 import com.example.ui.theme.MahoganyInput
 import com.example.ui.theme.Obsidian
@@ -150,15 +154,26 @@ fun TranslatorScreen(
     onPickSaveFolder: () -> Unit,
     onStartWithNotificationCheck: () -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   val settings by viewModel.settings.collectAsStateWithLifecycle()
+  val targetLanguages by viewModel.targetLanguages.collectAsStateWithLifecycle()
   val cacheCount by viewModel.cacheCount.collectAsStateWithLifecycle()
   val historyEntries by viewModel.historyEntries.collectAsStateWithLifecycle()
+  val filteredHistoryEntries by viewModel.filteredHistoryEntries.collectAsStateWithLifecycle()
+  val historySearchQuery by viewModel.historySearchQuery.collectAsStateWithLifecycle()
+  val historyStatusFilter by viewModel.historyStatusFilter.collectAsStateWithLifecycle()
+  val dailyProductivityStats by viewModel.dailyProductivityStats.collectAsStateWithLifecycle()
   val fileQueue by viewModel.fileQueue.collectAsStateWithLifecycle()
   val progressState by viewModel.progressState.collectAsStateWithLifecycle()
   val previewRows by viewModel.previewRows.collectAsStateWithLifecycle()
   val csvStructurePreview by viewModel.csvStructurePreview.collectAsStateWithLifecycle()
+  val validationReports by viewModel.validationReports.collectAsStateWithLifecycle()
+  val showValidationWarningDialog by viewModel.showValidationWarningDialog.collectAsStateWithLifecycle()
+  val validationWarningReports by viewModel.validationWarningReports.collectAsStateWithLifecycle()
   val logs by viewModel.logs.collectAsStateWithLifecycle()
+  val errorLogEntries by viewModel.errorLogEntries.collectAsStateWithLifecycle()
   val failedRows by viewModel.failedRows.collectAsStateWithLifecycle()
+  val sessionSummary by viewModel.sessionSummary.collectAsStateWithLifecycle()
   val connectionStatus by viewModel.connectionStatus.collectAsStateWithLifecycle()
   val errorAlert by viewModel.errorAlert.collectAsStateWithLifecycle()
   val pendingExportPreviews by viewModel.pendingExportPreviews.collectAsStateWithLifecycle()
@@ -176,6 +191,7 @@ fun TranslatorScreen(
   var activeHelpTopicKey by remember { mutableStateOf<String?>(null) }
   var glossaryExpanded by remember { mutableStateOf(false) }
   var guideExpanded by remember { mutableStateOf(false) }
+  var showAddCustomLangDialog by remember { mutableStateOf(false) }
 
   BackHandler(enabled = activeTab != AppTab.TRANSLATOR) {
     activeTab = AppTab.TRANSLATOR
@@ -189,7 +205,7 @@ fun TranslatorScreen(
   val isRegexValid = remember(settings.skipRegex) { WarbandTextProcessor.isValidRegex(settings.skipRegex) }
 
   Scaffold(
-      containerColor = Obsidian,
+      containerColor = pal.bgBottom,
       contentWindowInsets = WindowInsets.safeDrawing,
       snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       topBar = {
@@ -211,17 +227,17 @@ fun TranslatorScreen(
                 onStop = { viewModel.stopTranslation() }
             )
           }
-          HorizontalDivider(color = BurgundyBorder, thickness = 1.dp)
+          HorizontalDivider(color = pal.border, thickness = 1.dp)
           NavigationBar(
-              containerColor = MahoganyHeader,
-              contentColor = Parchment
+              containerColor = pal.headerBg,
+              contentColor = pal.textPrimary
           ) {
             val navColors = NavigationBarItemDefaults.colors(
-                selectedIconColor = GoldAccent,
-                selectedTextColor = GoldAccent,
-                indicatorColor = Burgundy.copy(alpha = 0.55f),
-                unselectedIconColor = ParchmentDim,
-                unselectedTextColor = ParchmentDim
+                selectedIconColor = pal.primaryAccent,
+                selectedTextColor = pal.primaryAccent,
+                indicatorColor = pal.actionBg.copy(alpha = 0.55f),
+                unselectedIconColor = pal.textSecondary,
+                unselectedTextColor = pal.textSecondary
             )
             NavigationBarItem(
                 selected = activeTab == AppTab.TRANSLATOR,
@@ -270,10 +286,15 @@ fun TranslatorScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(
+                Brush.verticalGradient(
+                    colors = listOf(pal.bgTop, pal.bgMid, pal.bgBottom)
+                )
+            )
+            .background(
                 Brush.radialGradient(
-                    colors = listOf(Burgundy.copy(alpha = 0.24f), Obsidian),
+                    colors = listOf(pal.parchmentGlow.copy(alpha = 0.34f), Color.Transparent),
                     center = Offset(500f, 0f),
-                    radius = 1200f
+                    radius = 1250f
                 )
             )
             .padding(innerPadding)
@@ -281,7 +302,7 @@ fun TranslatorScreen(
       when (activeTab) {
         AppTab.HISTORY -> {
           HistoryScreenContent(
-              historyEntries = historyEntries,
+              historyEntries = filteredHistoryEntries,
               isRunning = progressState.isRunning,
               tr = ::tr,
               onReopenEntry = { entry ->
@@ -291,7 +312,14 @@ fun TranslatorScreen(
               },
               onDeleteEntry = { viewModel.deleteHistoryEntry(it) },
               onClearAll = { viewModel.clearHistory() },
-              onOpenHelp = { activeHelpTopicKey = it }
+              onOpenHelp = { activeHelpTopicKey = it },
+              searchQuery = historySearchQuery,
+              onSearchQueryChange = { viewModel.setHistorySearchQuery(it) },
+              statusFilter = historyStatusFilter,
+              onStatusFilterChange = { viewModel.setHistoryStatusFilter(it) },
+              dailyStats = dailyProductivityStats,
+              totalDoneCount = historyEntries.count { it.status == "DONE" },
+              totalFailedCount = historyEntries.count { it.status != "DONE" }
           )
         }
         AppTab.SETTINGS -> {
@@ -304,6 +332,7 @@ fun TranslatorScreen(
               onExportPrefixChange = { viewModel.setExportFilenamePrefix(it) },
               onExportSuffixChange = { viewModel.setExportFilenameSuffix(it) },
               onSelectUiLanguage = { viewModel.setUiLanguage(it) },
+              onToggleMedievalTheme = { viewModel.setMedievalThemeEnabled(it) },
               onClearCache = { viewModel.clearCache() },
               onExportCacheBackup = onExportCacheBackup,
               onImportCacheBackup = onImportCacheBackup,
@@ -351,10 +380,12 @@ fun TranslatorScreen(
           // 2. Pengaturan Bahasa & Format Warband
           FormatSection(
               settings = settings,
+              targetLanguages = targetLanguages,
               isRegexValid = isRegexValid,
               tr = ::tr,
               onSelectSourceLang = { viewModel.setSourceLang(it) },
               onSelectTargetLang = { viewModel.setTargetLang(it) },
+              onOpenAddCustomLang = { showAddCustomLangDialog = true },
               onSeparatorChange = { viewModel.setSeparator(it) },
               onStripTagChange = { viewModel.setStripTag(it) },
               onSkipRegexChange = { viewModel.setSkipRegex(it) },
@@ -494,6 +525,7 @@ fun TranslatorScreen(
           // 4. Unggah & Antrean File CSV
           QueueSection(
               fileQueue = fileQueue,
+              validationReports = validationReports,
               selectedPreviewFileId = csvStructurePreview?.fileId,
               isRunning = progressState.isRunning,
               exportPrefix = settings.exportFilenamePrefix,
@@ -527,7 +559,7 @@ fun TranslatorScreen(
               progress = progressState,
               hasWaitingFiles = hasWaitingFiles,
               hasDoneFiles = hasDoneFiles,
-              failedCount = failedRows.size,
+              failedCount = errorLogEntries.size.coerceAtLeast(failedRows.size),
               tr = ::tr,
               onStart = onStartWithNotificationCheck,
               onTogglePause = { viewModel.togglePause() },
@@ -541,6 +573,31 @@ fun TranslatorScreen(
           TelemetryChartCard(
               progress = progressState,
               tr = ::tr,
+              onOpenHelp = { activeHelpTopicKey = it }
+          )
+
+          // 5c. Dasbor Ringkasan Sesi Pasca-Batch + Produktivitas
+          val activeSummary = sessionSummary
+          if (activeSummary != null && !progressState.isRunning) {
+            SessionSummaryDashboardCard(
+                summary = activeSummary,
+                dailyStats = dailyProductivityStats,
+                tr = ::tr,
+                onDismiss = { viewModel.dismissSessionSummary() },
+                onOpenHelp = { activeHelpTopicKey = it }
+            )
+          }
+
+          // 5d. Log Error Terjemahan (Inspect & Coba Ulang per Baris)
+          ErrorLogSectionCard(
+              entries = errorLogEntries,
+              isRunning = progressState.isRunning,
+              tr = ::tr,
+              onRetryEntry = { viewModel.retryErrorEntry(it) },
+              onRetryAllRowErrors = { viewModel.retryAllErrors() },
+              onDismissEntry = { viewModel.dismissErrorEntry(it) },
+              onClearAll = { viewModel.clearErrorLog() },
+              onExportErrors = onExportErrorLog,
               onOpenHelp = { activeHelpTopicKey = it }
           )
 
@@ -672,6 +729,21 @@ fun TranslatorScreen(
       onApplyDiff = { viewModel.applyModDiffToQueue() },
       onDismiss = { viewModel.dismissModDiffDialog() }
   )
+
+  CsvValidationWarningDialog(
+      visible = showValidationWarningDialog,
+      reports = validationWarningReports,
+      tr = ::tr,
+      onProceedAnyway = { viewModel.startTranslation(bypassValidation = true) },
+      onDismiss = { viewModel.dismissValidationWarningDialog() }
+  )
+
+  AddCustomLanguageDialog(
+      visible = showAddCustomLangDialog,
+      tr = ::tr,
+      onAdd = { code, label -> viewModel.addCustomTargetLanguage(code, label) },
+      onDismiss = { showAddCustomLangDialog = false }
+  )
 }
 
 @Composable
@@ -682,8 +754,9 @@ private fun TopMedievalHeader(
     onSelectLang: (UiLanguage) -> Unit,
     onOpenHelp: (String) -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
   Surface(
-      color = MahoganyHeader.copy(alpha = 0.96f),
+      color = pal.headerBg.copy(alpha = 0.96f),
       shadowElevation = 6.dp,
       modifier = Modifier.fillMaxWidth()
   ) {
@@ -1067,16 +1140,20 @@ private fun EngineSection(
 @Composable
 private fun FormatSection(
     settings: TranslatorSettings,
+    targetLanguages: List<LanguageOption>,
     isRegexValid: Boolean,
     tr: (String) -> String,
     onSelectSourceLang: (String) -> Unit,
     onSelectTargetLang: (String) -> Unit,
+    onOpenAddCustomLang: () -> Unit,
     onSeparatorChange: (String) -> Unit,
     onStripTagChange: (String) -> Unit,
     onSkipRegexChange: (String) -> Unit,
     onToggleMedievalTone: (Boolean) -> Unit,
     onOpenHelp: (String) -> Unit
 ) {
+  val pal = LocalWarbandPalette.current
+  val effectiveTargetLanguages = targetLanguages.ifEmpty { SupportedLanguages.targetLanguages }
   MedievalCard {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text("📜", fontSize = 15.sp)
@@ -1084,7 +1161,7 @@ private fun FormatSection(
       Text(
           text = tr("secFormat").uppercase(),
           style = MaterialTheme.typography.titleMedium,
-          color = GoldAccent,
+          color = pal.primaryAccent,
           modifier = Modifier.weight(1f, fill = false)
       )
       HelpIconButton(
@@ -1094,11 +1171,11 @@ private fun FormatSection(
       )
     }
 
-    HorizontalDivider(color = BurgundyBorderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
+    HorizontalDivider(color = pal.borderSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 10.dp))
 
     // Source language
     Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(tr("lblSrcLang"), style = MaterialTheme.typography.labelMedium, color = ParchmentDim)
+      Text(tr("lblSrcLang"), style = MaterialTheme.typography.labelMedium, color = pal.textSecondary)
       HelpIconButton(topicKey = "lblSrcLang", contentDescription = tr("lblSrcLang"), onOpenHelp = onOpenHelp)
     }
     val activeSrc = SupportedLanguages.sourceLanguages.firstOrNull { it.code == settings.sourceLang }
@@ -1114,23 +1191,36 @@ private fun FormatSection(
     Spacer(modifier = Modifier.height(6.dp))
     Text(
         text = "⬇",
-        color = GoldAccent,
+        color = pal.primaryAccent,
         fontSize = 16.sp,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth()
     )
     Spacer(modifier = Modifier.height(2.dp))
 
-    // Target language
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(tr("lblTgtLang"), style = MaterialTheme.typography.labelMedium, color = ParchmentDim)
-      HelpIconButton(topicKey = "lblTgtLang", contentDescription = tr("lblTgtLang"), onOpenHelp = onOpenHelp)
+    // Target language (Room-backed)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+        Text(tr("lblTgtLang"), style = MaterialTheme.typography.labelMedium, color = pal.textSecondary)
+        HelpIconButton(topicKey = "lblTgtLang", contentDescription = tr("lblTgtLang"), onOpenHelp = onOpenHelp)
+      }
+      TextButton(
+          onClick = onOpenAddCustomLang,
+          contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+          modifier = Modifier.testTag("open_add_custom_lang_button")
+      ) {
+        Text(tr("btnAddCustomLang"), fontSize = 11.sp, color = pal.primaryAccent)
+      }
     }
-    val activeTgt = SupportedLanguages.targetLanguages.firstOrNull { it.code == settings.targetLang }
-        ?: SupportedLanguages.targetLanguages.first()
+    val activeTgt = effectiveTargetLanguages.firstOrNull { it.code == settings.targetLang }
+        ?: LanguageOption(settings.targetLang, settings.targetLang.uppercase())
     MedievalDropdown(
         selectedLabel = activeTgt.label,
-        items = SupportedLanguages.targetLanguages,
+        items = effectiveTargetLanguages,
         itemLabel = { it.label },
         onSelect = { onSelectTargetLang(it.code) },
         testTag = "target_lang_dropdown"
@@ -1303,6 +1393,7 @@ private fun FormatSection(
 @Composable
 private fun QueueSection(
     fileQueue: List<QueuedFileItem>,
+    validationReports: Map<String, CsvValidationReport>,
     selectedPreviewFileId: String?,
     isRunning: Boolean,
     exportPrefix: String,
@@ -1514,6 +1605,22 @@ private fun QueueSection(
                       color = GoldAccent,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis
+                  )
+                }
+                val valReport = validationReports[item.id]
+                if (valReport != null) {
+                  val (valColor, valText) = when (valReport.status) {
+                    CsvValidationStatus.VALID -> ForestText to "✓ ${tr("csvValOk")}"
+                    CsvValidationStatus.WARNING -> AmberText to "⚠ ${tr("csvValWarn")}: ${valReport.malformedLinesCount}"
+                    CsvValidationStatus.MALFORMED -> CrimsonText to "✕ ${tr("csvValMalformed")}"
+                  }
+                  Text(
+                      text = valText,
+                      style = MaterialTheme.typography.labelSmall,
+                      color = valColor,
+                      maxLines = 1,
+                      overflow = TextOverflow.Ellipsis,
+                      modifier = Modifier.testTag("queue_validation_badge_${item.name}")
                   )
                 }
               }

@@ -273,4 +273,105 @@ class WarbandTextProcessorTest {
     assertEquals("str_king_harlaus|Raja Harlaus rules Swadia.", updated[0])
     assertEquals("str_king_yaroglek|Raja Yaroglek rules Vaegir.", updated[1])
   }
+
+  @Test
+  fun importGlossaryFromContent_parsesCsvWithHeadersAndQuotesAndTsv() {
+    val csv = """
+      source,target
+      "King Harlaus","Raja Harlaus"
+      "Swadian Knight",Ksatria Swadia
+      Calradia,
+    """.trimIndent()
+
+    val csvResult = WarbandTextProcessor.importGlossaryFromContent(csv, "terms.csv")
+    assertEquals("CSV", csvResult.formatDetected)
+    assertEquals(3, csvResult.importedCount)
+    assertTrue(csvResult.importedLinesText.contains("King Harlaus=Raja Harlaus"))
+    assertTrue(csvResult.importedLinesText.contains("Swadian Knight=Ksatria Swadia"))
+    assertTrue(csvResult.importedLinesText.contains("Calradia"))
+
+    val tsv = "source\ttarget\nPraven\tPraven\nVassal\tVasali"
+    val tsvResult = WarbandTextProcessor.importGlossaryFromContent(tsv, "glossary.tsv")
+    assertEquals("TSV", tsvResult.formatDetected)
+    assertEquals(2, tsvResult.importedCount)
+    assertTrue(tsvResult.importedLinesText.contains("Vassal=Vasali"))
+  }
+
+  @Test
+  fun validateCsvStructure_detectsValidWarningAndMalformedFiles() {
+    val validFile = QueuedFileItem(
+        id = "v1",
+        name = "dialogs.csv",
+        lines = listOf(
+            "dlga_1|Hail, {playername}!",
+            "dlga_2|May Swadia endure."
+        )
+    )
+    val validReport = WarbandTextProcessor.validateCsvStructure(validFile, "|", "{***}", "^\\d+$")
+    assertEquals(CsvValidationStatus.VALID, validReport.status)
+    assertEquals(0, validReport.malformedLinesCount)
+
+    val warningFile = QueuedFileItem(
+        id = "w1",
+        name = "partial.csv",
+        lines = listOf(
+            "dlga_1|First valid line",
+            "dlga_2|Second valid line",
+            "dlga_3|Third | extra pipe line"
+        )
+    )
+    val warningReport = WarbandTextProcessor.validateCsvStructure(warningFile, "|", "{***}", "^\\d+$")
+    assertEquals(CsvValidationStatus.WARNING, warningReport.status)
+    assertTrue(warningReport.issues.isNotEmpty())
+
+    val malformedFile = QueuedFileItem(
+        id = "m1",
+        name = "broken.csv",
+        lines = listOf(
+            "comma_separated,no_pipe_here",
+            "another_broken_row,text",
+            "|empty_id_left"
+        )
+    )
+    val malformedReport = WarbandTextProcessor.validateCsvStructure(malformedFile, "|", "{***}", "^\\d+$")
+    assertEquals(CsvValidationStatus.MALFORMED, malformedReport.status)
+    assertTrue(malformedReport.malformedLinesCount >= 3)
+  }
+
+  @Test
+  fun countWordsAndDailyStats_aggregatesRecentDays() {
+    val words = WarbandTextProcessor.countWordsInLines(
+        lines = listOf("999", "str_a|Hello brave knights", "str_b|Swadia"),
+        separator = "|",
+        stripTag = "{***}",
+        skipRegex = "^\\d+$"
+    )
+    assertEquals(4, words)
+
+    val now = System.currentTimeMillis()
+    val stats = WarbandTextProcessor.computeDailyProductivityStats(
+        history = listOf(
+            com.example.data.local.TranslationHistoryEntity(
+                fileName = "a.csv",
+                timestamp = now,
+                status = "DONE",
+                processedLines = 10,
+                wordsProcessed = 65
+            ),
+            com.example.data.local.TranslationHistoryEntity(
+                fileName = "b.csv",
+                timestamp = now,
+                status = "ERROR",
+                processedLines = 2,
+                wordsProcessed = 12
+            )
+        ),
+        daysCount = 7
+    )
+    assertEquals(7, stats.size)
+    val todayBucket = stats.last()
+    assertEquals(77, todayBucket.wordsCount)
+    assertEquals(1, todayBucket.filesDone)
+    assertEquals(1, todayBucket.filesFailed)
+  }
 }

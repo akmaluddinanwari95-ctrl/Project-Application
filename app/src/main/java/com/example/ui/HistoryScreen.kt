@@ -3,9 +3,12 @@ package com.example.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,10 +24,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -32,6 +37,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -43,28 +50,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.TranslationHistoryEntity
-import com.example.ui.theme.AmberBg
-import com.example.ui.theme.AmberText
-import com.example.ui.theme.Burgundy
-import com.example.ui.theme.BurgundyBorder
-import com.example.ui.theme.BurgundyBorderSoft
-import com.example.ui.theme.Crimson
-import com.example.ui.theme.CrimsonText
-import com.example.ui.theme.Forest
-import com.example.ui.theme.ForestText
-import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldMuted
-import com.example.ui.theme.Parchment
-import com.example.ui.theme.ParchmentDim
+import com.example.domain.DailyProductivityStat
+import com.example.ui.theme.LocalWarbandPalette
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HistoryScreenContent(
     historyEntries: List<TranslationHistoryEntity>,
@@ -73,8 +71,16 @@ fun HistoryScreenContent(
     onReopenEntry: (TranslationHistoryEntity) -> Unit,
     onDeleteEntry: (Long) -> Unit,
     onClearAll: () -> Unit,
-    onOpenHelp: (String) -> Unit
+    onOpenHelp: (String) -> Unit,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    statusFilter: String = "ALL",
+    onStatusFilterChange: (String) -> Unit = {},
+    dailyStats: List<DailyProductivityStat> = emptyList(),
+    totalDoneCount: Int = historyEntries.count { it.status == "DONE" },
+    totalFailedCount: Int = historyEntries.count { it.status != "DONE" }
 ) {
+  val pal = LocalWarbandPalette.current
   val dateFormat = remember { SimpleDateFormat("dd MMM yyyy · HH:mm", Locale.getDefault()) }
 
   LazyColumn(
@@ -96,14 +102,14 @@ fun HistoryScreenContent(
             Icon(
                 imageVector = Icons.Default.History,
                 contentDescription = tr("secHistory"),
-                tint = GoldAccent,
+                tint = pal.primaryAccent,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = tr("secHistory").uppercase(),
                 style = MaterialTheme.typography.titleMedium,
-                color = GoldAccent,
+                color = pal.primaryAccent,
                 modifier = Modifier.weight(1f, fill = false)
             )
             HelpIconButton(
@@ -113,13 +119,13 @@ fun HistoryScreenContent(
             )
           }
 
-          if (historyEntries.isNotEmpty()) {
+          if (historyEntries.isNotEmpty() || searchQuery.isNotEmpty() || statusFilter != "ALL") {
             OutlinedButton(
                 onClick = onClearAll,
-                border = BorderStroke(1.dp, Crimson),
+                border = BorderStroke(1.dp, pal.errorBorder),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Crimson.copy(alpha = 0.25f),
-                    contentColor = CrimsonText
+                    containerColor = pal.errorBg,
+                    contentColor = pal.errorText
                 ),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                 modifier = Modifier
@@ -137,8 +143,95 @@ fun HistoryScreenContent(
         Text(
             text = tr("historyDesc"),
             style = MaterialTheme.typography.bodySmall,
-            color = ParchmentDim
+            color = pal.textSecondary
         )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Search input
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            singleLine = true,
+            leadingIcon = {
+              Icon(Icons.Default.Search, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(18.dp))
+            },
+            trailingIcon = {
+              if (searchQuery.isNotEmpty()) {
+                IconButton(onClick = { onSearchQueryChange("") }) {
+                  Icon(Icons.Default.Close, contentDescription = tr("btnCancel"), tint = pal.textSecondary, modifier = Modifier.size(16.dp))
+                }
+              }
+            },
+            placeholder = {
+              Text(
+                  text = tr("historySearchPlaceholder"),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = pal.textSecondary.copy(alpha = 0.6f)
+              )
+            },
+            textStyle = MaterialTheme.typography.bodySmall.copy(color = pal.textPrimary),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = pal.primaryAccent,
+                unfocusedBorderColor = pal.border,
+                focusedContainerColor = pal.inputBg,
+                unfocusedContainerColor = pal.inputBg,
+                cursorColor = pal.primaryAccent
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("history_search_input")
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Status filter chips
+        val filterOptions = listOf(
+            "ALL" to tr("histFilterAll"),
+            "DONE" to tr("histFilterDone"),
+            "STOPPED" to tr("histFilterStopped"),
+            "ERROR" to tr("histFilterError")
+        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          filterOptions.forEach { (code, label) ->
+            val selected = statusFilter == code
+            Surface(
+                shape = CircleShape,
+                color = if (selected) pal.actionBg.copy(alpha = 0.7f) else pal.deepSurface,
+                border = BorderStroke(1.dp, if (selected) pal.primaryAccent else pal.border),
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .clickable { onStatusFilterChange(code) }
+                    .testTag("history_filter_$code")
+            ) {
+              Text(
+                  text = label,
+                  style = MaterialTheme.typography.labelSmall.copy(
+                      fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                  ),
+                  color = if (selected) pal.primaryAccent else pal.textSecondary,
+                  modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+              )
+            }
+          }
+        }
+      }
+    }
+
+    if (dailyStats.isNotEmpty() && (totalDoneCount + totalFailedCount) > 0) {
+      item {
+        Box(modifier = Modifier.widthIn(max = 720.dp)) {
+          ProductivityChartsCard(
+              dailyStats = dailyStats,
+              totalDone = totalDoneCount,
+              totalFailed = totalFailedCount,
+              tr = tr
+          )
+        }
       }
     }
 
@@ -156,27 +249,27 @@ fun HistoryScreenContent(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(Burgundy.copy(alpha = 0.3f))
-                    .border(1.dp, GoldMuted, CircleShape),
+                    .background(pal.actionBg.copy(alpha = 0.3f))
+                    .border(1.dp, pal.primaryMuted, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
               Icon(
                   imageVector = Icons.Default.History,
                   contentDescription = null,
-                  tint = GoldAccent,
+                  tint = pal.primaryAccent,
                   modifier = Modifier.size(28.dp)
               )
             }
             Text(
                 text = tr("historyEmptyTitle"),
                 style = MaterialTheme.typography.titleSmall,
-                color = Parchment,
+                color = pal.textPrimary,
                 textAlign = TextAlign.Center
             )
             Text(
                 text = tr("historyEmptySub"),
                 style = MaterialTheme.typography.bodySmall,
-                color = ParchmentDim,
+                color = pal.textSecondary,
                 textAlign = TextAlign.Center
             )
           }
@@ -185,9 +278,9 @@ fun HistoryScreenContent(
     } else {
       items(historyEntries, key = { it.id }) { entry ->
         val (badgeBg, badgeBorder, badgeText, statusLabel) = when (entry.status) {
-          "DONE" -> HistoryStatusStyle(Color(0xFF0E2914), Forest, ForestText, tr("histStatusDone"))
-          "STOPPED" -> HistoryStatusStyle(AmberBg, GoldMuted, AmberText, tr("histStatusStopped"))
-          else -> HistoryStatusStyle(Color(0xFF331015), Crimson, CrimsonText, tr("histStatusError"))
+          "DONE" -> HistoryStatusStyle(pal.successBg, pal.successBorder, pal.successText, tr("histStatusDone"))
+          "STOPPED" -> HistoryStatusStyle(pal.warningBg, pal.primaryMuted, pal.warningText, tr("histStatusStopped"))
+          else -> HistoryStatusStyle(pal.errorBg, pal.errorBorder, pal.errorText, tr("histStatusError"))
         }
 
         Column(
@@ -195,8 +288,8 @@ fun HistoryScreenContent(
                 .widthIn(max = 720.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFF1A100F))
-                .border(1.dp, BurgundyBorder, RoundedCornerShape(14.dp))
+                .background(pal.cardBottom)
+                .border(1.dp, pal.border, RoundedCornerShape(14.dp))
                 .padding(14.dp)
                 .testTag("history_item_${entry.id}"),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -210,14 +303,14 @@ fun HistoryScreenContent(
               Text(
                   text = entry.fileName,
                   style = MaterialTheme.typography.titleSmall,
-                  color = Parchment,
+                  color = pal.textPrimary,
                   maxLines = 1,
                   overflow = TextOverflow.Ellipsis
               )
               Text(
                   text = dateFormat.format(Date(entry.timestamp)),
                   style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                  color = ParchmentDim
+                  color = pal.textSecondary
               )
             }
 
@@ -237,7 +330,7 @@ fun HistoryScreenContent(
             }
           }
 
-          HorizontalDivider(color = BurgundyBorderSoft, thickness = 0.8.dp)
+          HorizontalDivider(color = pal.borderSoft, thickness = 0.8.dp)
 
           Row(
               modifier = Modifier.fillMaxWidth(),
@@ -247,7 +340,7 @@ fun HistoryScreenContent(
             Text(
                 text = "${entry.processedLines}/${entry.totalLines} ${tr("cacheUnit")} · ${entry.sourceLang}→${entry.targetLang} · ${entry.engineName}",
                 style = MaterialTheme.typography.labelSmall,
-                color = ParchmentDim,
+                color = pal.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
@@ -263,16 +356,16 @@ fun HistoryScreenContent(
                   onClick = { onReopenEntry(entry) },
                   enabled = !isRunning,
                   colors = ButtonDefaults.buttonColors(
-                      containerColor = Burgundy,
-                      contentColor = Parchment
+                      containerColor = pal.actionBg,
+                      contentColor = pal.textPrimary
                   ),
-                  border = BorderStroke(1.dp, GoldMuted),
+                  border = BorderStroke(1.dp, pal.primaryMuted),
                   contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                   modifier = Modifier
                       .minimumInteractiveComponentSize()
                       .testTag("reopen_history_${entry.id}")
               ) {
-                Icon(Icons.Default.FolderOpen, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(15.dp))
+                Icon(Icons.Default.FolderOpen, contentDescription = null, tint = pal.primaryAccent, modifier = Modifier.size(15.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(tr("btnReopenFile"), fontSize = 12.sp)
               }
@@ -284,7 +377,7 @@ fun HistoryScreenContent(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Delete",
-                    tint = ParchmentDim,
+                    tint = pal.textSecondary,
                     modifier = Modifier.size(18.dp)
                 )
               }

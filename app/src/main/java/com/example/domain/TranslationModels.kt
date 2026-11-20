@@ -136,6 +136,7 @@ data class TranslatorSettings(
     val batchSize: Int = 1,
     val autoFallback: Boolean = true,
     val medievalToneEnabled: Boolean = true,
+    val medievalThemeEnabled: Boolean = true,
     val sourceLang: String = "en",
     val targetLang: String = "id",
     val separator: String = "|",
@@ -202,6 +203,12 @@ data class GlossaryRules(
   val totalCount: Int get() = noTranslate.size + forcedPairs.size
 }
 
+data class GlossaryImportResult(
+    val importedLinesText: String,
+    val importedCount: Int,
+    val formatDetected: String
+)
+
 data class QueuedFileItem(
     val id: String,
     val name: String,
@@ -236,6 +243,66 @@ data class CsvStructurePreview(
     val rows: List<CsvPreviewRow>,
     val matchedSeparatorCount: Int,
     val skippedCount: Int
+)
+
+enum class CsvValidationStatus {
+  VALID,
+  WARNING,
+  MALFORMED
+}
+
+data class CsvValidationIssue(
+    val lineNumber: Int,
+    val reason: String,
+    val lineSnippet: String
+)
+
+data class CsvValidationReport(
+    val fileId: String,
+    val fileName: String,
+    val status: CsvValidationStatus,
+    val totalLines: Int,
+    val separatorMatchedLines: Int,
+    val skippedLines: Int,
+    val alignedColumnsCount: Int,
+    val malformedLinesCount: Int,
+    val issues: List<CsvValidationIssue> = emptyList(),
+    val summaryMessage: String = ""
+)
+
+data class TranslationErrorItem(
+    val id: String,
+    val fileId: String?,
+    val fileName: String,
+    val lineIndex: Int?,
+    val originalLine: String,
+    val errorMessage: String,
+    val isFormatError: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis(),
+    val isRetrying: Boolean = false
+)
+
+data class SessionSummaryReport(
+    val sessionId: Long,
+    val completedAt: Long,
+    val originalLines: Int,
+    val translatedLines: Int,
+    val skippedLines: Int,
+    val errorsEncountered: Int,
+    val totalDurationMs: Long,
+    val wordsProcessed: Int,
+    val filesSucceeded: Int,
+    val filesFailed: Int,
+    val stoppedEarly: Boolean
+)
+
+data class DailyProductivityStat(
+    val dayLabel: String,
+    val dayEpoch: Long,
+    val wordsCount: Int,
+    val linesCount: Int,
+    val filesDone: Int,
+    val filesFailed: Int
 )
 
 data class TelemetrySample(

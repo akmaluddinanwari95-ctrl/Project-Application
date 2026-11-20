@@ -16,5 +16,7 @@ data class TranslationHistoryEntity(
     val targetLang: String = "id",
     val engineName: String = "Google Translate",
     val sourceSnapshot: String = "",
-    val translatedSnapshot: String = ""
+    val translatedSnapshot: String = "",
+    val wordsProcessed: Int = 0,
+    val durationMs: Long = 0L
 )

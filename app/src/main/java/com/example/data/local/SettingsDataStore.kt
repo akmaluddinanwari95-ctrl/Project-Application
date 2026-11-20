@@ -28,6 +28,7 @@ class SettingsDataStore(private val context: Context) {
     val BATCH_SIZE = intPreferencesKey("batch_size")
     val AUTO_FALLBACK = booleanPreferencesKey("auto_fallback")
     val MEDIEVAL_TONE = booleanPreferencesKey("medieval_tone")
+    val MEDIEVAL_THEME = booleanPreferencesKey("medieval_theme")
     val SRC_LANG = stringPreferencesKey("src_lang")
     val TGT_LANG = stringPreferencesKey("tgt_lang")
     val SEPARATOR = stringPreferencesKey("separator")
@@ -49,6 +50,7 @@ class SettingsDataStore(private val context: Context) {
             batchSize = (prefs[Keys.BATCH_SIZE] ?: 1).coerceIn(1, 10),
             autoFallback = prefs[Keys.AUTO_FALLBACK] ?: true,
             medievalToneEnabled = prefs[Keys.MEDIEVAL_TONE] ?: true,
+            medievalThemeEnabled = prefs[Keys.MEDIEVAL_THEME] ?: true,
             sourceLang = prefs[Keys.SRC_LANG] ?: "en",
             targetLang = prefs[Keys.TGT_LANG] ?: "id",
             separator = prefs[Keys.SEPARATOR] ?: "|",
@@ -71,6 +73,7 @@ class SettingsDataStore(private val context: Context) {
           batchSize = (prefs[Keys.BATCH_SIZE] ?: 1).coerceIn(1, 10),
           autoFallback = prefs[Keys.AUTO_FALLBACK] ?: true,
           medievalToneEnabled = prefs[Keys.MEDIEVAL_TONE] ?: true,
+          medievalThemeEnabled = prefs[Keys.MEDIEVAL_THEME] ?: true,
           sourceLang = prefs[Keys.SRC_LANG] ?: "en",
           targetLang = prefs[Keys.TGT_LANG] ?: "id",
           separator = prefs[Keys.SEPARATOR] ?: "|",
@@ -89,6 +92,7 @@ class SettingsDataStore(private val context: Context) {
       prefs[Keys.BATCH_SIZE] = updated.batchSize.coerceIn(1, 10)
       prefs[Keys.AUTO_FALLBACK] = updated.autoFallback
       prefs[Keys.MEDIEVAL_TONE] = updated.medievalToneEnabled
+      prefs[Keys.MEDIEVAL_THEME] = updated.medievalThemeEnabled
       prefs[Keys.SRC_LANG] = updated.sourceLang
       prefs[Keys.TGT_LANG] = updated.targetLang
       prefs[Keys.SEPARATOR] = updated.separator

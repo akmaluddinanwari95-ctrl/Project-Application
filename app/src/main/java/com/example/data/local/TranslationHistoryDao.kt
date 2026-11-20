@@ -11,6 +11,16 @@ interface TranslationHistoryDao {
   @Query("SELECT * FROM translation_history ORDER BY timestamp DESC")
   fun getAllHistory(): Flow<List<TranslationHistoryEntity>>
 
+  @Query(
+      """
+      SELECT * FROM translation_history
+      WHERE (:query = '' OR fileName LIKE '%' || :query || '%' OR status LIKE '%' || :query || '%' OR targetLang LIKE '%' || :query || '%' OR engineName LIKE '%' || :query || '%')
+        AND (:statusFilter = 'ALL' OR status = :statusFilter)
+      ORDER BY timestamp DESC
+      """
+  )
+  fun searchHistory(query: String, statusFilter: String): Flow<List<TranslationHistoryEntity>>
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insert(entry: TranslationHistoryEntity): Long
 

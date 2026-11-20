@@ -6,16 +6,21 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
 import com.example.data.local.SettingsDataStore
+import com.example.data.local.SupportedLanguageRepository
 import com.example.data.local.TranslationHistoryEntity
 import com.example.data.local.TranslationHistoryRepository
 import com.example.domain.ConnectionBadgeType
 import com.example.domain.ConnectionStatus
 import com.example.domain.CsvStructurePreview
+import com.example.domain.CsvValidationReport
+import com.example.domain.CsvValidationStatus
+import com.example.domain.DailyProductivityStat
 import com.example.domain.ErrorAlert
 import com.example.domain.ExportDelimiter
 import com.example.domain.ExportEncoding
 import com.example.domain.FileQueueStatus
 import com.example.domain.GlossaryPreset
+import com.example.domain.LanguageOption
 import com.example.domain.LogEntry
 import com.example.domain.LogLevel
 import com.example.domain.ModDiffMergeResult
@@ -23,7 +28,10 @@ import com.example.domain.PendingExportPreviewItem
 import com.example.domain.PreviewRow
 import com.example.domain.QaAuditSummary
 import com.example.domain.QueuedFileItem
+import com.example.domain.SessionSummaryReport
+import com.example.domain.SupportedLanguages
 import com.example.domain.TranslationEngine
+import com.example.domain.TranslationErrorItem
 import com.example.domain.TranslationProgressState
 import com.example.domain.TranslatorSettings
 import com.example.domain.UiLanguage
@@ -33,6 +41,8 @@ import com.example.service.TranslationForegroundService
 import com.example.util.AndroidFileHelper
 import com.example.util.SaveOutcome
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -42,8 +52,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed class UiEvent {
   data class ShowToast(val message: String) : UiEvent()
@@ -54,18 +68,27 @@ sealed class UiEvent {
   ) : UiEvent()
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TranslatorViewModel(application: Application) : AndroidViewModel(application) {
   private val appContext = application.applicationContext
   private val settingsStore = SettingsDataStore(appContext)
   private val db = AppDatabase.getInstance(appContext)
   private val cacheDao = db.translationCacheDao()
   private val historyRepository = TranslationHistoryRepository(db.translationHistoryDao())
+  private val languageRepository = SupportedLanguageRepository(db.supportedLanguageDao())
 
   val settings: StateFlow<TranslatorSettings> = settingsStore.settingsFlow.stateIn(
       scope = viewModelScope,
       started = SharingStarted.WhileSubscribed(5000L),
       initialValue = TranslatorSettings()
   )
+
+  val targetLanguages: StateFlow<List<LanguageOption>> =
+      languageRepository.targetLanguagesFlow.stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(5000L),
+          initialValue = SupportedLanguages.targetLanguages
+      )
 
   val cacheCount: StateFlow<Int> = cacheDao.getCountFlow().stateIn(
       scope = viewModelScope,
@@ -80,13 +103,65 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
           initialValue = emptyList()
       )
 
+  private val _historySearchQuery = MutableStateFlow("")
+  val historySearchQuery: StateFlow<String> = _historySearchQuery.asStateFlow()
+
+  private val _historyStatusFilter = MutableStateFlow("ALL")
+  val historyStatusFilter: StateFlow<String> = _historyStatusFilter.asStateFlow()
+
+  val filteredHistoryEntries: StateFlow<List<TranslationHistoryEntity>> =
+      combine(_historySearchQuery, _historyStatusFilter) { query, status ->
+        query to status
+      }.flatMapLatest { (query, status) ->
+        historyRepository.searchHistory(query, status)
+      }.stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(5000L),
+          initialValue = emptyList()
+      )
+
+  val dailyProductivityStats: StateFlow<List<DailyProductivityStat>> =
+      historyEntries.map { entries ->
+        WarbandTextProcessor.computeDailyProductivityStats(entries, daysCount = 7)
+      }.flowOn(Dispatchers.Default).stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(5000L),
+          initialValue = emptyList()
+      )
+
   val fileQueue: StateFlow<List<QueuedFileItem>> = TranslationCoordinator.fileQueue
   val progressState: StateFlow<TranslationProgressState> = TranslationCoordinator.progressState
   val previewRows: StateFlow<List<PreviewRow>> = TranslationCoordinator.previewRows
   val logs: StateFlow<List<LogEntry>> = TranslationCoordinator.logs
+  val errorLogEntries: StateFlow<List<TranslationErrorItem>> = TranslationCoordinator.errorLogEntries
   val failedRows: StateFlow<List<String>> = TranslationCoordinator.failedRows
+  val sessionSummary: StateFlow<SessionSummaryReport?> = TranslationCoordinator.sessionSummary
   val connectionStatus: StateFlow<ConnectionStatus> = TranslationCoordinator.connectionStatus
   val errorAlert: StateFlow<ErrorAlert?> = TranslationCoordinator.errorAlert
+
+  val validationReports: StateFlow<Map<String, CsvValidationReport>> =
+      combine(fileQueue, settings) { queue, s ->
+        queue to s
+      }.map { (queue, s) ->
+        queue.associate { item ->
+          item.id to WarbandTextProcessor.validateCsvStructure(
+              file = item,
+              separator = s.separator,
+              stripTag = s.stripTag,
+              skipRegex = s.skipRegex
+          )
+        }
+      }.flowOn(Dispatchers.Default).stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(5000L),
+          initialValue = emptyMap()
+      )
+
+  private val _showValidationWarningDialog = MutableStateFlow(false)
+  val showValidationWarningDialog: StateFlow<Boolean> = _showValidationWarningDialog.asStateFlow()
+
+  private val _validationWarningReports = MutableStateFlow<List<CsvValidationReport>>(emptyList())
+  val validationWarningReports: StateFlow<List<CsvValidationReport>> = _validationWarningReports.asStateFlow()
 
   private val _selectedPreviewFileId = MutableStateFlow<String?>(null)
   val selectedPreviewFileId: StateFlow<String?> = _selectedPreviewFileId.asStateFlow()
@@ -211,6 +286,10 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
   private var legacySaveQueue: ArrayDeque<Pair<String, String>> = ArrayDeque()
 
   init {
+    viewModelScope.launch(Dispatchers.IO) {
+      languageRepository.ensureSeeded()
+    }
+
     viewModelScope.launch {
       TranslationCoordinator.completionToast.collect { msg ->
         if (msg != null) {
@@ -276,6 +355,12 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     }
   }
 
+  fun setMedievalThemeEnabled(enabled: Boolean) {
+    viewModelScope.launch {
+      settingsStore.updateSettings { it.copy(medievalThemeEnabled = enabled) }
+    }
+  }
+
   fun setSourceLang(code: String) {
     viewModelScope.launch {
       settingsStore.updateSettings { it.copy(sourceLang = code) }
@@ -285,6 +370,16 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
   fun setTargetLang(code: String) {
     viewModelScope.launch {
       settingsStore.updateSettings { it.copy(targetLang = code) }
+    }
+  }
+
+  fun addCustomTargetLanguage(code: String, label: String) {
+    val cleanCode = code.trim().lowercase()
+    if (cleanCode.isEmpty()) return
+    viewModelScope.launch {
+      languageRepository.addCustomLanguage(cleanCode, label)
+      settingsStore.updateSettings { it.copy(targetLang = cleanCode) }
+      _uiEvents.emit(UiEvent.ShowToast("Bahasa '$cleanCode' disimpan ke Room & dipilih!"))
     }
   }
 
@@ -347,6 +442,14 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     viewModelScope.launch {
       settingsStore.updateSettings { it.copy(exportFilenameSuffix = clean) }
     }
+  }
+
+  fun setHistorySearchQuery(query: String) {
+    _historySearchQuery.value = query
+  }
+
+  fun setHistoryStatusFilter(status: String) {
+    _historyStatusFilter.value = status
   }
 
   fun deleteHistoryEntry(id: Long) {
@@ -443,9 +546,33 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     if (uris.isEmpty()) return
     viewModelScope.launch {
       val outcome = AndroidFileHelper.readQueuedFiles(appContext, uris)
+      val currentSettings = settings.value
       if (outcome.loaded.isNotEmpty()) {
         TranslationCoordinator.enqueueFiles(outcome.loaded)
-        TranslationCoordinator.refreshAutoResumeCounts(appContext, settings.value)
+        TranslationCoordinator.refreshAutoResumeCounts(appContext, currentSettings)
+        val reports = withContext(Dispatchers.Default) {
+          outcome.loaded.map { item ->
+            WarbandTextProcessor.validateCsvStructure(
+                file = item,
+                separator = currentSettings.separator,
+                stripTag = currentSettings.stripTag,
+                skipRegex = currentSettings.skipRegex
+            )
+          }
+        }
+        reports.forEach { rep ->
+          if (rep.status == CsvValidationStatus.MALFORMED) {
+            TranslationCoordinator.recordFormatError(
+                fileId = rep.fileId,
+                fileName = rep.fileName,
+                errorMessage = rep.summaryMessage,
+                sampleLine = rep.issues.firstOrNull()?.lineSnippet ?: ""
+            )
+            TranslationCoordinator.appendLog("Validasi CSV (${rep.fileName}): ${rep.summaryMessage}", LogLevel.WARN)
+          } else if (rep.status == CsvValidationStatus.VALID) {
+            TranslationCoordinator.appendLog("Validasi CSV OK (${rep.fileName}): ${rep.summaryMessage}", LogLevel.OK)
+          }
+        }
         if (_selectedPreviewFileId.value == null) {
           _selectedPreviewFileId.value = outcome.loaded.first().id
         } else {
@@ -453,10 +580,18 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         }
       }
       outcome.rejectedNames.forEach { name ->
+        TranslationCoordinator.recordFormatError(
+            fileName = name,
+            errorMessage = "Format file tidak didukung (gunakan .csv, .txt, .tsv)"
+        )
         TranslationCoordinator.appendLog("Format tidak didukung: $name", LogLevel.ERROR)
         _uiEvents.emit(UiEvent.ShowToast("Format tidak didukung: $name (gunakan .csv, .txt, .tsv)"))
       }
       outcome.failedNames.forEach { name ->
+        TranslationCoordinator.recordFormatError(
+            fileName = name,
+            errorMessage = "Gagal membaca berkas dari penyimpanan"
+        )
         TranslationCoordinator.appendLog("Gagal membaca file: $name", LogLevel.ERROR)
         _uiEvents.emit(UiEvent.ShowToast("Gagal membaca file: $name"))
       }
@@ -481,11 +616,49 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     _selectedPreviewFileId.value = null
   }
 
-  fun startTranslation() {
+  fun startTranslation(bypassValidation: Boolean = false) {
     if (progressState.value.isRunning) return
-    val hasPending = fileQueue.value.any { it.status == FileQueueStatus.WAIT }
-    if (!hasPending) return
-    TranslationForegroundService.start(appContext)
+    val pending = fileQueue.value.filter { it.status == FileQueueStatus.WAIT }
+    if (pending.isEmpty()) return
+
+    if (bypassValidation) {
+      _showValidationWarningDialog.value = false
+      TranslationForegroundService.start(appContext)
+      return
+    }
+
+    val currentSettings = settings.value
+    viewModelScope.launch {
+      val reports = withContext(Dispatchers.Default) {
+        pending.map { item ->
+          WarbandTextProcessor.validateCsvStructure(
+              file = item,
+              separator = currentSettings.separator,
+              stripTag = currentSettings.stripTag,
+              skipRegex = currentSettings.skipRegex
+          )
+        }
+      }
+      val flagged = reports.filter { it.status == CsvValidationStatus.MALFORMED }
+      if (flagged.isNotEmpty()) {
+        flagged.forEach { rep ->
+          TranslationCoordinator.recordFormatError(
+              fileId = rep.fileId,
+              fileName = rep.fileName,
+              errorMessage = rep.summaryMessage,
+              sampleLine = rep.issues.firstOrNull()?.lineSnippet ?: ""
+          )
+        }
+        _validationWarningReports.value = flagged
+        _showValidationWarningDialog.value = true
+      } else {
+        TranslationForegroundService.start(appContext)
+      }
+    }
+  }
+
+  fun dismissValidationWarningDialog() {
+    _showValidationWarningDialog.value = false
   }
 
   fun togglePause() = TranslationCoordinator.togglePause()
@@ -495,6 +668,30 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
   fun clearLogs() = TranslationCoordinator.clearLogs()
 
   fun dismissErrorAlert() = TranslationCoordinator.dismissErrorAlert()
+
+  fun dismissSessionSummary() = TranslationCoordinator.dismissSessionSummary()
+
+  fun clearErrorLog() = TranslationCoordinator.clearErrorLog()
+
+  fun dismissErrorEntry(errorId: String) = TranslationCoordinator.dismissErrorEntry(errorId)
+
+  fun retryErrorEntry(errorId: String) {
+    viewModelScope.launch {
+      val ok = TranslationCoordinator.retryErrorEntry(appContext, settings.value, errorId)
+      _uiEvents.emit(
+          UiEvent.ShowToast(
+              if (ok) "Baris berhasil diterjemahkan ulang!" else "Gagal mencoba ulang baris. Periksa koneksi."
+          )
+      )
+    }
+  }
+
+  fun retryAllErrors() {
+    viewModelScope.launch {
+      val (ok, fail) = TranslationCoordinator.retryAllRowErrors(appContext, settings.value)
+      _uiEvents.emit(UiEvent.ShowToast("Coba ulang selesai: $ok berhasil, $fail masih gagal."))
+    }
+  }
 
   fun savePreviewEdit(lineIndex: Int, newTranslatedLine: String) {
     viewModelScope.launch {
@@ -513,10 +710,27 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
   fun importGlossaryFromUri(uri: Uri) {
     viewModelScope.launch {
       try {
-        val text = AndroidFileHelper.readTextFromUri(appContext, uri)
-        setGlossaryText(text)
+        val raw = AndroidFileHelper.readTextFromUri(appContext, uri)
         val name = AndroidFileHelper.getDisplayName(appContext, uri) ?: "glosarium.txt"
-        _uiEvents.emit(UiEvent.ShowToast("Glosarium \"$name\" dimuat!"))
+        val parsed = withContext(Dispatchers.Default) {
+          WarbandTextProcessor.importGlossaryFromContent(raw, name)
+        }
+        if (parsed.importedCount == 0) {
+          _uiEvents.emit(UiEvent.ShowToast("Tidak ada istilah valid ditemukan pada \"$name\"."))
+          return@launch
+        }
+        val merged = WarbandTextProcessor.mergeGlossaryText(
+            settings.value.glossaryText,
+            parsed.importedLinesText
+        )
+        setGlossaryText(merged)
+        TranslationCoordinator.appendLog(
+            "Impor glosarium ${parsed.formatDetected} ($name): ${parsed.importedCount} entri.",
+            LogLevel.OK
+        )
+        _uiEvents.emit(
+            UiEvent.ShowToast("${parsed.importedCount} istilah (${parsed.formatDetected}) dimuat dari \"$name\"!")
+        )
       } catch (e: Exception) {
         _uiEvents.emit(UiEvent.ShowToast("Gagal memuat glosarium: ${e.message}"))
       }
